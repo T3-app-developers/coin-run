@@ -1,0 +1,639 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Green-Head Coin Run</title>
+<style>
+  html, body { margin:0; padding:0; background:#21252b; color:#eaeaea; font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif; }
+  #ui { position:fixed; inset:0 0 auto 0; display:flex; gap:16px; align-items:center; padding:10px 14px; font-weight:600; backdrop-filter: blur(4px);  }
+  .pill { background:#2b2f36; border:1px solid #3a3f47; padding:6px 10px; border-radius:999px; box-shadow: inset 0 0 0 1px #00000040; }
+  .good { color:#9ef79a; }
+  .warn { color:#ff9e64; }
+  .bad { color:#ff6b6b; }
+  #help { position:fixed; right:10px; top:10px; background:#2b2f36; border:1px solid #3a3f47; padding:10px 12px; border-radius:10px; max-width: 420px; line-height:1.2; font-size:14px; }
+  #overlay { position:fixed; inset:0; display:none; align-items:center; justify-content:center; background:#000a; color:#fff; text-align:center; }
+  #overlay .card { background:#1f232a; border:1px solid #3a3f47; border-radius:14px; padding:22px 24px; max-width:560px; }
+  #overlay h1 { margin:0 0 8px 0; font-size:28px; }
+  #overlay p { margin:6px 0; }
+  canvas { display:block; width:100vw; height:100vh; image-rendering: pixelated; }
+</style>
+</head>
+<body>
+<canvas id="game" width="960" height="540"></canvas>
+
+<div id="ui">
+  <div class="pill">Coins: <span id="coins" class="good">0</span></div>
+  <div class="pill">Wood: <span id="wood" class="warn">0</span></div>
+  <div class="pill">Lava: <span id="lava" class="bad">hurts</span></div>
+  <div class="pill">Goal ▶</div>
+</div>
+
+<div id="help">
+  <b>Controls</b><br>
+  Move: <b>A/D</b> or <b>←/→</b> &nbsp;|&nbsp; Jump: <b>W</b>/<b>↑</b>/<b>Space</b><br>
+  Mine Tree (nearby): <b>E</b> (hold)<br>
+  Build Wall (spawns coin): <b>1</b> &nbsp;|&nbsp; Build Lava Pit: <b>2</b><br>
+  Restart: <b>R</b> &nbsp;|&nbsp; Toggle Hitboxes: <b>H</b>
+</div>
+
+<div id="overlay">
+  <div class="card">
+    <h1 id="ov-title">Finished!</h1>
+    <p id="ov-body"></p>
+    <p style="opacity:0.8">Press <b>R</b> to play again.</p>
+  </div>
+</div>
+
+<script>
+(() => {
+  // ===== helpers =====
+  const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+  const rand = (a, b) => Math.random() * (b - a) + a;
+  const irand = (a, b) => Math.floor(rand(a, b));
+  const sign = (x) => x < 0 ? -1 : 1;
+
+  // ===== canvas & sizing =====
+  const canvas = document.getElementById('game');
+  const ctx = canvas.getContext('2d');
+  let W = canvas.width, H = canvas.height;
+
+  function resize() {
+    // Keep fixed internal resolution; CSS scales it.
+    // (Could add DPR scaling if you prefer sharper rendering.)
+  }
+  window.addEventListener('resize', resize);
+
+  // ===== UI elements =====
+  const uiCoins = document.getElementById('coins');
+  const uiWood  = document.getElementById('wood');
+  const overlay = document.getElementById('overlay');
+  const ovTitle = document.getElementById('ov-title');
+  const ovBody  = document.getElementById('ov-body');
+
+  // ===== world constants =====
+  const TILE = 40;
+  const GROUND_Y = 440;
+  const LEVEL_LEN = 3000; // world ends here; goal near end
+  const GOAL_X = LEVEL_LEN - 140;
+
+  // physics
+  const GRAV = 0.9;
+  const FRICTION = 0.85;
+  const AIRFRIC = 0.98;
+  const MOVE_ACCEL = 0.9;
+  const MAX_RUN = 6.2;
+  const JUMP_VEL = -16;
+
+  // game state
+  let keys = {};
+  let debugShowHit = false;
+  let finished = false;
+
+  // ===== entities =====
+  class Player {
+    constructor(x, y) {
+      this.x = x; this.y = y;
+      this.vx = 0; this.vy = 0;
+      this.w = 22; this.h = 34; // compact body; head drawn on top
+      this.grounded = false;
+      this.facing = 1; // 1 right, -1 left
+      this.safeX = x; this.safeY = y;
+      this.coins = 0;
+      this.wood = 0;
+      this.invuln = 0; // frames
+    }
+    aabb() { return {x:this.x, y:this.y, w:this.w, h:this.h}; }
+    centerX() { return this.x + this.w/2; }
+    bottom() { return this.y + this.h; }
+  }
+
+  class Tree {
+    constructor(x) {
+      this.x = x;
+      this.w = 30;
+      this.h = 100;
+      this.baseY = GROUND_Y - this.h;
+      this.hp = 3; // number of "chunks"
+      this.progress = 0; // chopping progress per segment
+      this.dead = false;
+    }
+    aabb() { return {x:this.x, y:this.baseY, w:this.w, h:this.h}; }
+  }
+
+  class Wall {
+    constructor(x, y) {
+      this.x = x; this.y = y; // top-left
+      this.w = TILE; this.h = TILE;
+    }
+    aabb() { return {x:this.x, y:this.y, w:this.w, h:this.h}; }
+  }
+
+  class Lava {
+    constructor(x, y) {
+      this.x = x; this.y = y;
+      this.w = TILE; this.h = 14;
+      this.phase = rand(0, 1000);
+    }
+    aabb() { return {x:this.x, y:this.y, w:this.w, h:this.h}; }
+  }
+
+  class Coin {
+    constructor(x, y) {
+      this.x = x; this.y = y;
+      this.r = 10;
+      this.t = 0;
+      this.collected = false;
+    }
+  }
+
+  // ===== world containers =====
+  let player;
+  let trees = [];
+  let walls = [];
+  let lavas = [];
+  let coins = [];
+
+  // ===== camera =====
+  let camX = 0;
+
+  function resetLevel() {
+    finished = false;
+    overlay.style.display = 'none';
+    trees = []; walls = []; lavas = []; coins = [];
+    player = new Player(100, GROUND_Y - 34);
+    // scatter trees
+    const bands = 22;
+    for (let i=0; i<bands; i++) {
+      const x = irand(160 + i * ((LEVEL_LEN-400)/bands), 180 + i * ((LEVEL_LEN-400)/bands));
+      trees.push(new Tree(x));
+    }
+    // sprinkle a few natural hazards
+    for (let i=0; i<6; i++) {
+      const x = irand(260, LEVEL_LEN - 400);
+      lavas.push(new Lava(tileX(x), GROUND_Y - 14));
+    }
+    camX = 0;
+    updateUI();
+  }
+
+  // ===== controls =====
+  window.addEventListener('keydown', (e) => {
+    keys[e.key] = true;
+    if (e.key === 'r' || e.key === 'R') resetLevel();
+    if (e.key === 'h' || e.key === 'H') debugShowHit = !debugShowHit;
+
+    if (finished) return;
+
+    if (e.key === '1') placeWall();
+    if (e.key === '2') placeLava();
+  });
+  window.addEventListener('keyup', (e) => { keys[e.key] = false; });
+
+  function isDown(...opts) { return opts.some(k => !!keys[k]); }
+
+  // ===== placement helpers =====
+  function tileX(x) { return Math.floor(x / TILE) * TILE; }
+
+  function spaceFreeForWall(tx, ty) {
+    // no overlap with existing walls or trees; must sit on ground
+    if (ty !== GROUND_Y - TILE) return false;
+    const rect = {x:tx, y:ty, w:TILE, h:TILE};
+    if (walls.some(w => aabbOverlap(rect, w.aabb()))) return false;
+    if (trees.some(t => aabbOverlap(rect, t.aabb()))) return false;
+    return true;
+  }
+
+  function spaceFreeForLava(tx, ty) {
+    if (ty !== GROUND_Y - 14) return false;
+    const rect = {x:tx, y:ty, w:TILE, h:14};
+    if (lavas.some(l => aabbOverlap(rect, l.aabb()))) return false;
+    if (walls.some(w => aabbOverlap(rect, w.aabb()))) return false;
+    return true;
+  }
+
+  function placeWall() {
+    if (player.wood <= 0) return;
+    const ahead = player.centerX() + player.facing * (TILE * 1.2);
+    const tx = tileX(ahead);
+    const ty = GROUND_Y - TILE;
+    if (!spaceFreeForWall(tx, ty)) return;
+    walls.push(new Wall(tx, ty));
+    // spawn coin on top
+    coins.push(new Coin(tx + TILE/2, ty - 18));
+    player.wood -= 1;
+    updateUI();
+  }
+
+  function placeLava() {
+    if (player.wood <= 0) return;
+    const ahead = player.centerX() + player.facing * (TILE * 1.2);
+    const tx = tileX(ahead);
+    const ty = GROUND_Y - 14;
+    if (!spaceFreeForLava(tx, ty)) return;
+    lavas.push(new Lava(tx, ty));
+    player.wood -= 1;
+    updateUI();
+  }
+
+  // ===== collisions =====
+  function aabbOverlap(a, b) {
+    return a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y;
+  }
+
+  // ===== game loop =====
+  let last = performance.now();
+  function loop(t) {
+    const dt = Math.min(33, t - last) / 16.666; // normalize to 60fps steps
+    last = t;
+    update(dt);
+    draw();
+    requestAnimationFrame(loop);
+  }
+
+  function update(dt) {
+    // controls
+    if (!finished) {
+      let ax = 0;
+      if (isDown('ArrowLeft','a','A')) { ax -= MOVE_ACCEL; player.facing = -1; }
+      if (isDown('ArrowRight','d','D')) { ax += MOVE_ACCEL; player.facing =  1; }
+      player.vx += ax * dt;
+
+      const onGround = player.grounded;
+      if ((isDown('ArrowUp','w','W',' ') || keys[' ']) && onGround) {
+        player.vy = JUMP_VEL;
+        player.grounded = false;
+      }
+    }
+
+    // physics integrate
+    player.vy += GRAV * dt;
+    // friction
+    if (player.grounded) player.vx *= Math.pow(FRICTION, dt);
+    else player.vx *= Math.pow(AIRFRIC, dt);
+    player.vx = clamp(player.vx, -MAX_RUN, MAX_RUN);
+
+    // move horizontal
+    player.x += player.vx * dt;
+    // collide with walls horizontally
+    for (const w of walls) {
+      const a = player.aabb(), b = w.aabb();
+      if (aabbOverlap(a,b)) {
+        if (player.vx > 0) player.x = b.x - player.w;
+        if (player.vx < 0) player.x = b.x + b.w;
+        player.vx = 0;
+      }
+    }
+    // bounds
+    player.x = clamp(player.x, 0, LEVEL_LEN - player.w);
+
+    // move vertical
+    player.y += player.vy * dt;
+    player.grounded = false;
+
+    // ground collide
+    if (player.bottom() >= GROUND_Y) {
+      player.y = GROUND_Y - player.h;
+      player.vy = 0;
+      player.grounded = true;
+      player.safeX = player.x;
+      player.safeY = player.y;
+    }
+    // walls collide vertical
+    for (const w of walls) {
+      const a = player.aabb(), b = w.aabb();
+      if (aabbOverlap(a,b)) {
+        if (player.vy > 0) { // falling onto wall
+          player.y = b.y - player.h;
+          player.vy = 0;
+          player.grounded = true;
+        } else if (player.vy < 0) { // hitting underside
+          player.y = b.y + b.h;
+          player.vy = 0.1;
+        }
+      }
+    }
+
+    // lava damage
+    if (player.invuln > 0) player.invuln -= dt;
+    for (const l of lavas) {
+      if (aabbOverlap(player.aabb(), l.aabb()) && player.invuln <= 0) {
+        // respawn and penalty
+        if (player.coins > 0) player.coins -= 1;
+        player.x = Math.max(0, player.safeX - 60);
+        player.y = player.safeY;
+        player.vx = 0; player.vy = 0;
+        player.invuln = 30; // brief invulnerability
+        updateUI();
+      }
+    }
+
+    // mine tree (hold E)
+    if (isDown('e','E') && !finished) {
+      for (const tr of trees) {
+        if (tr.dead) continue;
+        const near = Math.abs((tr.x + tr.w/2) - player.centerX()) < 38 && Math.abs((tr.baseY + tr.h) - player.bottom()) < 50;
+        if (near) {
+          tr.progress += 0.04 * dt; // seconds-ish
+          if (tr.progress >= 1) {
+            tr.progress = 0;
+            tr.hp -= 1;
+            if (tr.hp <= 0) {
+              tr.dead = true;
+              player.wood += 2; // reward
+              updateUI();
+            }
+          }
+        }
+      }
+    } else {
+      // reset partial progress slowly
+      for (const tr of trees) {
+        tr.progress = Math.max(0, tr.progress - 0.02 * dt);
+      }
+    }
+
+    // coin pickup
+    for (const c of coins) {
+      if (!c.collected) {
+        const dx = (player.centerX()) - c.x;
+        const dy = (player.y + player.h/2) - c.y;
+        if (dx*dx + dy*dy < (14*14)) {
+          c.collected = true;
+          player.coins += 1;
+          updateUI();
+        }
+      }
+      c.t += 0.05 * dt;
+    }
+
+    // camera
+    camX += ((player.centerX() - W * 0.45) - camX) * 0.08;
+    camX = clamp(camX, 0, LEVEL_LEN - W);
+
+    // finish check
+    if (!finished && player.x > GOAL_X) {
+      finished = true;
+      ovTitle.textContent = "Run Complete!";
+      ovBody.innerHTML = `You reached the goal with <b>${player.coins}</b> coin${player.coins===1?'':'s'}.<br>
+                          Trees chopped: <b>${trees.filter(t=>t.dead).length}</b> · Walls built: <b>${walls.length}</b> · Lava placed: <b>${lavas.length}</b>`;
+      overlay.style.display = 'flex';
+    }
+  }
+
+  function updateUI() {
+    uiCoins.textContent = player.coins;
+    uiWood.textContent = player.wood;
+  }
+
+  // ===== drawing =====
+  function drawGround() {
+    // sky
+    const grd = ctx.createLinearGradient(0,0,0,H);
+    grd.addColorStop(0,'#6ec6ff');
+    grd.addColorStop(1,'#bfeaff');
+    ctx.fillStyle = grd;
+    ctx.fillRect(0,0,W,H);
+
+    // far hills
+    ctx.save();
+    ctx.translate(-camX*0.3,0);
+    ctx.fillStyle = '#9ed39b';
+    for (let i=0;i<8;i++){
+      const x = i*500;
+      ctx.beginPath();
+      ctx.moveTo(x, 380);
+      ctx.quadraticCurveTo(x+120,330,x+240,380);
+      ctx.quadraticCurveTo(x+360,330,x+480,380);
+      ctx.lineTo(x+480,H);
+      ctx.lineTo(x,H);
+      ctx.closePath();
+      ctx.fill();
+    }
+    ctx.restore();
+
+    // ground band
+    ctx.save();
+    ctx.translate(-camX,0);
+    ctx.fillStyle = '#79c36a';
+    ctx.fillRect(0, GROUND_Y-10, LEVEL_LEN, 10);
+    ctx.fillStyle = '#5ea557';
+    ctx.fillRect(0, GROUND_Y, LEVEL_LEN, H-GROUND_Y);
+    // grass blades
+    ctx.strokeStyle = '#8adf76';
+    ctx.lineWidth = 1;
+    for (let x=0; x<LEVEL_LEN; x+=8) {
+      const gx = x + Math.sin((x+performance.now()*0.002)*0.1)*1.2;
+      ctx.beginPath();
+      ctx.moveTo(gx, GROUND_Y-10);
+      ctx.lineTo(gx, GROUND_Y - 10 - (x%16<8?4:6));
+      ctx.stroke();
+    }
+    // goal flag
+    ctx.fillStyle = '#333';
+    ctx.fillRect(GOAL_X, GROUND_Y-60, 4, 60);
+    ctx.fillStyle = '#ffd166';
+    ctx.beginPath();
+    ctx.moveTo(GOAL_X+4, GROUND_Y-56);
+    ctx.lineTo(GOAL_X+54, GROUND_Y-46);
+    ctx.lineTo(GOAL_X+4, GROUND_Y-36);
+    ctx.closePath();
+    ctx.fill();
+    ctx.restore();
+  }
+
+  function drawTree(tr) {
+    if (tr.dead) return;
+    ctx.save();
+    ctx.translate(-camX,0);
+    // trunk
+    ctx.fillStyle = '#7c4f2a';
+    ctx.fillRect(tr.x + 10, tr.baseY + 30, 10, tr.h - 30);
+    // canopy
+    ctx.fillStyle = '#3a7d3a';
+    ctx.beginPath();
+    ctx.roundRect(tr.x, tr.baseY, tr.w, 40, 10);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.roundRect(tr.x-6, tr.baseY+18, tr.w+12, 34, 12);
+    ctx.fill();
+
+    // chop progress bar if nearby / active
+    const near = Math.abs((tr.x + tr.w/2) - player.centerX()) < 38;
+    if (near && !finished) {
+      ctx.fillStyle = '#0008';
+      ctx.fillRect(tr.x-6, tr.baseY-16, tr.w+12, 8);
+      ctx.fillStyle = '#9ef79a';
+      ctx.fillRect(tr.x-6, tr.baseY-16, (tr.w+12) * (tr.progress), 8);
+      // HP pips
+      ctx.fillStyle = '#ffd166';
+      for (let i=0;i<tr.hp;i++){
+        ctx.fillRect(tr.x + 4 + i*8, tr.baseY-28, 6, 6);
+      }
+    }
+
+    if (debugShowHit) {
+      const a=tr.aabb();
+      ctx.strokeStyle='#fff8'; ctx.strokeRect(a.x, a.y, a.w, a.h);
+    }
+    ctx.restore();
+  }
+
+  function drawWall(w) {
+    ctx.save(); ctx.translate(-camX,0);
+    // block
+    ctx.fillStyle = '#9399a3';
+    ctx.fillRect(w.x, w.y, w.w, w.h);
+    // fake brick lines
+    ctx.strokeStyle = '#747b85';
+    ctx.lineWidth = 1;
+    for (let y=0; y<w.h; y+=10) {
+      ctx.beginPath(); ctx.moveTo(w.x, w.y+y); ctx.lineTo(w.x+w.w, w.y+y); ctx.stroke();
+    }
+    ctx.restore();
+    if (debugShowHit) {
+      const a=w.aabb();
+      ctx.save(); ctx.translate(-camX,0); ctx.strokeStyle='#fff8'; ctx.strokeRect(a.x, a.y, a.w, a.h); ctx.restore();
+    }
+  }
+
+  function drawLava(l) {
+    ctx.save(); ctx.translate(-camX,0);
+    // base
+    ctx.fillStyle = '#ff4d4d';
+    ctx.fillRect(l.x, l.y, l.w, l.h);
+    // surface wiggle
+    ctx.strokeStyle = '#ffa66b';
+    ctx.lineWidth = 2;
+    const t = performance.now()*0.003 + l.phase;
+    ctx.beginPath();
+    for (let i=0; i<=l.w; i+=4) {
+      const y = l.y + 4 + Math.sin(t + i*0.2) * 2;
+      if (i===0) ctx.moveTo(l.x+i, y); else ctx.lineTo(l.x+i, y);
+    }
+    ctx.stroke();
+    ctx.restore();
+
+    if (debugShowHit) {
+      const a=l.aabb();
+      ctx.save(); ctx.translate(-camX,0); ctx.strokeStyle='#fff8'; ctx.strokeRect(a.x, a.y, a.w, a.h); ctx.restore();
+    }
+  }
+
+  function drawCoin(c) {
+    if (c.collected) return;
+    ctx.save(); ctx.translate(-camX,0);
+    const bob = Math.sin(c.t*4) * 3;
+    ctx.beginPath();
+    ctx.arc(c.x, c.y + bob, c.r, 0, Math.PI*2);
+    ctx.fillStyle = '#ffd166';
+    ctx.fill();
+    ctx.strokeStyle = '#c9a44f';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+    // inner shine
+    ctx.fillStyle = '#fff8';
+    ctx.beginPath();
+    ctx.arc(c.x-4, c.y + bob - 4, 4, 0, Math.PI*2);
+    ctx.fill();
+    ctx.restore();
+  }
+
+  function drawPlayer() {
+    ctx.save(); ctx.translate(-camX,0);
+
+    // shadow
+    ctx.fillStyle = '#0003';
+    ctx.beginPath();
+    ctx.ellipse(player.centerX(), GROUND_Y-2, 12, 4, 0, 0, Math.PI*2);
+    ctx.fill();
+
+    // body
+    ctx.fillStyle = '#2f3b52';
+    ctx.fillRect(player.x, player.y, player.w, player.h);
+
+    // head (green square)
+    const head = {x: player.x + (player.w-16)/2, y: player.y - 16, s:16};
+    ctx.fillStyle = '#2fd06c';
+    ctx.fillRect(head.x, head.y, head.s, head.s);
+    // eyes
+    ctx.fillStyle = '#1b1b1b';
+    ctx.fillRect(head.x+4 + (player.facing>0?2:0), head.y+5, 3, 3);
+    ctx.fillRect(head.x+9 + (player.facing>0?2:0), head.y+5, 3, 3);
+    // tiny mouth
+    ctx.fillRect(head.x+5, head.y+10, 6, 2);
+
+    // direction hint
+    ctx.fillStyle = '#ffffff33';
+    ctx.fillRect(player.centerX() + player.facing*14, player.y+6, 10, 2);
+
+    // hurt flash
+    if (player.invuln > 0) {
+      ctx.fillStyle = '#ffffff55';
+      ctx.fillRect(player.x-2, player.y-18, player.w+4, player.h+20);
+    }
+
+    if (debugShowHit) {
+      const a=player.aabb();
+      ctx.strokeStyle='#fff8'; ctx.strokeRect(a.x, a.y, a.w, a.h);
+      ctx.strokeStyle='#0f08'; ctx.strokeRect(head.x, head.y, head.s, head.s);
+    }
+
+    ctx.restore();
+  }
+
+  function draw() {
+    ctx.clearRect(0,0,W,H);
+    drawGround();
+
+    // parallax trees (background silhouettes)
+    ctx.save(); ctx.translate(-camX*0.6,0);
+    ctx.fillStyle = '#2f6130';
+    for (let i=0;i<18;i++){
+      const x = i*220 + 100;
+      ctx.fillRect(x+14, GROUND_Y-70, 12, 70);
+      ctx.beginPath();
+      ctx.roundRect(x, GROUND_Y-110, 40, 30, 10); ctx.fill();
+      ctx.beginPath();
+      ctx.roundRect(x-6, GROUND_Y-90, 52, 34, 12); ctx.fill();
+    }
+    ctx.restore();
+
+    // midground: trees, walls, lava, coins, player
+    for (const tr of trees) drawTree(tr);
+    for (const w of walls) drawWall(w);
+    for (const l of lavas) drawLava(l);
+    for (const c of coins) drawCoin(c);
+    drawPlayer();
+
+    // HUD guide line to goal
+    ctx.save();
+    ctx.translate(-camX,0);
+    ctx.strokeStyle = '#ffffff20';
+    ctx.setLineDash([6,6]);
+    ctx.beginPath(); ctx.moveTo(GOAL_X, 0); ctx.lineTo(GOAL_X, H); ctx.stroke();
+    ctx.restore();
+  }
+
+  // ===== polyfills =====
+  if (!CanvasRenderingContext2D.prototype.roundRect) {
+    CanvasRenderingContext2D.prototype.roundRect = function(x,y,w,h,r) {
+      const rr = Math.min(r, w/2, h/2) || 0;
+      this.beginPath();
+      this.moveTo(x+rr,y);
+      this.arcTo(x+w,y,x+w,y+h,rr);
+      this.arcTo(x+w,y+h,x,y+h,rr);
+      this.arcTo(x,y+h,x,y,rr);
+      this.arcTo(x,y,x+w,y,rr);
+      this.closePath();
+      return this;
+    }
+  }
+
+  // boot
+  resetLevel();
+  requestAnimationFrame(loop);
+})();
+</script>
+</body>
+</html>
