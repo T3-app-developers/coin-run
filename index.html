@@ -25,6 +25,7 @@
 <div id="ui">
   <div class="pill">Coins: <span id="coins" class="good">0</span></div>
   <div class="pill">Wood: <span id="wood" class="warn">0</span></div>
+  <div class="pill">Lives: <span id="lives" class="good">3</span></div>
   <div class="pill">Lava: <span id="lava" class="bad">hurts</span></div>
   <div class="pill">Goal ▶</div>
 </div>
@@ -67,6 +68,7 @@
   // ===== UI elements =====
   const uiCoins = document.getElementById('coins');
   const uiWood  = document.getElementById('wood');
+  const uiLives = document.getElementById('lives');
   const overlay = document.getElementById('overlay');
   const ovTitle = document.getElementById('ov-title');
   const ovBody  = document.getElementById('ov-body');
@@ -102,6 +104,7 @@
       this.coins = 0;
       this.wood = 0;
       this.invuln = 0; // frames
+      this.lives = 3;
     }
     aabb() { return {x:this.x, y:this.y, w:this.w, h:this.h}; }
     centerX() { return this.x + this.w/2; }
@@ -318,7 +321,12 @@
     if (player.invuln > 0) player.invuln -= dt;
     for (const l of lavas) {
       if (aabbOverlap(player.aabb(), l.aabb()) && player.invuln <= 0) {
-        // respawn and penalty
+        // life loss and respawn handling
+        player.lives -= 1;
+        if (player.lives <= 0) {
+          resetLevel();
+          return;
+        }
         if (player.coins > 0) player.coins -= 1;
         player.x = Math.max(0, player.safeX - 60);
         player.y = player.safeY;
@@ -384,6 +392,7 @@
   function updateUI() {
     uiCoins.textContent = player.coins;
     uiWood.textContent = player.wood;
+    uiLives.textContent = player.lives;
   }
 
   // ===== drawing =====
