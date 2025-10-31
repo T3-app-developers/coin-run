@@ -23,18 +23,21 @@
 <canvas id="game" width="960" height="540"></canvas>
 
 <div id="ui">
-  <div class="pill">Coins: <span id="coins" class="good">0</span></div>
-  <div class="pill">Wood: <span id="wood" class="warn">0</span></div>
-  <div class="pill">Lives: <span id="lives" class="good">3</span></div>
+  <div class="pill">P1 Coins: <span id="p1-coins" class="good">0</span></div>
+  <div class="pill">P1 Wood: <span id="p1-wood" class="warn">0</span></div>
+  <div class="pill">P1 Lives: <span id="p1-lives" class="good">3</span></div>
+  <div class="pill">P2 Coins: <span id="p2-coins" class="good">0</span></div>
+  <div class="pill">P2 Wood: <span id="p2-wood" class="warn">0</span></div>
+  <div class="pill">P2 Lives: <span id="p2-lives" class="good">3</span></div>
+  <div class="pill">Timer: <span id="timer" class="good">0:00.0</span></div>
   <div class="pill">Lava: <span id="lava" class="bad">hurts</span></div>
   <div class="pill">Goal ▶</div>
 </div>
 
 <div id="help">
   <b>Controls</b><br>
-  Move: <b>A/D</b> or <b>←/→</b> &nbsp;|&nbsp; Jump: <b>W</b>/<b>↑</b>/<b>Space</b><br>
-  Mine Tree (nearby): <b>E</b> (hold)<br>
-  Build Wall (spawns coin): <b>1</b> &nbsp;|&nbsp; Build Lava Pit: <b>2</b><br>
+  <b>Player 1</b> – Move: <b>A/D</b> · Jump: <b>W</b>/<b>Space</b> · Mine: <b>E</b> (hold) · Wall: <b>1</b> · Lava: <b>2</b><br>
+  <b>Player 2</b> – Move: <b>←/→</b> · Jump: <b>↑</b> · Mine: <b>/</b> (hold) · Wall: <b>[</b> · Lava: <b>]</b><br>
   Restart: <b>R</b> &nbsp;|&nbsp; Toggle Hitboxes: <b>H</b>
 </div>
 
@@ -53,6 +56,13 @@
   const rand = (a, b) => Math.random() * (b - a) + a;
   const irand = (a, b) => Math.floor(rand(a, b));
   const sign = (x) => x < 0 ? -1 : 1;
+  const formatTime = (sec) => {
+    const totalTenths = Math.round(sec * 10);
+    const minutes = Math.floor(totalTenths / 600);
+    const seconds = Math.floor((totalTenths % 600) / 10);
+    const tenths = totalTenths % 10;
+    return `${minutes}:${seconds.toString().padStart(2,'0')}.${tenths}`;
+  };
 
   // ===== canvas & sizing =====
   const canvas = document.getElementById('game');
@@ -66,9 +76,19 @@
   window.addEventListener('resize', resize);
 
   // ===== UI elements =====
-  const uiCoins = document.getElementById('coins');
-  const uiWood  = document.getElementById('wood');
-  const uiLives = document.getElementById('lives');
+  const ui = {
+    p1: {
+      coins: document.getElementById('p1-coins'),
+      wood: document.getElementById('p1-wood'),
+      lives: document.getElementById('p1-lives'),
+    },
+    p2: {
+      coins: document.getElementById('p2-coins'),
+      wood: document.getElementById('p2-wood'),
+      lives: document.getElementById('p2-lives'),
+    }
+  };
+  const uiTimer = document.getElementById('timer');
   const overlay = document.getElementById('overlay');
   const ovTitle = document.getElementById('ov-title');
   const ovBody  = document.getElementById('ov-body');
@@ -96,10 +116,13 @@
   let keys = {};
   let debugShowHit = false;
   let finished = false;
+  let runStartTime = 0;
+  let elapsedTime = 0;
+  let finishDuration = 0;
 
   // ===== entities =====
   class Player {
-    constructor(x, y) {
+    constructor(x, y, options = {}) {
       this.x = x; this.y = y;
       this.vx = 0; this.vy = 0;
       this.w = 22; this.h = 34; // compact body; head drawn on top
@@ -110,10 +133,21 @@
       this.wood = 0;
       this.invuln = 0; // frames
       this.lives = 3;
+      this.deaths = 0;
+      this.finished = false;
+      this.label = options.label || 'P';
+      this.bodyColor = options.bodyColor || '#2f3b52';
+      this.headColor = options.headColor || '#2fd06c';
+      this.controls = options.controls || {};
     }
     aabb() { return {x:this.x, y:this.y, w:this.w, h:this.h}; }
     centerX() { return this.x + this.w/2; }
     bottom() { return this.y + this.h; }
+    controlDown(action) {
+      const binds = this.controls[action];
+      if (!binds) return false;
+      return binds.some(k => !!keys[k]);
+    }
   }
 
   class Tree {
@@ -158,7 +192,7 @@
   }
 
   // ===== world containers =====
-  let player;
+  let players = [];
   let trees = [];
   let walls = [];
   let lavas = [];
@@ -171,7 +205,34 @@
     finished = false;
     overlay.style.display = 'none';
     trees = []; walls = []; lavas = []; coins = [];
-    player = new Player(100, GROUND_Y - 34);
+    players = [
+      new Player(100, GROUND_Y - 34, {
+        label: 'P1',
+        headColor: '#2fd06c',
+        bodyColor: '#2f3b52',
+        controls: {
+          left: ['a','A'],
+          right: ['d','D'],
+          jump: ['w','W',' '],
+          chop: ['e','E'],
+          wall: ['1'],
+          lava: ['2'],
+        }
+      }),
+      new Player(160, GROUND_Y - 34, {
+        label: 'P2',
+        headColor: '#3fb5ff',
+        bodyColor: '#233149',
+        controls: {
+          left: ['ArrowLeft'],
+          right: ['ArrowRight'],
+          jump: ['ArrowUp'],
+          chop: ['/', '?'],
+          wall: ['[', '{'],
+          lava: [']', '}'],
+        }
+      })
+    ];
     // scatter trees
     const bands = 22;
     for (let i=0; i<bands; i++) {
@@ -184,23 +245,29 @@
       lavas.push(new Lava(tileX(x)));
     }
     camX = 0;
+    runStartTime = performance.now();
+    elapsedTime = 0;
+    finishDuration = 0;
+    keys = {};
     updateUI();
+    uiTimer.textContent = formatTime(0);
   }
 
   // ===== controls =====
   window.addEventListener('keydown', (e) => {
     keys[e.key] = true;
-    if (e.key === 'r' || e.key === 'R') resetLevel();
+    if (e.key === 'r' || e.key === 'R') { resetLevel(); return; }
     if (e.key === 'h' || e.key === 'H') debugShowHit = !debugShowHit;
 
     if (finished) return;
 
-    if (e.key === '1') placeWall();
-    if (e.key === '2') placeLava();
+    for (const player of players) {
+      if (player.finished) continue;
+      if (player.controls.wall && player.controls.wall.includes(e.key)) placeWall(player);
+      if (player.controls.lava && player.controls.lava.includes(e.key)) placeLava(player);
+    }
   });
   window.addEventListener('keyup', (e) => { keys[e.key] = false; });
-
-  function isDown(...opts) { return opts.some(k => !!keys[k]); }
 
   // ===== placement helpers =====
   function tileX(x) { return Math.floor(x / TILE) * TILE; }
@@ -223,7 +290,7 @@
     return true;
   }
 
-  function placeWall() {
+  function placeWall(player) {
     if (player.wood <= 0) return;
     const ahead = player.centerX() + player.facing * (TILE * 1.2);
     const tx = tileX(ahead);
@@ -236,7 +303,7 @@
     updateUI();
   }
 
-  function placeLava() {
+  function placeLava(player) {
     if (player.wood <= 0) return;
     const ahead = player.centerX() + player.facing * (TILE * 1.2);
     const tx = tileX(ahead);
@@ -252,6 +319,23 @@
     return a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y;
   }
 
+  function handlePlayerDeath(player) {
+    player.lives -= 1;
+    player.deaths += 1;
+    if (player.lives <= 0) {
+      resetLevel();
+      return true;
+    }
+    if (player.coins > 0) player.coins -= 1;
+    player.x = Math.max(0, player.safeX - 60);
+    player.y = player.safeY;
+    player.vx = 0;
+    player.vy = 0;
+    player.invuln = 30;
+    updateUI();
+    return false;
+  }
+
   // ===== game loop =====
   let last = performance.now();
   function loop(t) {
@@ -263,110 +347,107 @@
   }
 
   function update(dt) {
-    // controls
+    const now = performance.now();
     if (!finished) {
-      let ax = 0;
-      if (isDown('ArrowLeft','a','A')) { ax -= MOVE_ACCEL; player.facing = -1; }
-      if (isDown('ArrowRight','d','D')) { ax += MOVE_ACCEL; player.facing =  1; }
-      player.vx += ax * dt;
-
-      const onGround = player.grounded;
-      if ((isDown('ArrowUp','w','W',' ') || keys[' ']) && onGround) {
-        player.vy = JUMP_VEL;
-        player.grounded = false;
-      }
+      elapsedTime = (now - runStartTime) / 1000;
+      uiTimer.textContent = formatTime(elapsedTime);
     }
 
-    // physics integrate
-    player.vy += GRAV * dt;
-    // friction
-    if (player.grounded) player.vx *= Math.pow(FRICTION, dt);
-    else player.vx *= Math.pow(AIRFRIC, dt);
-    player.vx = clamp(player.vx, -MAX_RUN, MAX_RUN);
+    for (const player of players) {
+      // controls
+      if (!finished && !player.finished) {
+        let ax = 0;
+        if (player.controlDown('left')) { ax -= MOVE_ACCEL; player.facing = -1; }
+        if (player.controlDown('right')) { ax += MOVE_ACCEL; player.facing =  1; }
+        player.vx += ax * dt;
 
-    // move horizontal
-    player.x += player.vx * dt;
-    // collide with walls horizontally
-    for (const w of walls) {
-      const a = player.aabb(), b = w.aabb();
-      if (aabbOverlap(a,b)) {
-        if (player.vx > 0) player.x = b.x - player.w;
-        if (player.vx < 0) player.x = b.x + b.w;
-        player.vx = 0;
-      }
-    }
-    // bounds
-    player.x = clamp(player.x, 0, LEVEL_LEN - player.w);
-
-    // move vertical
-    player.y += player.vy * dt;
-    player.grounded = false;
-
-    const feetRect = {x: player.x + 2, y: player.bottom() - 4, w: player.w - 4, h: 6};
-    const overLava = lavas.some(l => feetRect.x < l.x + l.w && feetRect.x + feetRect.w > l.x);
-
-    // ground collide
-    if (player.bottom() >= GROUND_Y && !overLava) {
-      player.y = GROUND_Y - player.h;
-      player.vy = 0;
-      player.grounded = true;
-      player.safeX = player.x;
-      player.safeY = player.y;
-    }
-    // walls collide vertical
-    for (const w of walls) {
-      const a = player.aabb(), b = w.aabb();
-      if (aabbOverlap(a,b)) {
-        if (player.vy > 0) { // falling onto wall
-          player.y = b.y - player.h;
-          player.vy = 0;
-          player.grounded = true;
-        } else if (player.vy < 0) { // hitting underside
-          player.y = b.y + b.h;
-          player.vy = 0.1;
+        const onGround = player.grounded;
+        if (player.controlDown('jump') && onGround) {
+          player.vy = JUMP_VEL;
+          player.grounded = false;
         }
       }
-    }
 
-    // lava damage
-    if (player.invuln > 0) player.invuln -= dt;
-    for (const l of lavas) {
-      if (aabbOverlap(player.aabb(), l.aabb()) && player.invuln <= 0) {
-        // life loss and respawn handling
-        player.lives -= 1;
-        if (player.lives <= 0) {
-          resetLevel();
-          return;
+      // physics integrate
+      player.vy += GRAV * dt;
+      if (player.grounded) player.vx *= Math.pow(FRICTION, dt);
+      else player.vx *= Math.pow(AIRFRIC, dt);
+      player.vx = clamp(player.vx, -MAX_RUN, MAX_RUN);
+
+      // move horizontal
+      player.x += player.vx * dt;
+      for (const w of walls) {
+        const a = player.aabb(), b = w.aabb();
+        if (aabbOverlap(a,b)) {
+          if (player.vx > 0) player.x = b.x - player.w;
+          if (player.vx < 0) player.x = b.x + b.w;
+          player.vx = 0;
         }
-        if (player.coins > 0) player.coins -= 1;
-        player.x = Math.max(0, player.safeX - 60);
-        player.y = player.safeY;
-        player.vx = 0; player.vy = 0;
-        player.invuln = 30; // brief invulnerability
-        updateUI();
       }
-    }
+      player.x = clamp(player.x, 0, LEVEL_LEN - player.w);
 
-    // mine tree (hold E)
-    if (isDown('e','E') && !finished) {
-      for (const tr of trees) {
-        if (tr.dead) continue;
-        const near = Math.abs((tr.x + tr.w/2) - player.centerX()) < 38 && Math.abs((tr.baseY + tr.h) - player.bottom()) < 50;
-        if (near) {
-          tr.progress += 0.04 * dt; // seconds-ish
-          if (tr.progress >= 1) {
-            tr.progress = 0;
-            tr.hp -= 1;
-            if (tr.hp <= 0) {
-              tr.dead = true;
-              player.wood += 2; // reward
-              updateUI();
-            }
+      // move vertical
+      player.y += player.vy * dt;
+      player.grounded = false;
+
+      const feetRect = {x: player.x + 2, y: player.bottom() - 4, w: player.w - 4, h: 6};
+      const overLava = lavas.some(l => feetRect.x < l.x + l.w && feetRect.x + feetRect.w > l.x);
+
+      if (player.bottom() >= GROUND_Y && !overLava) {
+        player.y = GROUND_Y - player.h;
+        player.vy = 0;
+        player.grounded = true;
+        player.safeX = player.x;
+        player.safeY = player.y;
+      }
+      for (const w of walls) {
+        const a = player.aabb(), b = w.aabb();
+        if (aabbOverlap(a,b)) {
+          if (player.vy > 0) {
+            player.y = b.y - player.h;
+            player.vy = 0;
+            player.grounded = true;
+          } else if (player.vy < 0) {
+            player.y = b.y + b.h;
+            player.vy = 0.1;
           }
         }
       }
+
+      if (player.invuln > 0) player.invuln -= dt;
+      for (const l of lavas) {
+        if (aabbOverlap(player.aabb(), l.aabb()) && player.invuln <= 0) {
+          if (handlePlayerDeath(player)) return;
+        }
+      }
+    }
+
+    // mine tree (hold)
+    if (!finished) {
+      for (const tr of trees) {
+        if (tr.dead) continue;
+        let worked = false;
+        for (const player of players) {
+          if (player.finished) continue;
+          if (!player.controlDown('chop')) continue;
+          const near = Math.abs((tr.x + tr.w/2) - player.centerX()) < 38 && Math.abs((tr.baseY + tr.h) - player.bottom()) < 50;
+          if (near) {
+            worked = true;
+            tr.progress += 0.04 * dt;
+            if (tr.progress >= 1) {
+              tr.progress = 0;
+              tr.hp -= 1;
+              if (tr.hp <= 0) {
+                tr.dead = true;
+                player.wood += 2;
+                updateUI();
+              }
+            }
+          }
+        }
+        if (!worked) tr.progress = Math.max(0, tr.progress - 0.02 * dt);
+      }
     } else {
-      // reset partial progress slowly
       for (const tr of trees) {
         tr.progress = Math.max(0, tr.progress - 0.02 * dt);
       }
@@ -375,35 +456,69 @@
     // coin pickup
     for (const c of coins) {
       if (!c.collected) {
-        const dx = (player.centerX()) - c.x;
-        const dy = (player.y + player.h/2) - c.y;
-        if (dx*dx + dy*dy < (14*14)) {
-          c.collected = true;
-          player.coins += 1;
-          updateUI();
+        for (const player of players) {
+          const dx = player.centerX() - c.x;
+          const dy = (player.y + player.h/2) - c.y;
+          if (dx*dx + dy*dy < (14*14)) {
+            c.collected = true;
+            player.coins += 1;
+            updateUI();
+            break;
+          }
         }
       }
       c.t += 0.05 * dt;
     }
 
     // camera
-    camX += ((player.centerX() - W * 0.45) - camX) * 0.08;
-    camX = clamp(camX, 0, LEVEL_LEN - W);
+    if (players.length) {
+      const avgX = players.reduce((sum, p) => sum + p.centerX(), 0) / players.length;
+      camX += ((avgX - W * 0.45) - camX) * 0.08;
+      camX = clamp(camX, 0, LEVEL_LEN - W);
+    }
 
     // finish check
-    if (!finished && player.x > GOAL_X) {
-      finished = true;
-      ovTitle.textContent = "Run Complete!";
-      ovBody.innerHTML = `You reached the goal with <b>${player.coins}</b> coin${player.coins===1?'':'s'}.<br>
-                          Trees chopped: <b>${trees.filter(t=>t.dead).length}</b> · Walls built: <b>${walls.length}</b> · Lava placed: <b>${lavas.length}</b>`;
-      overlay.style.display = 'flex';
+    if (!finished && players.length) {
+      for (const player of players) {
+        if (!player.finished && player.x > GOAL_X) {
+          player.finished = true;
+          player.vx = 0;
+          player.vy = 0;
+          player.grounded = true;
+        }
+      }
+      if (players.every(p => p.finished)) {
+        finished = true;
+        finishDuration = elapsedTime;
+        const summary = players.map(p => `${p.label}: Coins <b>${p.coins}</b> · Wood <b>${p.wood}</b> · Deaths <b>${p.deaths}</b>`).join('<br>');
+        ovTitle.textContent = "Run Complete!";
+        ovBody.innerHTML = `Finished in <b>${formatTime(finishDuration)}</b>.<br>${summary}`;
+        overlay.style.display = 'flex';
+        uiTimer.textContent = formatTime(finishDuration);
+      }
     }
   }
 
   function updateUI() {
-    uiCoins.textContent = player.coins;
-    uiWood.textContent = player.wood;
-    uiLives.textContent = player.lives;
+    const [p1, p2] = players;
+    if (p1) {
+      ui.p1.coins.textContent = p1.coins;
+      ui.p1.wood.textContent = p1.wood;
+      ui.p1.lives.textContent = p1.lives;
+    } else {
+      ui.p1.coins.textContent = '0';
+      ui.p1.wood.textContent = '0';
+      ui.p1.lives.textContent = '0';
+    }
+    if (p2) {
+      ui.p2.coins.textContent = p2.coins;
+      ui.p2.wood.textContent = p2.wood;
+      ui.p2.lives.textContent = p2.lives;
+    } else {
+      ui.p2.coins.textContent = '0';
+      ui.p2.wood.textContent = '0';
+      ui.p2.lives.textContent = '0';
+    }
   }
 
   // ===== drawing =====
@@ -500,7 +615,7 @@
     ctx.fill();
 
     // chop progress bar if nearby / active
-    const near = Math.abs((tr.x + tr.w/2) - player.centerX()) < 38;
+    const near = players.some(p => Math.abs((tr.x + tr.w/2) - p.centerX()) < 38 && Math.abs((tr.baseY + tr.h) - p.bottom()) < 50);
     if (near && !finished) {
       ctx.fillStyle = '#0008';
       ctx.fillRect(tr.x-6, tr.baseY-16, tr.w+12, 8);
@@ -621,7 +736,7 @@
     ctx.restore();
   }
 
-  function drawPlayer() {
+  function drawPlayer(player) {
     ctx.save(); ctx.translate(-camX,0);
 
     // shadow
@@ -631,12 +746,12 @@
     ctx.fill();
 
     // body
-    ctx.fillStyle = '#2f3b52';
+    ctx.fillStyle = player.bodyColor;
     ctx.fillRect(player.x, player.y, player.w, player.h);
 
-    // head (green square)
+    // head
     const head = {x: player.x + (player.w-16)/2, y: player.y - 16, s:16};
-    ctx.fillStyle = '#2fd06c';
+    ctx.fillStyle = player.headColor;
     ctx.fillRect(head.x, head.y, head.s, head.s);
     // eyes
     ctx.fillStyle = '#1b1b1b';
@@ -646,14 +761,23 @@
     ctx.fillRect(head.x+5, head.y+10, 6, 2);
 
     // direction hint
-    ctx.fillStyle = '#ffffff33';
-    ctx.fillRect(player.centerX() + player.facing*14, player.y+6, 10, 2);
+    if (!player.finished) {
+      ctx.fillStyle = '#ffffff33';
+      ctx.fillRect(player.centerX() + player.facing*14, player.y+6, 10, 2);
+    }
 
     // hurt flash
     if (player.invuln > 0) {
       ctx.fillStyle = '#ffffff55';
       ctx.fillRect(player.x-2, player.y-18, player.w+4, player.h+20);
     }
+
+    // label
+    ctx.fillStyle = '#ffffffdd';
+    ctx.font = '600 12px system-ui';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'bottom';
+    ctx.fillText(player.label, player.centerX(), player.y - 20);
 
     if (debugShowHit) {
       const a=player.aabb();
@@ -686,7 +810,7 @@
     for (const w of walls) drawWall(w);
     for (const l of lavas) drawLava(l);
     for (const c of coins) drawCoin(c);
-    drawPlayer();
+    for (const player of players) drawPlayer(player);
 
     // HUD guide line to goal
     ctx.save();
