@@ -78,6 +78,11 @@
   const GROUND_Y = 440;
   const LEVEL_LEN = 3000; // world ends here; goal near end
   const GOAL_X = LEVEL_LEN - 140;
+  const GROUND_SURFACE = 16;
+  const LAVA_RIM = 6;
+  const LAVA_DEPTH = 28;
+  const LAVA_HEIGHT = 14;
+  const LAVA_SURFACE_Y = GROUND_Y + LAVA_DEPTH - LAVA_HEIGHT;
 
   // physics
   const GRAV = 0.9;
@@ -133,9 +138,11 @@
   }
 
   class Lava {
-    constructor(x, y) {
-      this.x = x; this.y = y;
-      this.w = TILE; this.h = 14;
+    constructor(x) {
+      this.x = x;
+      this.y = LAVA_SURFACE_Y;
+      this.w = TILE;
+      this.h = LAVA_HEIGHT;
       this.phase = rand(0, 1000);
     }
     aabb() { return {x:this.x, y:this.y, w:this.w, h:this.h}; }
@@ -174,7 +181,7 @@
     // sprinkle a few natural hazards
     for (let i=0; i<6; i++) {
       const x = irand(260, LEVEL_LEN - 400);
-      lavas.push(new Lava(tileX(x), GROUND_Y - 14));
+      lavas.push(new Lava(tileX(x)));
     }
     camX = 0;
     updateUI();
@@ -208,10 +215,11 @@
   }
 
   function spaceFreeForLava(tx, ty) {
-    if (ty !== GROUND_Y - 14) return false;
-    const rect = {x:tx, y:ty, w:TILE, h:14};
+    if (ty !== LAVA_SURFACE_Y) return false;
+    const rect = {x:tx, y:ty, w:TILE, h:LAVA_HEIGHT};
     if (lavas.some(l => aabbOverlap(rect, l.aabb()))) return false;
-    if (walls.some(w => aabbOverlap(rect, w.aabb()))) return false;
+    if (walls.some(w => tx < w.x + w.w && tx + TILE > w.x)) return false;
+    if (trees.some(t => !t.dead && tx < t.x + t.w && tx + TILE > t.x)) return false;
     return true;
   }
 
@@ -232,9 +240,9 @@
     if (player.wood <= 0) return;
     const ahead = player.centerX() + player.facing * (TILE * 1.2);
     const tx = tileX(ahead);
-    const ty = GROUND_Y - 14;
+    const ty = LAVA_SURFACE_Y;
     if (!spaceFreeForLava(tx, ty)) return;
-    lavas.push(new Lava(tx, ty));
+    lavas.push(new Lava(tx));
     player.wood -= 1;
     updateUI();
   }
@@ -294,8 +302,11 @@
     player.y += player.vy * dt;
     player.grounded = false;
 
+    const feetRect = {x: player.x + 2, y: player.bottom() - 4, w: player.w - 4, h: 6};
+    const overLava = lavas.some(l => feetRect.x < l.x + l.w && feetRect.x + feetRect.w > l.x);
+
     // ground collide
-    if (player.bottom() >= GROUND_Y) {
+    if (player.bottom() >= GROUND_Y && !overLava) {
       player.y = GROUND_Y - player.h;
       player.vy = 0;
       player.grounded = true;
@@ -424,18 +435,39 @@
     // ground band
     ctx.save();
     ctx.translate(-camX,0);
-    ctx.fillStyle = '#79c36a';
-    ctx.fillRect(0, GROUND_Y-10, LEVEL_LEN, 10);
-    ctx.fillStyle = '#5ea557';
+    const turfTop = GROUND_Y - GROUND_SURFACE;
+    const turfGrad = ctx.createLinearGradient(0, turfTop, 0, GROUND_Y + 4);
+    turfGrad.addColorStop(0, '#90e084');
+    turfGrad.addColorStop(0.45, '#66ba5d');
+    turfGrad.addColorStop(1, '#447d3d');
+    ctx.fillStyle = turfGrad;
+    ctx.fillRect(0, turfTop, LEVEL_LEN, GROUND_SURFACE + 4);
+    ctx.fillStyle = '#2f4f2d';
+    ctx.fillRect(0, GROUND_Y - 2, LEVEL_LEN, 2);
+    ctx.fillStyle = '#0003';
+    ctx.fillRect(0, GROUND_Y, LEVEL_LEN, 2);
+
+    const frontGrad = ctx.createLinearGradient(0, GROUND_Y, 0, H);
+    frontGrad.addColorStop(0, '#4b3a25');
+    frontGrad.addColorStop(0.5, '#3a2718');
+    frontGrad.addColorStop(1, '#1f140b');
+    ctx.fillStyle = frontGrad;
     ctx.fillRect(0, GROUND_Y, LEVEL_LEN, H-GROUND_Y);
+
+    // subtle stratified dirt lines
+    ctx.fillStyle = '#0002';
+    for (let y = GROUND_Y + 18; y < H; y += 26) {
+      ctx.fillRect(0, y, LEVEL_LEN, 4);
+    }
+
     // grass blades
-    ctx.strokeStyle = '#8adf76';
+    ctx.strokeStyle = '#9ef79a';
     ctx.lineWidth = 1;
     for (let x=0; x<LEVEL_LEN; x+=8) {
       const gx = x + Math.sin((x+performance.now()*0.002)*0.1)*1.2;
       ctx.beginPath();
-      ctx.moveTo(gx, GROUND_Y-10);
-      ctx.lineTo(gx, GROUND_Y - 10 - (x%16<8?4:6));
+      ctx.moveTo(gx, turfTop);
+      ctx.lineTo(gx, turfTop - (x%16<8?5:7));
       ctx.stroke();
     }
     // goal flag
@@ -508,19 +540,60 @@
 
   function drawLava(l) {
     ctx.save(); ctx.translate(-camX,0);
-    // base
-    ctx.fillStyle = '#ff4d4d';
-    ctx.fillRect(l.x, l.y, l.w, l.h);
-    // surface wiggle
-    ctx.strokeStyle = '#ffa66b';
+    const rimTop = GROUND_Y - LAVA_RIM;
+    const pitTop = GROUND_Y;
+    const pitBottom = pitTop + LAVA_DEPTH;
+    const lavaTop = pitBottom - l.h;
+
+    // grassy rim
+    const rimGrad = ctx.createLinearGradient(0, rimTop, 0, pitTop);
+    rimGrad.addColorStop(0, '#6fa95c');
+    rimGrad.addColorStop(1, '#35592d');
+    ctx.fillStyle = rimGrad;
+    ctx.fillRect(l.x - 6, rimTop, l.w + 12, LAVA_RIM);
+
+    // pit walls with slight bevel
+    const wallGrad = ctx.createLinearGradient(l.x - 6, pitTop, l.x + l.w + 6, pitTop);
+    wallGrad.addColorStop(0, '#1c2b16');
+    wallGrad.addColorStop(0.08, '#3f5a29');
+    wallGrad.addColorStop(0.92, '#3f5a29');
+    wallGrad.addColorStop(1, '#1c2b16');
+    ctx.fillStyle = wallGrad;
+    ctx.fillRect(l.x - 6, pitTop, l.w + 12, LAVA_DEPTH);
+
+    const cavityGrad = ctx.createLinearGradient(0, pitTop, 0, pitBottom);
+    cavityGrad.addColorStop(0, '#2f1a11');
+    cavityGrad.addColorStop(1, '#0f0502');
+    ctx.fillStyle = cavityGrad;
+    ctx.fillRect(l.x, pitTop, l.w, LAVA_DEPTH);
+
+    // lava pool
+    const lavaGrad = ctx.createLinearGradient(0, lavaTop, 0, pitBottom);
+    lavaGrad.addColorStop(0, '#ffb56b');
+    lavaGrad.addColorStop(0.45, '#ff6b3a');
+    lavaGrad.addColorStop(1, '#d62020');
+    ctx.fillStyle = lavaGrad;
+    ctx.fillRect(l.x, lavaTop, l.w, pitBottom - lavaTop);
+
+    // animated surface ripple
+    ctx.strokeStyle = '#ffd166';
     ctx.lineWidth = 2;
     const t = performance.now()*0.003 + l.phase;
     ctx.beginPath();
     for (let i=0; i<=l.w; i+=4) {
-      const y = l.y + 4 + Math.sin(t + i*0.2) * 2;
+      const y = lavaTop + 4 + Math.sin(t + i*0.2) * 2;
       if (i===0) ctx.moveTo(l.x+i, y); else ctx.lineTo(l.x+i, y);
     }
     ctx.stroke();
+
+    // glow to sell depth
+    const glow = ctx.createRadialGradient(l.x + l.w/2, lavaTop + (pitBottom - lavaTop)/2, 0, l.x + l.w/2, lavaTop + (pitBottom - lavaTop)/2, l.w);
+    glow.addColorStop(0, '#ff6b3a55');
+    glow.addColorStop(1, '#ff6b3a00');
+    ctx.fillStyle = glow;
+    ctx.globalCompositeOperation = 'lighter';
+    ctx.fillRect(l.x - 20, lavaTop - 12, l.w + 40, pitBottom - lavaTop + 24);
+    ctx.globalCompositeOperation = 'source-over';
     ctx.restore();
 
     if (debugShowHit) {
