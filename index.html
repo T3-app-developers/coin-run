@@ -16,6 +16,15 @@
   #overlay .card { background:#1f232a; border:1px solid #3a3f47; border-radius:14px; padding:22px 24px; max-width:560px; }
   #overlay h1 { margin:0 0 8px 0; font-size:28px; }
   #overlay p { margin:6px 0; }
+  #mode-select { position:fixed; inset:0; display:flex; align-items:center; justify-content:center; background:#000d; color:#fff; text-align:center; z-index:20; }
+  #mode-select .card { background:#1f232a; border:1px solid #3a3f47; border-radius:18px; padding:28px 32px; max-width:520px; box-shadow:0 18px 60px #0008; }
+  #mode-select h1 { margin:0 0 12px 0; font-size:30px; }
+  #mode-select p { margin:8px 0; opacity:0.85; }
+  .mode-buttons { display:flex; gap:16px; justify-content:center; margin-top:18px; flex-wrap:wrap; }
+  .mode-btn { background:#2f3540; border:1px solid #4a5160; color:#fff; font-weight:600; padding:12px 26px; border-radius:999px; font-size:18px; cursor:pointer; transition:transform 0.15s ease, background 0.15s ease, box-shadow 0.15s ease; }
+  .mode-btn:hover { background:#3d4554; box-shadow:0 0 0 3px #ffffff12; transform:translateY(-2px); }
+  .mode-btn:active { transform:translateY(0); background:#28303c; }
+  .hidden { display:none !important; }
   canvas { display:block; width:100vw; height:100vh; image-rendering: pixelated; }
 </style>
 </head>
@@ -26,9 +35,9 @@
   <div class="pill">P1 Coins: <span id="p1-coins" class="good">0</span></div>
   <div class="pill">P1 Wood: <span id="p1-wood" class="warn">0</span></div>
   <div class="pill">P1 Lives: <span id="p1-lives" class="good">3</span></div>
-  <div class="pill">P2 Coins: <span id="p2-coins" class="good">0</span></div>
-  <div class="pill">P2 Wood: <span id="p2-wood" class="warn">0</span></div>
-  <div class="pill">P2 Lives: <span id="p2-lives" class="good">3</span></div>
+  <div class="pill p2-pill">P2 Coins: <span id="p2-coins" class="good">0</span></div>
+  <div class="pill p2-pill">P2 Wood: <span id="p2-wood" class="warn">0</span></div>
+  <div class="pill p2-pill">P2 Lives: <span id="p2-lives" class="good">3</span></div>
   <div class="pill">Timer: <span id="timer" class="good">0:00.0</span></div>
   <div class="pill">Lava: <span id="lava" class="bad">hurts</span></div>
   <div class="pill">Goal ▶</div>
@@ -37,7 +46,7 @@
 <div id="help">
   <b>Controls</b><br>
   <b>Player 1</b> – Move: <b>A/D</b> · Jump: <b>W</b>/<b>Space</b> · Mine: <b>E</b> (hold) · Wall: <b>1</b> · Lava: <b>2</b><br>
-  <b>Player 2</b> – Move: <b>←/→</b> · Jump: <b>↑</b> · Mine: <b>/</b> (hold) · Wall: <b>[</b> · Lava: <b>]</b><br>
+  <span id="help-p2"><b>Player 2</b> – Move: <b>←/→</b> · Jump: <b>↑</b> · Mine: <b>/</b> (hold) · Wall: <b>[</b> · Lava: <b>]</b><br></span>
   Restart: <b>R</b> &nbsp;|&nbsp; Toggle Hitboxes: <b>H</b>
 </div>
 
@@ -46,6 +55,18 @@
     <h1 id="ov-title">Finished!</h1>
     <p id="ov-body"></p>
     <p style="opacity:0.8">Press <b>R</b> to play again.</p>
+  </div>
+</div>
+
+<div id="mode-select">
+  <div class="card">
+    <h1>Choose Game Mode</h1>
+    <p>Play solo or grab a friend! This choice sticks until you reload the page. You can press <b>1</b> or <b>2</b> to choose quickly.</p>
+    <div class="mode-buttons">
+      <button class="mode-btn" data-mode="1">One Player</button>
+      <button class="mode-btn" data-mode="2">Two Players</button>
+    </div>
+    <p style="margin-top:18px; font-size:14px; opacity:0.7;">You can press <b>R</b> anytime during a run to restart the current mode.</p>
   </div>
 </div>
 
@@ -92,6 +113,10 @@
   const overlay = document.getElementById('overlay');
   const ovTitle = document.getElementById('ov-title');
   const ovBody  = document.getElementById('ov-body');
+  const modeSelect = document.getElementById('mode-select');
+  const modeButtons = modeSelect.querySelectorAll('.mode-btn');
+  const helpP2 = document.getElementById('help-p2');
+  const p2Pills = Array.from(document.querySelectorAll('.p2-pill'));
 
   // ===== world constants =====
   const TILE = 40;
@@ -99,10 +124,19 @@
   const LEVEL_LEN = 3000; // world ends here; goal near end
   const GOAL_X = LEVEL_LEN - 140;
   const GROUND_SURFACE = 16;
-  const LAVA_RIM = 6;
-  const LAVA_DEPTH = 28;
-  const LAVA_HEIGHT = 14;
+  const LAVA_RIM = 8;
+  const LAVA_DEPTH = 46;
+  const LAVA_HEIGHT = 20;
   const LAVA_SURFACE_Y = GROUND_Y + LAVA_DEPTH - LAVA_HEIGHT;
+
+  const VOLCANO_STEPS = 12;
+  const VOLCANO_STEP_HEIGHT = 12;
+  const VOLCANO_CRATER_WIDTH = TILE * 3;
+  const VOLCANO_RIM_WIDTH = TILE;
+  const VOLCANO_CRATER_DEPTH = 96;
+  const VOLCANO_LAVA_HEIGHT = 42;
+  const VOLCANO_LAVA_RIM = 22;
+  const VOLCANO_WIDTH = VOLCANO_STEPS * TILE * 2 + VOLCANO_CRATER_WIDTH;
 
   // physics
   const GRAV = 0.9;
@@ -113,12 +147,34 @@
   const JUMP_VEL = -16;
 
   // game state
+  let gameMode = null;
   let keys = {};
   let debugShowHit = false;
   let finished = false;
   let runStartTime = 0;
   let elapsedTime = 0;
   let finishDuration = 0;
+
+  function updateModeHud(showSecondPlayer) {
+    p2Pills.forEach(el => el.classList.toggle('hidden', !showSecondPlayer));
+    if (helpP2) helpP2.classList.toggle('hidden', !showSecondPlayer);
+  }
+
+  updateModeHud(false);
+
+  function setGameMode(mode) {
+    gameMode = mode === 2 ? 2 : 1;
+    updateModeHud(gameMode === 2);
+    modeSelect.style.display = 'none';
+    resetLevel();
+  }
+
+  modeButtons.forEach(btn => {
+    btn.addEventListener('click', () => {
+      const mode = parseInt(btn.dataset.mode, 10);
+      setGameMode(Number.isNaN(mode) ? 1 : mode);
+    });
+  });
 
   // ===== entities =====
   class Player {
@@ -172,14 +228,74 @@
   }
 
   class Lava {
-    constructor(x) {
+    constructor(x, options = {}) {
       this.x = x;
-      this.y = LAVA_SURFACE_Y;
-      this.w = TILE;
-      this.h = LAVA_HEIGHT;
+      this.w = options.width ?? TILE;
+      this.depth = options.depth ?? LAVA_DEPTH;
+      this.h = options.height ?? LAVA_HEIGHT;
+      this.rim = options.rim ?? LAVA_RIM;
+      this.theme = options.theme ?? 'grass';
+      const surface = options.surfaceY ?? (GROUND_Y + this.depth - this.h);
+      this.y = surface;
       this.phase = rand(0, 1000);
     }
     aabb() { return {x:this.x, y:this.y, w:this.w, h:this.h}; }
+  }
+
+  function createVolcano(baseX) {
+    const margin = TILE * 2;
+    const slopeWidth = VOLCANO_STEPS * TILE;
+    const clampedBase = clamp(baseX, 240, Math.max(240, LEVEL_LEN - VOLCANO_WIDTH - 240));
+    const craterX = clampedBase + slopeWidth;
+    const lipLeft = craterX - VOLCANO_RIM_WIDTH;
+    const lipRight = craterX + VOLCANO_CRATER_WIDTH + VOLCANO_RIM_WIDTH;
+    const rimY = GROUND_Y - VOLCANO_STEPS * VOLCANO_STEP_HEIGHT;
+    const craterInnerInset = 14;
+    const craterLavaWidth = Math.max(60, VOLCANO_CRATER_WIDTH - craterInnerInset * 2);
+    const lavaX = craterX + (VOLCANO_CRATER_WIDTH - craterLavaWidth) / 2;
+    const lava = new Lava(lavaX, {
+      width: craterLavaWidth,
+      depth: VOLCANO_CRATER_DEPTH,
+      height: VOLCANO_LAVA_HEIGHT,
+      rim: VOLCANO_LAVA_RIM,
+      theme: 'volcano'
+    });
+    const volcanoObj = {
+      x: clampedBase,
+      width: VOLCANO_WIDTH,
+      height: VOLCANO_STEPS * VOLCANO_STEP_HEIGHT,
+      craterX,
+      craterWidth: VOLCANO_CRATER_WIDTH,
+      rimWidth: VOLCANO_RIM_WIDTH,
+      rimY,
+      lipLeft,
+      lipRight,
+      lava,
+      safeMin: clampedBase - margin,
+      safeMax: clampedBase + VOLCANO_WIDTH + margin,
+      groundAt(px) {
+        if (px < this.x || px > this.x + this.width) return GROUND_Y;
+        if (px >= this.craterX && px <= this.craterX + this.craterWidth) return GROUND_Y;
+        if (px < this.craterX) {
+          if (px <= this.lipLeft) {
+            const span = Math.max(1, this.lipLeft - this.x);
+            const t = clamp((px - this.x) / span, 0, 1);
+            return GROUND_Y - t * this.height;
+          }
+          return this.rimY;
+        }
+        if (px >= this.craterX + this.craterWidth) {
+          if (px >= this.lipRight) {
+            const span = Math.max(1, (this.x + this.width) - this.lipRight);
+            const t = clamp(((this.x + this.width) - px) / span, 0, 1);
+            return GROUND_Y - t * this.height;
+          }
+          return this.rimY;
+        }
+        return GROUND_Y;
+      }
+    };
+    return volcanoObj;
   }
 
   class Coin {
@@ -197,14 +313,17 @@
   let walls = [];
   let lavas = [];
   let coins = [];
+  let volcano = null;
 
   // ===== camera =====
   let camX = 0;
 
   function resetLevel() {
+    if (!gameMode) return;
     finished = false;
     overlay.style.display = 'none';
     trees = []; walls = []; lavas = []; coins = [];
+    volcano = createVolcano(tileX(LEVEL_LEN * 0.55));
     players = [
       new Player(100, GROUND_Y - 34, {
         label: 'P1',
@@ -218,8 +337,10 @@
           wall: ['1'],
           lava: ['2'],
         }
-      }),
-      new Player(160, GROUND_Y - 34, {
+      })
+    ];
+    if (gameMode === 2) {
+      players.push(new Player(160, GROUND_Y - 34, {
         label: 'P2',
         headColor: '#3fb5ff',
         bodyColor: '#233149',
@@ -231,18 +352,35 @@
           wall: ['[', '{'],
           lava: [']', '}'],
         }
-      })
-    ];
+      }));
+    }
     // scatter trees
     const bands = 22;
     for (let i=0; i<bands; i++) {
-      const x = irand(160 + i * ((LEVEL_LEN-400)/bands), 180 + i * ((LEVEL_LEN-400)/bands));
+      let attempts = 0;
+      let x;
+      do {
+        x = irand(160 + i * ((LEVEL_LEN-400)/bands), 180 + i * ((LEVEL_LEN-400)/bands));
+        attempts++;
+      } while (volcano && x > volcano.safeMin && x < volcano.safeMax && attempts < 8);
+      if (volcano && x > volcano.safeMin && x < volcano.safeMax) continue;
       trees.push(new Tree(x));
     }
     // sprinkle a few natural hazards
     for (let i=0; i<6; i++) {
-      const x = irand(260, LEVEL_LEN - 400);
+      let attempts = 0;
+      let x;
+      do {
+        x = irand(260, LEVEL_LEN - 400);
+        attempts++;
+      } while (volcano && x > volcano.safeMin - TILE && x < volcano.safeMax + TILE && attempts < 12);
+      if (volcano && x > volcano.safeMin - TILE && x < volcano.safeMax + TILE) continue;
       lavas.push(new Lava(tileX(x)));
+    }
+    if (volcano) {
+      lavas.push(volcano.lava);
+      coins.push(new Coin(volcano.craterX - 28, volcano.rimY - 18));
+      coins.push(new Coin(volcano.craterX + volcano.craterWidth + 28, volcano.rimY - 18));
     }
     camX = 0;
     runStartTime = performance.now();
@@ -255,6 +393,12 @@
 
   // ===== controls =====
   window.addEventListener('keydown', (e) => {
+    if (!gameMode) {
+      if (e.key === '1') setGameMode(1);
+      if (e.key === '2') setGameMode(2);
+      return;
+    }
+
     keys[e.key] = true;
     if (e.key === 'r' || e.key === 'R') { resetLevel(); return; }
     if (e.key === 'h' || e.key === 'H') debugShowHit = !debugShowHit;
@@ -267,7 +411,10 @@
       if (player.controls.lava && player.controls.lava.includes(e.key)) placeLava(player);
     }
   });
-  window.addEventListener('keyup', (e) => { keys[e.key] = false; });
+  window.addEventListener('keyup', (e) => {
+    if (!gameMode) return;
+    keys[e.key] = false;
+  });
 
   // ===== placement helpers =====
   function tileX(x) { return Math.floor(x / TILE) * TILE; }
@@ -278,6 +425,7 @@
     const rect = {x:tx, y:ty, w:TILE, h:TILE};
     if (walls.some(w => aabbOverlap(rect, w.aabb()))) return false;
     if (trees.some(t => aabbOverlap(rect, t.aabb()))) return false;
+    if (volcano && tx + TILE > volcano.safeMin && tx < volcano.safeMax) return false;
     return true;
   }
 
@@ -287,6 +435,7 @@
     if (lavas.some(l => aabbOverlap(rect, l.aabb()))) return false;
     if (walls.some(w => tx < w.x + w.w && tx + TILE > w.x)) return false;
     if (trees.some(t => !t.dead && tx < t.x + t.w && tx + TILE > t.x)) return false;
+    if (volcano && tx + TILE > volcano.safeMin && tx < volcano.safeMax) return false;
     return true;
   }
 
@@ -348,9 +497,11 @@
 
   function update(dt) {
     const now = performance.now();
-    if (!finished) {
+    if (!finished && runStartTime) {
       elapsedTime = (now - runStartTime) / 1000;
       uiTimer.textContent = formatTime(elapsedTime);
+    } else if (!runStartTime) {
+      uiTimer.textContent = formatTime(0);
     }
 
     for (const player of players) {
@@ -392,9 +543,15 @@
 
       const feetRect = {x: player.x + 2, y: player.bottom() - 4, w: player.w - 4, h: 6};
       const overLava = lavas.some(l => feetRect.x < l.x + l.w && feetRect.x + feetRect.w > l.x);
+      const sampleLeft = player.x + 4;
+      const sampleRight = player.x + player.w - 4;
+      let terrainY = GROUND_Y;
+      if (volcano) {
+        terrainY = Math.min(terrainY, volcano.groundAt(sampleLeft), volcano.groundAt(sampleRight));
+      }
 
-      if (player.bottom() >= GROUND_Y && !overLava) {
-        player.y = GROUND_Y - player.h;
+      if (player.bottom() >= terrainY && !overLava) {
+        player.y = terrainY - player.h;
         player.vy = 0;
         player.grounded = true;
         player.safeX = player.x;
@@ -598,6 +755,89 @@
     ctx.restore();
   }
 
+  function drawVolcano(v) {
+    if (!v) return;
+    ctx.save();
+    ctx.translate(-camX,0);
+
+    const baseY = GROUND_Y;
+    const rimY = v.rimY;
+    const smokeSeed = performance.now() * 0.0015;
+
+    const bodyGrad = ctx.createLinearGradient(0, rimY, 0, baseY + 80);
+    bodyGrad.addColorStop(0, '#6d3e2c');
+    bodyGrad.addColorStop(0.5, '#543121');
+    bodyGrad.addColorStop(1, '#2d1c14');
+    ctx.fillStyle = bodyGrad;
+    ctx.beginPath();
+    ctx.moveTo(v.x, baseY);
+    ctx.lineTo(v.lipLeft, rimY);
+    ctx.lineTo(v.lipRight, rimY);
+    ctx.lineTo(v.x + v.width, baseY);
+    ctx.closePath();
+    ctx.fill();
+
+    ctx.fillStyle = '#4a2b1e';
+    ctx.beginPath();
+    ctx.moveTo(v.x, baseY);
+    ctx.lineTo(v.lipLeft, rimY);
+    ctx.lineTo(v.lipLeft, baseY);
+    ctx.closePath();
+    ctx.fill();
+    ctx.beginPath();
+    ctx.moveTo(v.x + v.width, baseY);
+    ctx.lineTo(v.lipRight, rimY);
+    ctx.lineTo(v.lipRight, baseY);
+    ctx.closePath();
+    ctx.fill();
+
+    const cavityBottom = baseY + v.lava.depth + 40;
+    const cavityGrad = ctx.createLinearGradient(0, rimY, 0, cavityBottom);
+    cavityGrad.addColorStop(0, '#361f15');
+    cavityGrad.addColorStop(1, '#120805');
+    ctx.fillStyle = cavityGrad;
+    ctx.fillRect(v.craterX, rimY, v.craterWidth, cavityBottom - rimY);
+
+    ctx.fillStyle = '#8f5539';
+    ctx.fillRect(v.lipLeft - 6, rimY - 6, (v.lipRight - v.lipLeft) + 12, 6);
+    ctx.fillStyle = '#2c1a12';
+    ctx.fillRect(v.lipLeft - 4, rimY - 2, (v.lipRight - v.lipLeft) + 8, 4);
+
+    ctx.strokeStyle = '#3b2419';
+    ctx.lineWidth = 2;
+    for (let i=1; i<=VOLCANO_STEPS; i++) {
+      const t = i / VOLCANO_STEPS;
+      const y = baseY - t * v.height;
+      const leftX = v.x + (v.lipLeft - v.x) * t;
+      const rightX = v.x + v.width - (v.x + v.width - v.lipRight) * t;
+      ctx.beginPath();
+      ctx.moveTo(leftX, y);
+      ctx.lineTo(rightX, y);
+      ctx.stroke();
+    }
+
+    ctx.save();
+    for (let i=0; i<5; i++) {
+      const alpha = 0.15 - i * 0.02;
+      if (alpha <= 0) break;
+      ctx.globalAlpha = alpha;
+      const sx = v.craterX + v.craterWidth/2 + Math.sin(smokeSeed + i*0.6) * 20;
+      const sy = rimY - 24 - i * 20 - Math.cos(smokeSeed*1.3 + i) * 6;
+      ctx.fillStyle = '#f3ede4';
+      ctx.beginPath();
+      ctx.ellipse(sx, sy, 28 - i*3, 14 - i*2, 0, 0, Math.PI*2);
+      ctx.fill();
+    }
+    ctx.restore();
+
+    if (debugShowHit) {
+      ctx.strokeStyle = '#ff00ff55';
+      ctx.strokeRect(v.x, rimY, v.width, 2);
+    }
+
+    ctx.restore();
+  }
+
   function drawTree(tr) {
     if (tr.dead) return;
     ctx.save();
@@ -655,34 +895,38 @@
 
   function drawLava(l) {
     ctx.save(); ctx.translate(-camX,0);
-    const rimTop = GROUND_Y - LAVA_RIM;
     const pitTop = GROUND_Y;
-    const pitBottom = pitTop + LAVA_DEPTH;
-    const lavaTop = pitBottom - l.h;
+    const pitBottom = pitTop + l.depth;
+    const lavaTop = l.y;
 
-    // grassy rim
-    const rimGrad = ctx.createLinearGradient(0, rimTop, 0, pitTop);
-    rimGrad.addColorStop(0, '#6fa95c');
-    rimGrad.addColorStop(1, '#35592d');
-    ctx.fillStyle = rimGrad;
-    ctx.fillRect(l.x - 6, rimTop, l.w + 12, LAVA_RIM);
+    if (l.theme !== 'volcano') {
+      const rimTop = GROUND_Y - l.rim;
+      const rimGrad = ctx.createLinearGradient(0, rimTop, 0, pitTop);
+      rimGrad.addColorStop(0, '#6fa95c');
+      rimGrad.addColorStop(1, '#35592d');
+      ctx.fillStyle = rimGrad;
+      ctx.fillRect(l.x - 8, rimTop, l.w + 16, l.rim);
 
-    // pit walls with slight bevel
-    const wallGrad = ctx.createLinearGradient(l.x - 6, pitTop, l.x + l.w + 6, pitTop);
-    wallGrad.addColorStop(0, '#1c2b16');
-    wallGrad.addColorStop(0.08, '#3f5a29');
-    wallGrad.addColorStop(0.92, '#3f5a29');
-    wallGrad.addColorStop(1, '#1c2b16');
-    ctx.fillStyle = wallGrad;
-    ctx.fillRect(l.x - 6, pitTop, l.w + 12, LAVA_DEPTH);
+      const wallGrad = ctx.createLinearGradient(l.x - 8, pitTop, l.x + l.w + 8, pitTop);
+      wallGrad.addColorStop(0, '#1c2b16');
+      wallGrad.addColorStop(0.12, '#3f5a29');
+      wallGrad.addColorStop(0.88, '#3f5a29');
+      wallGrad.addColorStop(1, '#1c2b16');
+      ctx.fillStyle = wallGrad;
+      ctx.fillRect(l.x - 8, pitTop, l.w + 16, l.depth);
 
-    const cavityGrad = ctx.createLinearGradient(0, pitTop, 0, pitBottom);
-    cavityGrad.addColorStop(0, '#2f1a11');
-    cavityGrad.addColorStop(1, '#0f0502');
-    ctx.fillStyle = cavityGrad;
-    ctx.fillRect(l.x, pitTop, l.w, LAVA_DEPTH);
+      const cavityGrad = ctx.createLinearGradient(0, pitTop, 0, pitBottom);
+      cavityGrad.addColorStop(0, '#331b11');
+      cavityGrad.addColorStop(1, '#0f0603');
+      ctx.fillStyle = cavityGrad;
+      ctx.fillRect(l.x, pitTop, l.w, l.depth);
+    } else {
+      ctx.fillStyle = '#2a1811';
+      ctx.fillRect(l.x - 10, pitTop, l.w + 20, l.depth + 40);
+      ctx.fillStyle = '#4d2c1c';
+      ctx.fillRect(l.x - 6, pitTop - 8, l.w + 12, 8);
+    }
 
-    // lava pool
     const lavaGrad = ctx.createLinearGradient(0, lavaTop, 0, pitBottom);
     lavaGrad.addColorStop(0, '#ffb56b');
     lavaGrad.addColorStop(0.45, '#ff6b3a');
@@ -690,7 +934,6 @@
     ctx.fillStyle = lavaGrad;
     ctx.fillRect(l.x, lavaTop, l.w, pitBottom - lavaTop);
 
-    // animated surface ripple
     ctx.strokeStyle = '#ffd166';
     ctx.lineWidth = 2;
     const t = performance.now()*0.003 + l.phase;
@@ -701,13 +944,12 @@
     }
     ctx.stroke();
 
-    // glow to sell depth
-    const glow = ctx.createRadialGradient(l.x + l.w/2, lavaTop + (pitBottom - lavaTop)/2, 0, l.x + l.w/2, lavaTop + (pitBottom - lavaTop)/2, l.w);
+    const glow = ctx.createRadialGradient(l.x + l.w/2, lavaTop + (pitBottom - lavaTop)/2, 0, l.x + l.w/2, lavaTop + (pitBottom - lavaTop)/2, l.w * 1.2);
     glow.addColorStop(0, '#ff6b3a55');
     glow.addColorStop(1, '#ff6b3a00');
     ctx.fillStyle = glow;
     ctx.globalCompositeOperation = 'lighter';
-    ctx.fillRect(l.x - 20, lavaTop - 12, l.w + 40, pitBottom - lavaTop + 24);
+    ctx.fillRect(l.x - 24, lavaTop - 16, l.w + 48, pitBottom - lavaTop + 32);
     ctx.globalCompositeOperation = 'source-over';
     ctx.restore();
 
@@ -739,40 +981,58 @@
   function drawPlayer(player) {
     ctx.save(); ctx.translate(-camX,0);
 
-    // shadow
+    const groundUnder = volcano ? Math.min(GROUND_Y, volcano.groundAt(player.centerX())) : GROUND_Y;
     ctx.fillStyle = '#0003';
     ctx.beginPath();
-    ctx.ellipse(player.centerX(), GROUND_Y-2, 12, 4, 0, 0, Math.PI*2);
+    ctx.ellipse(player.centerX(), groundUnder - 2, 12, 4, 0, 0, Math.PI*2);
     ctx.fill();
 
-    // body
+    const speedRatio = clamp(Math.abs(player.vx) / MAX_RUN, 0, 1);
+    const swing = Math.sin(performance.now() * 0.012 + player.centerX() * 0.045) * 4.5 * speedRatio;
+    const legHeight = 18;
+    const legWidth = 6;
+    const legTop = player.y + player.h - legHeight;
+    const armHeight = 16;
+    const armWidth = 5;
+    const armTop = player.y + 10;
+
+    // rear limb pass
+    ctx.fillStyle = '#1a2331';
+    ctx.fillRect(player.x + 4 - swing * 0.35, legTop, legWidth, legHeight);
+    ctx.fillStyle = '#23344d';
+    ctx.fillRect(player.x - 4 - swing * 0.25, armTop, armWidth, armHeight);
+
+    // torso
     ctx.fillStyle = player.bodyColor;
     ctx.fillRect(player.x, player.y, player.w, player.h);
+    ctx.fillStyle = '#ffffff12';
+    ctx.fillRect(player.x + 4, player.y + 6, player.w - 8, 10);
+
+    // front limbs
+    ctx.fillStyle = '#314567';
+    ctx.fillRect(player.x + player.w - armWidth + 2 + swing * 0.25, armTop + 1, armWidth, armHeight);
+    ctx.fillStyle = '#233047';
+    ctx.fillRect(player.x + player.w - legWidth - 4 + swing * 0.35, legTop, legWidth, legHeight);
 
     // head
     const head = {x: player.x + (player.w-16)/2, y: player.y - 16, s:16};
     ctx.fillStyle = player.headColor;
     ctx.fillRect(head.x, head.y, head.s, head.s);
-    // eyes
     ctx.fillStyle = '#1b1b1b';
     ctx.fillRect(head.x+4 + (player.facing>0?2:0), head.y+5, 3, 3);
     ctx.fillRect(head.x+9 + (player.facing>0?2:0), head.y+5, 3, 3);
-    // tiny mouth
     ctx.fillRect(head.x+5, head.y+10, 6, 2);
 
-    // direction hint
     if (!player.finished) {
       ctx.fillStyle = '#ffffff33';
       ctx.fillRect(player.centerX() + player.facing*14, player.y+6, 10, 2);
     }
 
-    // hurt flash
     if (player.invuln > 0) {
       ctx.fillStyle = '#ffffff55';
       ctx.fillRect(player.x-2, player.y-18, player.w+4, player.h+20);
     }
 
-    // label
     ctx.fillStyle = '#ffffffdd';
     ctx.font = '600 12px system-ui';
     ctx.textAlign = 'center';
@@ -805,7 +1065,8 @@
     }
     ctx.restore();
 
-    // midground: trees, walls, lava, coins, player
+    // midground: volcano, trees, walls, lava, coins, player
+    drawVolcano(volcano);
     for (const tr of trees) drawTree(tr);
     for (const w of walls) drawWall(w);
     for (const l of lavas) drawLava(l);
@@ -837,7 +1098,7 @@
   }
 
   // boot
-  resetLevel();
+  uiTimer.textContent = formatTime(0);
   requestAnimationFrame(loop);
 })();
 </script>
