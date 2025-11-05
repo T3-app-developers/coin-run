@@ -16,16 +16,24 @@
   #overlay .card { background:#1f232a; border:1px solid #3a3f47; border-radius:14px; padding:22px 24px; max-width:560px; }
   #overlay h1 { margin:0 0 8px 0; font-size:28px; }
   #overlay p { margin:6px 0; }
-  #mode-select { position:fixed; inset:0; display:flex; align-items:center; justify-content:center; background:#000d; color:#fff; text-align:center; z-index:20; }
-  #mode-select .card { background:#1f232a; border:1px solid #3a3f47; border-radius:18px; padding:28px 32px; max-width:520px; box-shadow:0 18px 60px #0008; }
-  #mode-select h1 { margin:0 0 12px 0; font-size:30px; }
-  #mode-select p { margin:8px 0; opacity:0.85; }
+  #platform-select, #mode-select { position:fixed; inset:0; display:flex; align-items:center; justify-content:center; background:#000d; color:#fff; text-align:center; }
+  #platform-select { z-index:30; }
+  #mode-select { z-index:20; }
+  #platform-select .card, #mode-select .card { background:#1f232a; border:1px solid #3a3f47; border-radius:18px; padding:28px 32px; max-width:520px; box-shadow:0 18px 60px #0008; }
+  #platform-select h1, #mode-select h1 { margin:0 0 12px 0; font-size:30px; }
+  #platform-select p, #mode-select p { margin:8px 0; opacity:0.85; }
   .mode-buttons { display:flex; gap:16px; justify-content:center; margin-top:18px; flex-wrap:wrap; }
-  .mode-btn { background:#2f3540; border:1px solid #4a5160; color:#fff; font-weight:600; padding:12px 26px; border-radius:999px; font-size:18px; cursor:pointer; transition:transform 0.15s ease, background 0.15s ease, box-shadow 0.15s ease; }
-  .mode-btn:hover { background:#3d4554; box-shadow:0 0 0 3px #ffffff12; transform:translateY(-2px); }
-  .mode-btn:active { transform:translateY(0); background:#28303c; }
+  .mode-btn, .platform-btn { background:#2f3540; border:1px solid #4a5160; color:#fff; font-weight:600; padding:12px 26px; border-radius:999px; font-size:18px; cursor:pointer; transition:transform 0.15s ease, background 0.15s ease, box-shadow 0.15s ease; }
+  .mode-btn:hover, .platform-btn:hover { background:#3d4554; box-shadow:0 0 0 3px #ffffff12; transform:translateY(-2px); }
+  .mode-btn:active, .platform-btn:active { transform:translateY(0); background:#28303c; }
   .hidden { display:none !important; }
   canvas { display:block; width:100vw; height:100vh; image-rendering: pixelated; }
+  #touch-controls { position:fixed; inset:auto 0 0 0; display:flex; justify-content:space-between; padding:18px 20px; pointer-events:none; z-index:15; }
+  #touch-controls .cluster { display:flex; gap:14px; pointer-events:auto; flex-wrap:wrap; }
+  #touch-controls .cluster.actions { justify-content:flex-end; }
+  .touch-btn { background:#2b2f36; border:1px solid #3a3f47; color:#fff; font-weight:600; font-size:16px; padding:16px 18px; border-radius:18px; min-width:68px; text-transform:uppercase; touch-action:none; user-select:none; opacity:0.85; transition:background 0.15s ease, opacity 0.15s ease, box-shadow 0.15s ease; }
+  .touch-btn:active, .touch-btn.active { background:#3d4554; opacity:1; box-shadow:0 0 0 3px #ffffff12; }
+  .touch-btn span { display:block; font-size:12px; font-weight:500; opacity:0.8; margin-top:4px; text-transform:none; }
 </style>
 </head>
 <body>
@@ -58,7 +66,19 @@
   </div>
 </div>
 
-<div id="mode-select">
+<div id="platform-select">
+  <div class="card">
+    <h1>How would you like to play?</h1>
+    <p>Pick an experience tailored for your device. You can still use a keyboard on desktop if you change your mind later.</p>
+    <div class="mode-buttons">
+      <button class="platform-btn" data-platform="desktop">Desktop</button>
+      <button class="platform-btn" data-platform="mobile">Mobile / Touch</button>
+    </div>
+    <p style="margin-top:18px; font-size:14px; opacity:0.7;">Mobile mode enables on-screen controls designed for solo play.</p>
+  </div>
+</div>
+
+<div id="mode-select" class="hidden">
   <div class="card">
     <h1>Choose Game Mode</h1>
     <p>Play solo or grab a friend! This choice sticks until you reload the page. You can press <b>1</b> or <b>2</b> to choose quickly.</p>
@@ -67,6 +87,19 @@
       <button class="mode-btn" data-mode="2">Two Players</button>
     </div>
     <p style="margin-top:18px; font-size:14px; opacity:0.7;">You can press <b>R</b> anytime during a run to restart the current mode.</p>
+  </div>
+</div>
+
+<div id="touch-controls" class="hidden">
+  <div class="cluster move">
+    <button class="touch-btn" type="button" data-key="a">Left<span>Move</span></button>
+    <button class="touch-btn" type="button" data-key="d">Right<span>Move</span></button>
+  </div>
+  <div class="cluster actions">
+    <button class="touch-btn" type="button" data-key="space">Jump</button>
+    <button class="touch-btn" type="button" data-key="e">Mine<span>Hold</span></button>
+    <button class="touch-btn" type="button" data-key="1">Wall</button>
+    <button class="touch-btn" type="button" data-key="2">Lava</button>
   </div>
 </div>
 
@@ -113,8 +146,11 @@
   const overlay = document.getElementById('overlay');
   const ovTitle = document.getElementById('ov-title');
   const ovBody  = document.getElementById('ov-body');
+  const platformSelect = document.getElementById('platform-select');
+  const platformButtons = platformSelect.querySelectorAll('.platform-btn');
   const modeSelect = document.getElementById('mode-select');
   const modeButtons = modeSelect.querySelectorAll('.mode-btn');
+  const touchControls = document.getElementById('touch-controls');
   const helpP2 = document.getElementById('help-p2');
   const p2Pills = Array.from(document.querySelectorAll('.p2-pill'));
 
@@ -147,6 +183,7 @@
   const JUMP_VEL = -16;
 
   // game state
+  let platformMode = null;
   let gameMode = null;
   let keys = {};
   let debugShowHit = false;
@@ -154,6 +191,7 @@
   let runStartTime = 0;
   let elapsedTime = 0;
   let finishDuration = 0;
+  const virtualButtons = [];
 
   function updateModeHud(showSecondPlayer) {
     p2Pills.forEach(el => el.classList.toggle('hidden', !showSecondPlayer));
@@ -161,6 +199,96 @@
   }
 
   updateModeHud(false);
+
+  const VIRTUAL_KEY_ALIASES = {
+    space: ' ',
+    Space: ' ',
+  };
+
+  function resolveVirtualKey(raw) {
+    if (!raw) return raw;
+    return VIRTUAL_KEY_ALIASES.hasOwnProperty(raw) ? VIRTUAL_KEY_ALIASES[raw] : raw;
+  }
+
+  function clearVirtualInputs() {
+    virtualButtons.forEach(({btn, key}) => {
+      btn.classList.remove('active');
+      keys[key] = false;
+    });
+  }
+
+  function handleKeyDown(key) {
+    if (!key) return;
+    keys[key] = true;
+    if (key === 'r' || key === 'R') { resetLevel(); return; }
+    if (key === 'h' || key === 'H') { debugShowHit = !debugShowHit; }
+    if (finished) return;
+    for (const player of players) {
+      if (player.finished) continue;
+      if (player.controls.wall && player.controls.wall.includes(key)) placeWall(player);
+      if (player.controls.lava && player.controls.lava.includes(key)) placeLava(player);
+    }
+  }
+
+  function handleKeyUp(key) {
+    if (!key) return;
+    keys[key] = false;
+  }
+
+  function enableTouchControls() {
+    if (!touchControls) return;
+    touchControls.classList.remove('hidden');
+    const buttons = Array.from(touchControls.querySelectorAll('.touch-btn'));
+    buttons.forEach(btn => {
+      const resolvedKey = resolveVirtualKey(btn.dataset.key);
+      const entry = { btn, key: resolvedKey };
+      virtualButtons.push(entry);
+      const press = (e) => {
+        if (e) {
+          e.preventDefault();
+          if (btn.setPointerCapture) btn.setPointerCapture(e.pointerId);
+        }
+        btn.classList.add('active');
+        handleKeyDown(resolvedKey);
+      };
+      const release = (e) => {
+        if (e && btn.releasePointerCapture && btn.hasPointerCapture && btn.hasPointerCapture(e.pointerId)) {
+          btn.releasePointerCapture(e.pointerId);
+        }
+        btn.classList.remove('active');
+        handleKeyUp(resolvedKey);
+      };
+      btn.addEventListener('pointerdown', press);
+      btn.addEventListener('pointerup', release);
+      btn.addEventListener('pointercancel', release);
+      btn.addEventListener('pointerleave', (e) => {
+        if (e.buttons === 0) release(e);
+      });
+      btn.addEventListener('contextmenu', e => e.preventDefault());
+    });
+    window.addEventListener('blur', clearVirtualInputs);
+  }
+
+  function showModeSelect() {
+    modeSelect.classList.remove('hidden');
+    modeSelect.style.display = 'flex';
+  }
+
+  function choosePlatform(mode) {
+    platformMode = mode;
+    platformSelect.style.display = 'none';
+    if (mode === 'mobile') {
+      enableTouchControls();
+    }
+    showModeSelect();
+  }
+
+  platformButtons.forEach(btn => {
+    btn.addEventListener('click', () => {
+      const mode = btn.dataset.platform === 'mobile' ? 'mobile' : 'desktop';
+      choosePlatform(mode);
+    });
+  });
 
   function setGameMode(mode) {
     gameMode = mode === 2 ? 2 : 1;
@@ -387,33 +515,24 @@
     elapsedTime = 0;
     finishDuration = 0;
     keys = {};
+    clearVirtualInputs();
     updateUI();
     uiTimer.textContent = formatTime(0);
   }
 
   // ===== controls =====
   window.addEventListener('keydown', (e) => {
+    if (!platformMode) return;
     if (!gameMode) {
       if (e.key === '1') setGameMode(1);
       if (e.key === '2') setGameMode(2);
       return;
     }
-
-    keys[e.key] = true;
-    if (e.key === 'r' || e.key === 'R') { resetLevel(); return; }
-    if (e.key === 'h' || e.key === 'H') debugShowHit = !debugShowHit;
-
-    if (finished) return;
-
-    for (const player of players) {
-      if (player.finished) continue;
-      if (player.controls.wall && player.controls.wall.includes(e.key)) placeWall(player);
-      if (player.controls.lava && player.controls.lava.includes(e.key)) placeLava(player);
-    }
+    handleKeyDown(e.key);
   });
   window.addEventListener('keyup', (e) => {
-    if (!gameMode) return;
-    keys[e.key] = false;
+    if (!platformMode || !gameMode) return;
+    handleKeyUp(e.key);
   });
 
   // ===== placement helpers =====
