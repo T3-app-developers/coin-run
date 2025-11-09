@@ -12,10 +12,28 @@
   .warn { color:#ff9e64; }
   .bad { color:#ff6b6b; }
   #help { position:fixed; right:10px; top:10px; background:#2b2f36; border:1px solid #3a3f47; padding:10px 12px; border-radius:10px; max-width: 420px; line-height:1.2; font-size:14px; }
-  #overlay { position:fixed; inset:0; display:none; align-items:center; justify-content:center; background:#000a; color:#fff; text-align:center; }
-  #overlay .card { background:#1f232a; border:1px solid #3a3f47; border-radius:14px; padding:22px 24px; max-width:560px; }
+  #overlay { position:fixed; inset:0; display:none; align-items:center; justify-content:center; background:#000a; color:#fff; text-align:center; transition:background 0.25s ease; }
+  #overlay.celebrating { background:radial-gradient(circle at 50% 30%, #2e3c5fdd 0%, #141821ee 55%, #0a0c12f5 100%); }
+  #overlay .card { background:#1f232a; border:1px solid #3a3f47; border-radius:14px; padding:22px 24px; max-width:560px; box-shadow:0 18px 60px #0009; }
   #overlay h1 { margin:0 0 8px 0; font-size:28px; }
   #overlay p { margin:6px 0; }
+  #celebration-screen { position:relative; display:flex; flex-direction:column; align-items:center; gap:16px; max-width:720px; padding:12px; }
+  #celebration-screen .celebration-card { position:relative; overflow:hidden; padding:36px 48px; border-radius:28px; background:linear-gradient(145deg, #283a5a, #1b2435 62%, #111722); border:1px solid #4b5973; box-shadow:0 22px 80px #000b, inset 0 0 0 1px #ffffff12; text-shadow:0 4px 30px #000d; }
+  #celebration-screen .celebration-card::after { content:""; position:absolute; inset:18px; border-radius:22px; border:1px solid #ffffff12; pointer-events:none; }
+  #celebration-screen .celebration-trophy { font-size:64px; line-height:1; margin-bottom:12px; filter:drop-shadow(0 6px 18px #0009); animation:floaty 2.6s ease-in-out infinite; }
+  #celebration-screen h1 { margin:0; font-size:44px; letter-spacing:1.6px; text-transform:uppercase; }
+  #celebration-screen .summary-line { margin:6px 0 8px 0; font-size:20px; font-weight:600; color:#f3f7ff; }
+  #celebration-screen .details { margin:0; font-size:16px; line-height:1.5; opacity:0.9; }
+  #celebration-screen .replay-hint { margin:14px 0 0 0; font-size:15px; opacity:0.8; letter-spacing:0.3px; }
+  #celebration-screen .celebration-burst { position:absolute; inset:-40px; pointer-events:none; }
+  #celebration-screen .celebration-burst span { position:absolute; width:14px; height:14px; background:linear-gradient(135deg, #ffd166, #ff8ba7); border-radius:5px; opacity:0.7; animation:twinkle 2.4s linear infinite; }
+  #celebration-screen .celebration-burst .star-a { top:0; left:16%; animation-delay:-0.2s; }
+  #celebration-screen .celebration-burst .star-b { top:12%; right:18%; width:18px; height:18px; animation-delay:-1.1s; background:linear-gradient(135deg, #7afcff, #9dff91); }
+  #celebration-screen .celebration-burst .star-c { bottom:10%; left:10%; width:16px; height:16px; animation-delay:-0.6s; background:linear-gradient(135deg, #ffd1ff, #f79e89); }
+  #celebration-screen .celebration-burst .star-d { bottom:-6%; right:8%; animation-delay:-1.8s; }
+  #celebration-screen .celebration-burst .star-e { top:40%; left:-4%; width:20px; height:20px; animation-delay:-0.9s; background:linear-gradient(135deg, #8ec5fc, #e0c3fc); }
+  @keyframes floaty { 0% { transform:translateY(0); } 50% { transform:translateY(-10px); } 100% { transform:translateY(0); } }
+  @keyframes twinkle { 0% { transform:scale(0.6) rotate(0deg); opacity:0; } 20% { opacity:0.9; } 50% { transform:scale(1.1) rotate(28deg); opacity:0.7; } 80% { opacity:0.9; } 100% { transform:scale(0.6) rotate(60deg); opacity:0; } }
   #platform-select, #mode-select { position:fixed; inset:0; display:flex; align-items:center; justify-content:center; background:#000d; color:#fff; text-align:center; }
   #platform-select { z-index:30; }
   #mode-select { z-index:20; }
@@ -61,10 +79,26 @@
 </div>
 
 <div id="overlay">
-  <div class="card">
+  <div class="card" id="overlay-card">
     <h1 id="ov-title">Finished!</h1>
     <p id="ov-body"></p>
     <p style="opacity:0.8">Press <b>R</b> to play again.</p>
+  </div>
+  <div id="celebration-screen" class="hidden" aria-hidden="true">
+    <div class="celebration-card">
+      <div class="celebration-burst">
+        <span class="burst-star star-a"></span>
+        <span class="burst-star star-b"></span>
+        <span class="burst-star star-c"></span>
+        <span class="burst-star star-d"></span>
+        <span class="burst-star star-e"></span>
+      </div>
+      <div class="celebration-trophy" aria-hidden="true">🏆</div>
+      <h1 id="celebration-title">Victory!</h1>
+      <p id="celebration-summary" class="summary-line"></p>
+      <p id="celebration-details" class="details"></p>
+      <p id="celebration-next" class="replay-hint">Press <b>R</b> to play again.</p>
+    </div>
   </div>
 </div>
 
@@ -148,8 +182,12 @@
   const uiLevel = document.getElementById('level-indicator');
   const uiTimer = document.getElementById('timer');
   const overlay = document.getElementById('overlay');
-  const ovTitle = document.getElementById('ov-title');
-  const ovBody  = document.getElementById('ov-body');
+  const overlayCard = document.getElementById('overlay-card');
+  const celebrationScreen = document.getElementById('celebration-screen');
+  const celebrationTitle = document.getElementById('celebration-title');
+  const celebrationSummary = document.getElementById('celebration-summary');
+  const celebrationDetails = document.getElementById('celebration-details');
+  const celebrationNext = document.getElementById('celebration-next');
   const platformSelect = document.getElementById('platform-select');
   const platformButtons = platformSelect.querySelectorAll('.platform-btn');
   const modeSelect = document.getElementById('mode-select');
@@ -157,6 +195,124 @@
   const touchControls = document.getElementById('touch-controls');
   const helpP2 = document.getElementById('help-p2');
   const p2Pills = Array.from(document.querySelectorAll('.p2-pill'));
+
+  // ===== audio =====
+  function createAudio(src, options = {}) {
+    const audio = new Audio(src);
+    audio.preload = 'auto';
+    if (options.volume !== undefined) audio.volume = options.volume;
+    return audio;
+  }
+
+  function playSound(sound) {
+    if (!sound) return;
+    try {
+      sound.currentTime = 0;
+      const playPromise = sound.play();
+      if (playPromise && typeof playPromise.catch === 'function') {
+        playPromise.catch(() => {});
+      }
+    } catch (_) {
+      // Some browsers block autoplay until user interaction; ignore errors.
+    }
+  }
+
+  function stopSound(sound) {
+    if (!sound) return;
+    sound.pause();
+    sound.currentTime = 0;
+  }
+
+  const celebrationAudioSrc = `
+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
+`.replace(/\s+/g, '');
+
+  const celebrationAudio = createAudio(`data:audio/wav;base64,${celebrationAudioSrc}`, { volume: 0.75 });
+  celebrationAudio.load();
 
   // ===== world constants =====
   const TILE = 40;
@@ -582,6 +738,11 @@
     configureLevelDimensions();
     finished = false;
     overlay.style.display = 'none';
+    overlay.classList.remove('celebrating');
+    if (overlayCard) overlayCard.classList.remove('hidden');
+    celebrationScreen.classList.add('hidden');
+    celebrationScreen.setAttribute('aria-hidden', 'true');
+    stopSound(celebrationAudio);
     trees = [];
     walls = [];
     lavas = [];
@@ -1000,13 +1161,20 @@
         const config = LEVELS[levelIndex] || LEVELS[0];
         const isFinalLevel = levelIndex >= LEVELS.length - 1;
         const nextConfig = LEVELS[levelIndex + 1];
-        ovTitle.textContent = isFinalLevel ? 'All Levels Complete!' : `${config.name} Complete!`;
         const nextLine = isFinalLevel
           ? 'Press <b>R</b> to restart from Level 1.'
           : `Press <b>R</b> to continue to ${nextConfig.name}.`;
-        ovBody.innerHTML = `Finished in <b>${formatTime(finishDuration)}</b>.<br>${summary}<br><br>${nextLine}`;
+        celebrationTitle.textContent = isFinalLevel ? 'All Levels Complete!' : `${config.name} Complete!`;
+        celebrationSummary.innerHTML = `Finished in <b>${formatTime(finishDuration)}</b>`;
+        celebrationDetails.innerHTML = summary;
+        celebrationNext.innerHTML = nextLine;
+        overlay.classList.add('celebrating');
+        if (overlayCard) overlayCard.classList.add('hidden');
+        celebrationScreen.classList.remove('hidden');
+        celebrationScreen.setAttribute('aria-hidden', 'false');
         overlay.style.display = 'flex';
         uiTimer.textContent = formatTime(finishDuration);
+        playSound(celebrationAudio);
       }
     }
   }
