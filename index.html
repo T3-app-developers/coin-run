@@ -512,7 +512,7 @@
           }
           return closest;
         }, null);
-        if (target && target.player) {
+        if (target && target.player && target.dist <= TILE) {
           const dir = target.player.centerX() >= this.centerX() ? 1 : -1;
           this.facing = dir;
           this.fireTimer = rand(90, 160);
@@ -545,8 +545,11 @@
       return { x: this.x - this.w/2, y: this.y - this.h/2, w: this.w, h: this.h };
     }
     update(dt) {
-      this.x += this.vx * dt;
+      const dx = this.vx * dt;
+      this.x += dx;
       this.life -= dt;
+      this.rangeRemaining -= Math.abs(dx);
+      if (this.rangeRemaining <= 0) this.dead = true;
       if (this.life <= 0) this.dead = true;
     }
   }
