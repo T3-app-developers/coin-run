@@ -745,8 +745,7 @@
       const dirMatch = Math.abs(dx) < 1 ? true : sign(dx) === player.facing;
       if (!dirMatch) continue;
       const horizontal = Math.abs(dx);
-      if (horizontal < ENEMY_ATTACK_DISTANCE - ENEMY_ATTACK_TOLERANCE ||
-          horizontal > ENEMY_ATTACK_DISTANCE + ENEMY_ATTACK_TOLERANCE) continue;
+      if (horizontal > ENEMY_ATTACK_DISTANCE + ENEMY_ATTACK_TOLERANCE) continue;
       const enemyMidY = enemy.y + enemy.h / 2;
       const playerMidY = player.y + player.h / 2;
       if (Math.abs(enemyMidY - playerMidY) > ENEMY_ATTACK_VERTICAL_TOLERANCE) continue;
