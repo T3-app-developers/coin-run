@@ -566,8 +566,27 @@
       return true;
     }
     update(dt, players, allowFire = true) {
-      const minX = clamp(this.baseX - this.range, 40, levelLength - this.w - 40);
-      const maxX = clamp(this.baseX + this.range, this.w + 40, levelLength - 40);
+      let minX = clamp(this.baseX - this.range, 40, levelLength - this.w - 40);
+      let maxX = clamp(this.baseX + this.range, this.w + 40, levelLength - 40);
+      if (volcano) {
+        const safeMin = volcano.safeMin;
+        const safeMax = volcano.safeMax;
+        if (maxX > safeMin && minX < safeMax) {
+          const prefersLeft = this.x + this.w / 2 <= safeMin || this.baseX <= safeMin;
+          const prefersRight = this.x + this.w / 2 >= safeMax || this.baseX >= safeMax;
+          if (prefersLeft && !prefersRight) {
+            maxX = Math.max(minX, Math.min(maxX, safeMin - this.w));
+          } else if (prefersRight && !prefersLeft) {
+            minX = Math.min(maxX, Math.max(minX, safeMax));
+          } else {
+            if (this.dir <= 0) {
+              maxX = Math.max(minX, Math.min(maxX, safeMin - this.w));
+            } else {
+              minX = Math.min(maxX, Math.max(minX, safeMax));
+            }
+          }
+        }
+      }
       this.x += this.dir * this.speed * dt;
       if (this.x < minX) { this.x = minX; this.dir = 1; }
       if (this.x > maxX) { this.x = maxX; this.dir = -1; }
