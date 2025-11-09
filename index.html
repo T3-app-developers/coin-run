@@ -520,7 +520,7 @@
             this.centerX() + dir * (this.w / 2 + 6),
             this.y + this.h * 0.45,
             dir * 12,
-            TILE
+            { faction: 'enemy' }
           );
         }
         this.fireTimer = rand(60, 120);
@@ -530,7 +530,7 @@
   }
 
   class Bullet {
-    constructor(x, y, vx, maxRange = TILE) {
+    constructor(x, y, vx, { owner = null, faction = 'enemy' } = {}) {
       this.x = x;
       this.y = y;
       this.vx = vx;
@@ -538,7 +538,8 @@
       this.h = 4;
       this.life = 240;
       this.dead = false;
-      this.rangeRemaining = Math.max(0, maxRange);
+      this.owner = owner;
+      this.faction = faction;
     }
     aabb() {
       return { x: this.x - this.w/2, y: this.y - this.h/2, w: this.w, h: this.h };
@@ -747,6 +748,29 @@
 
   function playerAttack(player) {
     if (player.attackCooldown > 0) return;
+
+    const projectileDistance = TILE * 3;
+    let nearestDist = null;
+    for (const enemy of enemies) {
+      if (enemy.dead) continue;
+      const dx = enemy.centerX() - player.centerX();
+      const facingMatch = Math.abs(dx) < 1 || sign(dx) === player.facing;
+      if (!facingMatch) continue;
+      const dist = Math.abs(dx);
+      if (nearestDist === null || dist < nearestDist) {
+        nearestDist = dist;
+      }
+    }
+
+    if (nearestDist !== null && nearestDist >= projectileDistance) {
+      bullets.push(new Bullet(
+        player.centerX() + player.facing * (player.w / 2 + 8),
+        player.y + player.h * 0.45,
+        player.facing * 14,
+        { owner: player, faction: 'player' }
+      ));
+    }
+
     let hitEnemy = false;
     for (const enemy of enemies) {
       if (enemy.dead) continue;
@@ -902,12 +926,24 @@
         if (aabbOverlap(rect, w.aabb())) { bullet.dead = true; break; }
       }
       if (bullet.dead) continue;
-      for (const player of players) {
-        if (player.finished || player.invuln > 0) continue;
-        if (aabbOverlap(rect, player.aabb())) {
-          if (handlePlayerDeath(player)) return;
-          bullet.dead = true;
-          break;
+      if (bullet.faction === 'enemy') {
+        for (const player of players) {
+          if (player.finished || player.invuln > 0) continue;
+          if (bullet.owner && bullet.owner === player) continue;
+          if (aabbOverlap(rect, player.aabb())) {
+            if (handlePlayerDeath(player)) return;
+            bullet.dead = true;
+            break;
+          }
+        }
+      } else if (bullet.faction === 'player') {
+        for (const enemy of enemies) {
+          if (enemy.dead) continue;
+          if (aabbOverlap(rect, enemy.aabb())) {
+            enemy.takeHit();
+            bullet.dead = true;
+            break;
+          }
         }
       }
     }
