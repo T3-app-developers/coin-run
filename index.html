@@ -54,8 +54,9 @@
 
 <div id="help">
   <b>Controls</b><br>
-  <b>Player 1</b> – Move: <b>A/D</b> · Jump: <b>W</b>/<b>Space</b> · Mine: <b>E</b> (hold) · Attack: <b>X</b> · Wall: <b>1</b> · Lava: <b>2</b><br>
-  <span id="help-p2"><b>Player 2</b> – Move: <b>←/→</b> · Jump: <b>↑</b> · Mine: <b>/</b> (hold) · Attack: <b>.</b> · Wall: <b>[</b> · Lava: <b>]</b><br></span>
+  <b>Player 1</b> – Move: <b>A/D</b> · Jump: <b>W</b>/<b>Space</b> · Mine: <b>E</b> (hold) · Attack: <b>X</b> (3 hits, ~2 lava pits away) · Wall: <b>1</b> · Lava: <b>2</b><br>
+  <span id="help-p2"><b>Player 2</b> – Move: <b>←/→</b> · Jump: <b>↑</b> · Mine: <b>/</b> (hold) · Attack: <b>.</b> (3 hits, ~2 lava pits away) · Wall: <b>[</b> · Lava: <b>]</b><br></span>
+  <span style="display:block; margin-top:8px; opacity:0.75;">Tip: line up about two lava pits away before attacking &mdash; each enemy needs three strikes.</span>
   Restart: <b>R</b> &nbsp;|&nbsp; Toggle Hitboxes: <b>H</b>
 </div>
 
@@ -99,7 +100,7 @@
   <div class="cluster actions">
     <button class="touch-btn" type="button" data-key="space">Jump</button>
     <button class="touch-btn" type="button" data-key="e">Mine<span>Hold</span></button>
-    <button class="touch-btn" type="button" data-key="x">Attack</button>
+    <button class="touch-btn" type="button" data-key="x">Attack<span>3 hits</span></button>
     <button class="touch-btn" type="button" data-key="1">Wall</button>
     <button class="touch-btn" type="button" data-key="2">Lava</button>
   </div>
@@ -174,6 +175,10 @@
   const LAVA_DEPTH = 46;
   const LAVA_HEIGHT = 20;
   const LAVA_SURFACE_Y = GROUND_Y + LAVA_DEPTH - LAVA_HEIGHT;
+  const ENEMY_ATTACK_DISTANCE = TILE * 2;
+  const ENEMY_ATTACK_TOLERANCE = TILE * 0.6;
+  const ENEMY_ATTACK_VERTICAL_TOLERANCE = TILE;
+  const ENEMY_HITS_TO_DEFEAT = 3;
 
   const VOLCANO_STEPS = 12;
   const VOLCANO_STEP_HEIGHT = 12;
@@ -466,11 +471,22 @@
       this.facing = this.dir;
       this.fireTimer = rand(90, 160);
       this.dead = false;
+      this.hp = ENEMY_HITS_TO_DEFEAT;
+      this.hitFlash = 0;
       this.x = this.baseX;
       this.y = groundHeightAt(this.centerX()) - this.h;
     }
     centerX() { return this.x + this.w/2; }
     aabb() { return { x: this.x, y: this.y, w: this.w, h: this.h }; }
+    takeHit() {
+      if (this.dead) return false;
+      this.hp -= 1;
+      this.hitFlash = 12;
+      if (this.hp <= 0) {
+        this.dead = true;
+      }
+      return true;
+    }
     update(dt, players, allowFire = true) {
       const minX = clamp(this.baseX - this.range, 40, levelLength - this.w - 40);
       const maxX = clamp(this.baseX + this.range, this.w + 40, levelLength - 40);
@@ -479,6 +495,7 @@
       if (this.x > maxX) { this.x = maxX; this.dir = -1; }
       if (this.dir !== 0) this.facing = this.dir;
       this.y = groundHeightAt(this.centerX()) - this.h;
+      if (this.hitFlash > 0) this.hitFlash = Math.max(0, this.hitFlash - dt);
 
       if (!allowFire) {
         this.fireTimer = Math.max(this.fireTimer, 45);
@@ -721,20 +738,23 @@
 
   function playerAttack(player) {
     if (player.attackCooldown > 0) return;
-    const reach = 60;
-    const height = player.h + 20;
-    const attackRect = player.facing > 0
-      ? { x: player.x + player.w - 6, y: player.y - 10, w: reach, h: height }
-      : { x: player.x - reach + 6, y: player.y - 10, w: reach, h: height };
     let hitEnemy = false;
     for (const enemy of enemies) {
       if (enemy.dead) continue;
-      if (aabbOverlap(attackRect, enemy.aabb())) {
-        enemy.dead = true;
+      const dx = enemy.centerX() - player.centerX();
+      const dirMatch = Math.abs(dx) < 1 ? true : sign(dx) === player.facing;
+      if (!dirMatch) continue;
+      const horizontal = Math.abs(dx);
+      if (horizontal < ENEMY_ATTACK_DISTANCE - ENEMY_ATTACK_TOLERANCE ||
+          horizontal > ENEMY_ATTACK_DISTANCE + ENEMY_ATTACK_TOLERANCE) continue;
+      const enemyMidY = enemy.y + enemy.h / 2;
+      const playerMidY = player.y + player.h / 2;
+      if (Math.abs(enemyMidY - playerMidY) > ENEMY_ATTACK_VERTICAL_TOLERANCE) continue;
+      if (enemy.takeHit()) {
         hitEnemy = true;
       }
     }
-    player.attackCooldown = hitEnemy ? 20 : 10;
+    player.attackCooldown = hitEnemy ? 20 : 12;
   }
 
   // ===== collisions =====
@@ -1327,6 +1347,12 @@
     ctx.fillRect(enemy.x, enemy.y + 6, enemy.w, enemy.h - 16);
     ctx.fillStyle = '#c54c4c';
     ctx.fillRect(enemy.x + 4, enemy.y + 8, enemy.w - 8, enemy.h - 20);
+
+    if (enemy.hitFlash > 0) {
+      const flash = clamp(enemy.hitFlash / 12, 0, 1);
+      ctx.fillStyle = `rgba(255, 236, 189, ${0.35 * flash})`;
+      ctx.fillRect(enemy.x - 2, enemy.y - 6, enemy.w + 4, enemy.h + 16);
+    }
 
     const headSize = 16;
     const headX = enemy.x + (enemy.w - headSize) / 2;
