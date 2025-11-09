@@ -40,6 +40,7 @@
 <canvas id="game" width="960" height="540"></canvas>
 
 <div id="ui">
+  <div class="pill">Level: <span id="level-indicator" class="good">1</span></div>
   <div class="pill">P1 Coins: <span id="p1-coins" class="good">0</span></div>
   <div class="pill">P1 Wood: <span id="p1-wood" class="warn">0</span></div>
   <div class="pill">P1 Lives: <span id="p1-lives" class="good">3</span></div>
@@ -53,8 +54,8 @@
 
 <div id="help">
   <b>Controls</b><br>
-  <b>Player 1</b> – Move: <b>A/D</b> · Jump: <b>W</b>/<b>Space</b> · Mine: <b>E</b> (hold) · Wall: <b>1</b> · Lava: <b>2</b><br>
-  <span id="help-p2"><b>Player 2</b> – Move: <b>←/→</b> · Jump: <b>↑</b> · Mine: <b>/</b> (hold) · Wall: <b>[</b> · Lava: <b>]</b><br></span>
+  <b>Player 1</b> – Move: <b>A/D</b> · Jump: <b>W</b>/<b>Space</b> · Mine: <b>E</b> (hold) · Attack: <b>X</b> · Wall: <b>1</b> · Lava: <b>2</b><br>
+  <span id="help-p2"><b>Player 2</b> – Move: <b>←/→</b> · Jump: <b>↑</b> · Mine: <b>/</b> (hold) · Attack: <b>.</b> · Wall: <b>[</b> · Lava: <b>]</b><br></span>
   Restart: <b>R</b> &nbsp;|&nbsp; Toggle Hitboxes: <b>H</b>
 </div>
 
@@ -98,6 +99,7 @@
   <div class="cluster actions">
     <button class="touch-btn" type="button" data-key="space">Jump</button>
     <button class="touch-btn" type="button" data-key="e">Mine<span>Hold</span></button>
+    <button class="touch-btn" type="button" data-key="x">Attack</button>
     <button class="touch-btn" type="button" data-key="1">Wall</button>
     <button class="touch-btn" type="button" data-key="2">Lava</button>
   </div>
@@ -142,6 +144,7 @@
       lives: document.getElementById('p2-lives'),
     }
   };
+  const uiLevel = document.getElementById('level-indicator');
   const uiTimer = document.getElementById('timer');
   const overlay = document.getElementById('overlay');
   const ovTitle = document.getElementById('ov-title');
@@ -157,8 +160,15 @@
   // ===== world constants =====
   const TILE = 40;
   const GROUND_Y = 440;
-  const LEVEL_LEN = 3000; // world ends here; goal near end
-  const GOAL_X = LEVEL_LEN - 140;
+  const BASE_LEVEL_LEN = 3000; // baseline used for scaling stages
+  const LEVELS = [
+    { name: 'Level 1', lengthMultiplier: 2, enemyCount: 3 },
+    { name: 'Level 2', lengthMultiplier: 3, enemyCount: 5 },
+    { name: 'Level 3', lengthMultiplier: 4, enemyCount: 7 },
+  ];
+  let levelIndex = 0;
+  let levelLength = BASE_LEVEL_LEN * LEVELS[levelIndex].lengthMultiplier;
+  let goalX = levelLength - 140;
   const GROUND_SURFACE = 16;
   const LAVA_RIM = 8;
   const LAVA_DEPTH = 46;
@@ -220,11 +230,19 @@
   function handleKeyDown(key) {
     if (!key) return;
     keys[key] = true;
-    if (key === 'r' || key === 'R') { resetLevel(); return; }
+    if (key === 'r' || key === 'R') {
+      if (finished) {
+        if (levelIndex < LEVELS.length - 1) levelIndex += 1;
+        else levelIndex = 0;
+      }
+      resetLevel();
+      return;
+    }
     if (key === 'h' || key === 'H') { debugShowHit = !debugShowHit; }
     if (finished) return;
     for (const player of players) {
       if (player.finished) continue;
+      if (player.controls.attack && player.controls.attack.includes(key)) playerAttack(player);
       if (player.controls.wall && player.controls.wall.includes(key)) placeWall(player);
       if (player.controls.lava && player.controls.lava.includes(key)) placeLava(player);
     }
@@ -292,6 +310,7 @@
 
   function setGameMode(mode) {
     gameMode = mode === 2 ? 2 : 1;
+    levelIndex = 0;
     updateModeHud(gameMode === 2);
     modeSelect.style.display = 'none';
     resetLevel();
@@ -323,6 +342,7 @@
       this.bodyColor = options.bodyColor || '#2f3b52';
       this.headColor = options.headColor || '#2fd06c';
       this.controls = options.controls || {};
+      this.attackCooldown = 0;
     }
     aabb() { return {x:this.x, y:this.y, w:this.w, h:this.h}; }
     centerX() { return this.x + this.w/2; }
@@ -373,7 +393,7 @@
   function createVolcano(baseX) {
     const margin = TILE * 2;
     const slopeWidth = VOLCANO_STEPS * TILE;
-    const clampedBase = clamp(baseX, 240, Math.max(240, LEVEL_LEN - VOLCANO_WIDTH - 240));
+    const clampedBase = clamp(baseX, 240, Math.max(240, levelLength - VOLCANO_WIDTH - 240));
     const craterX = clampedBase + slopeWidth;
     const lipLeft = craterX - VOLCANO_RIM_WIDTH;
     const lipRight = craterX + VOLCANO_CRATER_WIDTH + VOLCANO_RIM_WIDTH;
@@ -435,23 +455,114 @@
     }
   }
 
+  class Enemy {
+    constructor(x) {
+      this.w = 28;
+      this.h = 40;
+      this.baseX = clamp(x, 80, levelLength - 80);
+      this.range = 140;
+      this.speed = 1.4;
+      this.dir = Math.random() < 0.5 ? -1 : 1;
+      this.facing = this.dir;
+      this.fireTimer = rand(90, 160);
+      this.dead = false;
+      this.x = this.baseX;
+      this.y = groundHeightAt(this.centerX()) - this.h;
+    }
+    centerX() { return this.x + this.w/2; }
+    aabb() { return { x: this.x, y: this.y, w: this.w, h: this.h }; }
+    update(dt, players, allowFire = true) {
+      const minX = clamp(this.baseX - this.range, 40, levelLength - this.w - 40);
+      const maxX = clamp(this.baseX + this.range, this.w + 40, levelLength - 40);
+      this.x += this.dir * this.speed * dt;
+      if (this.x < minX) { this.x = minX; this.dir = 1; }
+      if (this.x > maxX) { this.x = maxX; this.dir = -1; }
+      if (this.dir !== 0) this.facing = this.dir;
+      this.y = groundHeightAt(this.centerX()) - this.h;
+
+      if (!allowFire) {
+        this.fireTimer = Math.max(this.fireTimer, 45);
+        return null;
+      }
+
+      this.fireTimer -= dt;
+      if (this.fireTimer <= 0 && players && players.length) {
+        const target = players.reduce((closest, p) => {
+          if (p.finished) return closest;
+          const dist = Math.abs(p.centerX() - this.centerX());
+          if (!closest || dist < closest.dist) {
+            return { player: p, dist };
+          }
+          return closest;
+        }, null);
+        if (target && target.player) {
+          const dir = target.player.centerX() >= this.centerX() ? 1 : -1;
+          this.facing = dir;
+          this.fireTimer = rand(90, 160);
+          return new Bullet(this.centerX() + dir * (this.w / 2 + 6), this.y + this.h * 0.45, dir * 12);
+        }
+        this.fireTimer = rand(60, 120);
+      }
+      return null;
+    }
+  }
+
+  class Bullet {
+    constructor(x, y, vx) {
+      this.x = x;
+      this.y = y;
+      this.vx = vx;
+      this.w = 12;
+      this.h = 4;
+      this.life = 240;
+      this.dead = false;
+    }
+    aabb() {
+      return { x: this.x - this.w/2, y: this.y - this.h/2, w: this.w, h: this.h };
+    }
+    update(dt) {
+      this.x += this.vx * dt;
+      this.life -= dt;
+      if (this.life <= 0) this.dead = true;
+    }
+  }
+
   // ===== world containers =====
   let players = [];
   let trees = [];
   let walls = [];
   let lavas = [];
   let coins = [];
+  let enemies = [];
+  let bullets = [];
   let volcano = null;
 
   // ===== camera =====
   let camX = 0;
 
+  function groundHeightAt(px) {
+    if (!volcano) return GROUND_Y;
+    return Math.min(GROUND_Y, volcano.groundAt(px));
+  }
+
+  function configureLevelDimensions() {
+    const config = LEVELS[levelIndex] || LEVELS[0];
+    levelLength = BASE_LEVEL_LEN * config.lengthMultiplier;
+    goalX = levelLength - 140;
+  }
+
   function resetLevel() {
     if (!gameMode) return;
+    configureLevelDimensions();
     finished = false;
     overlay.style.display = 'none';
-    trees = []; walls = []; lavas = []; coins = [];
-    volcano = createVolcano(tileX(LEVEL_LEN * 0.55));
+    trees = [];
+    walls = [];
+    lavas = [];
+    coins = [];
+    enemies = [];
+    bullets = [];
+    volcano = createVolcano(tileX(levelLength * 0.55));
     players = [
       new Player(100, GROUND_Y - 34, {
         label: 'P1',
@@ -462,6 +573,7 @@
           right: ['d','D'],
           jump: ['w','W',' '],
           chop: ['e','E'],
+          attack: ['x','X'],
           wall: ['1'],
           lava: ['2'],
         }
@@ -477,6 +589,7 @@
           right: ['ArrowRight'],
           jump: ['ArrowUp'],
           chop: ['/', '?'],
+          attack: ['.', '>'],
           wall: ['[', '{'],
           lava: [']', '}'],
         }
@@ -484,11 +597,15 @@
     }
     // scatter trees
     const bands = 22;
+    const span = Math.max(200, levelLength - 400);
+    const step = span / bands;
     for (let i=0; i<bands; i++) {
       let attempts = 0;
       let x;
+      const min = 160 + i * step;
+      const max = Math.min(levelLength - 200, min + step - 20);
       do {
-        x = irand(160 + i * ((LEVEL_LEN-400)/bands), 180 + i * ((LEVEL_LEN-400)/bands));
+        x = irand(min, Math.max(min + 1, max));
         attempts++;
       } while (volcano && x > volcano.safeMin && x < volcano.safeMax && attempts < 8);
       if (volcano && x > volcano.safeMin && x < volcano.safeMax) continue;
@@ -499,7 +616,7 @@
       let attempts = 0;
       let x;
       do {
-        x = irand(260, LEVEL_LEN - 400);
+        x = irand(260, Math.max(280, levelLength - 400));
         attempts++;
       } while (volcano && x > volcano.safeMin - TILE && x < volcano.safeMax + TILE && attempts < 12);
       if (volcano && x > volcano.safeMin - TILE && x < volcano.safeMax + TILE) continue;
@@ -510,6 +627,26 @@
       coins.push(new Coin(volcano.craterX - 28, volcano.rimY - 18));
       coins.push(new Coin(volcano.craterX + volcano.craterWidth + 28, volcano.rimY - 18));
     }
+
+    const enemyCount = (LEVELS[levelIndex] || LEVELS[0]).enemyCount;
+    if (enemyCount > 0) {
+      const spacing = levelLength / (enemyCount + 1);
+      for (let i=0; i<enemyCount; i++) {
+        let ex;
+        let attempts = 0;
+        do {
+          ex = spacing * (i + 1) + rand(-80, 80);
+          ex = clamp(ex, 160, levelLength - 200);
+          attempts++;
+        } while (volcano && ex > volcano.safeMin - 60 && ex < volcano.safeMax + 60 && attempts < 6);
+        if (volcano && ex > volcano.safeMin - 60 && ex < volcano.safeMax + 60) {
+          ex = volcano.safeMax + 120 + i * 40;
+          ex = clamp(ex, 160, levelLength - 200);
+        }
+        enemies.push(new Enemy(ex));
+      }
+    }
+
     camX = 0;
     runStartTime = performance.now();
     elapsedTime = 0;
@@ -580,6 +717,24 @@
     lavas.push(new Lava(tx));
     player.wood -= 1;
     updateUI();
+  }
+
+  function playerAttack(player) {
+    if (player.attackCooldown > 0) return;
+    const reach = 60;
+    const height = player.h + 20;
+    const attackRect = player.facing > 0
+      ? { x: player.x + player.w - 6, y: player.y - 10, w: reach, h: height }
+      : { x: player.x - reach + 6, y: player.y - 10, w: reach, h: height };
+    let hitEnemy = false;
+    for (const enemy of enemies) {
+      if (enemy.dead) continue;
+      if (aabbOverlap(attackRect, enemy.aabb())) {
+        enemy.dead = true;
+        hitEnemy = true;
+      }
+    }
+    player.attackCooldown = hitEnemy ? 20 : 10;
   }
 
   // ===== collisions =====
@@ -654,7 +809,7 @@
           player.vx = 0;
         }
       }
-      player.x = clamp(player.x, 0, LEVEL_LEN - player.w);
+      player.x = clamp(player.x, 0, levelLength - player.w);
 
       // move vertical
       player.y += player.vy * dt;
@@ -691,12 +846,58 @@
       }
 
       if (player.invuln > 0) player.invuln -= dt;
+      if (player.attackCooldown > 0) player.attackCooldown = Math.max(0, player.attackCooldown - dt);
       for (const l of lavas) {
         if (aabbOverlap(player.aabb(), l.aabb()) && player.invuln <= 0) {
           if (handlePlayerDeath(player)) return;
         }
       }
     }
+
+    for (const enemy of enemies) {
+      if (enemy.dead) continue;
+      const bullet = enemy.update(dt, players, !finished);
+      if (bullet) bullets.push(bullet);
+    }
+
+    for (const bullet of bullets) {
+      if (bullet.dead) continue;
+      bullet.update(dt);
+      if (bullet.dead) continue;
+      const rect = bullet.aabb();
+      if (rect.x + rect.w < 0 || rect.x > levelLength) {
+        bullet.dead = true;
+        continue;
+      }
+      for (const w of walls) {
+        if (aabbOverlap(rect, w.aabb())) { bullet.dead = true; break; }
+      }
+      if (bullet.dead) continue;
+      for (const player of players) {
+        if (player.finished || player.invuln > 0) continue;
+        if (aabbOverlap(rect, player.aabb())) {
+          if (handlePlayerDeath(player)) return;
+          bullet.dead = true;
+          break;
+        }
+      }
+    }
+
+    if (!finished) {
+      for (const enemy of enemies) {
+        if (enemy.dead) continue;
+        for (const player of players) {
+          if (player.finished || player.invuln > 0) continue;
+          if (aabbOverlap(player.aabb(), enemy.aabb())) {
+            if (handlePlayerDeath(player)) return;
+            break;
+          }
+        }
+      }
+    }
+
+    enemies = enemies.filter(e => !e.dead);
+    bullets = bullets.filter(b => !b.dead);
 
     // mine tree (hold)
     if (!finished) {
@@ -750,13 +951,13 @@
     if (players.length) {
       const avgX = players.reduce((sum, p) => sum + p.centerX(), 0) / players.length;
       camX += ((avgX - W * 0.45) - camX) * 0.08;
-      camX = clamp(camX, 0, LEVEL_LEN - W);
+      camX = clamp(camX, 0, levelLength - W);
     }
 
     // finish check
     if (!finished && players.length) {
       for (const player of players) {
-        if (!player.finished && player.x > GOAL_X) {
+        if (!player.finished && player.x > goalX) {
           player.finished = true;
           player.vx = 0;
           player.vy = 0;
@@ -767,8 +968,14 @@
         finished = true;
         finishDuration = elapsedTime;
         const summary = players.map(p => `${p.label}: Coins <b>${p.coins}</b> · Wood <b>${p.wood}</b> · Deaths <b>${p.deaths}</b>`).join('<br>');
-        ovTitle.textContent = "Run Complete!";
-        ovBody.innerHTML = `Finished in <b>${formatTime(finishDuration)}</b>.<br>${summary}`;
+        const config = LEVELS[levelIndex] || LEVELS[0];
+        const isFinalLevel = levelIndex >= LEVELS.length - 1;
+        const nextConfig = LEVELS[levelIndex + 1];
+        ovTitle.textContent = isFinalLevel ? 'All Levels Complete!' : `${config.name} Complete!`;
+        const nextLine = isFinalLevel
+          ? 'Press <b>R</b> to restart from Level 1.'
+          : `Press <b>R</b> to continue to ${nextConfig.name}.`;
+        ovBody.innerHTML = `Finished in <b>${formatTime(finishDuration)}</b>.<br>${summary}<br><br>${nextLine}`;
         overlay.style.display = 'flex';
         uiTimer.textContent = formatTime(finishDuration);
       }
@@ -777,6 +984,12 @@
 
   function updateUI() {
     const [p1, p2] = players;
+    if (uiLevel) {
+      const config = LEVELS[levelIndex] || LEVELS[0];
+      uiLevel.textContent = config.name;
+      uiLevel.classList.toggle('warn', levelIndex === LEVELS.length - 1);
+      uiLevel.classList.toggle('good', levelIndex !== LEVELS.length - 1);
+    }
     if (p1) {
       ui.p1.coins.textContent = p1.coins;
       ui.p1.wood.textContent = p1.wood;
@@ -810,8 +1023,10 @@
     ctx.save();
     ctx.translate(-camX*0.3,0);
     ctx.fillStyle = '#9ed39b';
-    for (let i=0;i<8;i++){
-      const x = i*500;
+    const hillSpacing = 500;
+    const hillCount = Math.ceil((levelLength + W) / hillSpacing);
+    for (let i=0;i<hillCount;i++){
+      const x = i*hillSpacing;
       ctx.beginPath();
       ctx.moveTo(x, 380);
       ctx.quadraticCurveTo(x+120,330,x+240,380);
@@ -832,29 +1047,29 @@
     turfGrad.addColorStop(0.45, '#66ba5d');
     turfGrad.addColorStop(1, '#447d3d');
     ctx.fillStyle = turfGrad;
-    ctx.fillRect(0, turfTop, LEVEL_LEN, GROUND_SURFACE + 4);
+    ctx.fillRect(0, turfTop, levelLength, GROUND_SURFACE + 4);
     ctx.fillStyle = '#2f4f2d';
-    ctx.fillRect(0, GROUND_Y - 2, LEVEL_LEN, 2);
+    ctx.fillRect(0, GROUND_Y - 2, levelLength, 2);
     ctx.fillStyle = '#0003';
-    ctx.fillRect(0, GROUND_Y, LEVEL_LEN, 2);
+    ctx.fillRect(0, GROUND_Y, levelLength, 2);
 
     const frontGrad = ctx.createLinearGradient(0, GROUND_Y, 0, H);
     frontGrad.addColorStop(0, '#4b3a25');
     frontGrad.addColorStop(0.5, '#3a2718');
     frontGrad.addColorStop(1, '#1f140b');
     ctx.fillStyle = frontGrad;
-    ctx.fillRect(0, GROUND_Y, LEVEL_LEN, H-GROUND_Y);
+    ctx.fillRect(0, GROUND_Y, levelLength, H-GROUND_Y);
 
     // subtle stratified dirt lines
     ctx.fillStyle = '#0002';
     for (let y = GROUND_Y + 18; y < H; y += 26) {
-      ctx.fillRect(0, y, LEVEL_LEN, 4);
+      ctx.fillRect(0, y, levelLength, 4);
     }
 
     // grass blades
     ctx.strokeStyle = '#9ef79a';
     ctx.lineWidth = 1;
-    for (let x=0; x<LEVEL_LEN; x+=8) {
+    for (let x=0; x<levelLength; x+=8) {
       const gx = x + Math.sin((x+performance.now()*0.002)*0.1)*1.2;
       ctx.beginPath();
       ctx.moveTo(gx, turfTop);
@@ -863,12 +1078,12 @@
     }
     // goal flag
     ctx.fillStyle = '#333';
-    ctx.fillRect(GOAL_X, GROUND_Y-60, 4, 60);
+    ctx.fillRect(goalX, GROUND_Y-60, 4, 60);
     ctx.fillStyle = '#ffd166';
     ctx.beginPath();
-    ctx.moveTo(GOAL_X+4, GROUND_Y-56);
-    ctx.lineTo(GOAL_X+54, GROUND_Y-46);
-    ctx.lineTo(GOAL_X+4, GROUND_Y-36);
+    ctx.moveTo(goalX+4, GROUND_Y-56);
+    ctx.lineTo(goalX+54, GROUND_Y-46);
+    ctx.lineTo(goalX+4, GROUND_Y-36);
     ctx.closePath();
     ctx.fill();
     ctx.restore();
@@ -1097,6 +1312,68 @@
     ctx.restore();
   }
 
+  function drawEnemy(enemy) {
+    if (enemy.dead) return;
+    ctx.save(); ctx.translate(-camX,0);
+    const groundUnder = groundHeightAt(enemy.centerX());
+    ctx.fillStyle = '#0003';
+    ctx.beginPath();
+    ctx.ellipse(enemy.centerX(), groundUnder - 2, 12, 4, 0, 0, Math.PI*2);
+    ctx.fill();
+
+    ctx.fillStyle = '#532626';
+    ctx.fillRect(enemy.x + 2, enemy.y + 14, enemy.w - 4, enemy.h - 14);
+    ctx.fillStyle = '#7f3232';
+    ctx.fillRect(enemy.x, enemy.y + 6, enemy.w, enemy.h - 16);
+    ctx.fillStyle = '#c54c4c';
+    ctx.fillRect(enemy.x + 4, enemy.y + 8, enemy.w - 8, enemy.h - 20);
+
+    const headSize = 16;
+    const headX = enemy.x + (enemy.w - headSize) / 2;
+    const headY = enemy.y - headSize + 6;
+    ctx.fillStyle = '#ffb27d';
+    ctx.fillRect(headX, headY, headSize, headSize);
+    ctx.fillStyle = '#2b1a1a';
+    ctx.fillRect(headX + 4, headY + 8, 8, 3);
+    ctx.fillRect(headX + (enemy.facing > 0 ? 8 : 2), headY + 4, 3, 3);
+    ctx.fillRect(headX + (enemy.facing > 0 ? 4 : 10), headY + 4, 3, 3);
+
+    const gunLength = 16;
+    const gunHeight = 6;
+    const gunX = enemy.facing > 0 ? enemy.x + enemy.w - 6 : enemy.x - gunLength + 6;
+    ctx.fillStyle = '#1e1f24';
+    ctx.fillRect(gunX, enemy.y + 14, gunLength, gunHeight);
+    ctx.fillStyle = '#5a5d68';
+    ctx.fillRect(gunX + (enemy.facing > 0 ? gunLength - 4 : 0), enemy.y + 14, 4, gunHeight);
+
+    if (debugShowHit) {
+      const a = enemy.aabb();
+      ctx.strokeStyle = '#ff00ff55';
+      ctx.strokeRect(a.x, a.y, a.w, a.h);
+    }
+
+    ctx.restore();
+  }
+
+  function drawBullet(bullet) {
+    if (bullet.dead) return;
+    ctx.save(); ctx.translate(-camX,0);
+    const rect = bullet.aabb();
+    ctx.fillStyle = '#ff9e64';
+    ctx.fillRect(rect.x, rect.y, rect.w, rect.h);
+    ctx.fillStyle = '#ffd8b2';
+    if (bullet.vx > 0) {
+      ctx.fillRect(rect.x + rect.w - 4, rect.y, 4, rect.h);
+    } else {
+      ctx.fillRect(rect.x, rect.y, 4, rect.h);
+    }
+    if (debugShowHit) {
+      ctx.strokeStyle = '#ffffff55';
+      ctx.strokeRect(rect.x, rect.y, rect.w, rect.h);
+    }
+    ctx.restore();
+  }
+
   function drawPlayer(player) {
     ctx.save(); ctx.translate(-camX,0);
 
@@ -1174,8 +1451,10 @@
     // parallax trees (background silhouettes)
     ctx.save(); ctx.translate(-camX*0.6,0);
     ctx.fillStyle = '#2f6130';
-    for (let i=0;i<18;i++){
-      const x = i*220 + 100;
+    const silhouetteSpacing = 220;
+    const silhouetteCount = Math.ceil((levelLength + W) / silhouetteSpacing);
+    for (let i=0;i<silhouetteCount;i++){
+      const x = i*silhouetteSpacing + 100;
       ctx.fillRect(x+14, GROUND_Y-70, 12, 70);
       ctx.beginPath();
       ctx.roundRect(x, GROUND_Y-110, 40, 30, 10); ctx.fill();
@@ -1190,14 +1469,16 @@
     for (const w of walls) drawWall(w);
     for (const l of lavas) drawLava(l);
     for (const c of coins) drawCoin(c);
+    for (const enemy of enemies) drawEnemy(enemy);
     for (const player of players) drawPlayer(player);
+    for (const bullet of bullets) drawBullet(bullet);
 
     // HUD guide line to goal
     ctx.save();
     ctx.translate(-camX,0);
     ctx.strokeStyle = '#ffffff20';
     ctx.setLineDash([6,6]);
-    ctx.beginPath(); ctx.moveTo(GOAL_X, 0); ctx.lineTo(GOAL_X, H); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(goalX, 0); ctx.lineTo(goalX, H); ctx.stroke();
     ctx.restore();
   }
 
