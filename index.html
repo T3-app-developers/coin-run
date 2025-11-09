@@ -512,11 +512,16 @@
           }
           return closest;
         }, null);
-        if (target && target.player) {
+        if (target && target.player && target.dist <= TILE) {
           const dir = target.player.centerX() >= this.centerX() ? 1 : -1;
           this.facing = dir;
           this.fireTimer = rand(90, 160);
-          return new Bullet(this.centerX() + dir * (this.w / 2 + 6), this.y + this.h * 0.45, dir * 12);
+          return new Bullet(
+            this.centerX() + dir * (this.w / 2 + 6),
+            this.y + this.h * 0.45,
+            dir * 12,
+            TILE
+          );
         }
         this.fireTimer = rand(60, 120);
       }
@@ -525,7 +530,7 @@
   }
 
   class Bullet {
-    constructor(x, y, vx) {
+    constructor(x, y, vx, maxRange = TILE) {
       this.x = x;
       this.y = y;
       this.vx = vx;
@@ -533,13 +538,17 @@
       this.h = 4;
       this.life = 240;
       this.dead = false;
+      this.rangeRemaining = Math.max(0, maxRange);
     }
     aabb() {
       return { x: this.x - this.w/2, y: this.y - this.h/2, w: this.w, h: this.h };
     }
     update(dt) {
-      this.x += this.vx * dt;
+      const dx = this.vx * dt;
+      this.x += dx;
       this.life -= dt;
+      this.rangeRemaining -= Math.abs(dx);
+      if (this.rangeRemaining <= 0) this.dead = true;
       if (this.life <= 0) this.dead = true;
     }
   }
