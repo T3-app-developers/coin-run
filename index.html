@@ -12,8 +12,13 @@
   .warn { color:#ff9e64; }
   .bad { color:#ff6b6b; }
   #help { position:fixed; right:10px; top:10px; background:#2b2f36; border:1px solid #3a3f47; padding:10px 12px; border-radius:10px; max-width: 420px; line-height:1.2; font-size:14px; }
-  #overlay { position:fixed; inset:0; display:none; align-items:center; justify-content:center; background:#000a; color:#fff; text-align:center; }
+  #overlay { position:fixed; inset:0; display:none; align-items:center; justify-content:center; background:#000a; color:#fff; text-align:center; z-index:40; }
   #overlay .card { background:#1f232a; border:1px solid #3a3f47; border-radius:14px; padding:22px 24px; max-width:560px; }
+  #death-screen { position:fixed; inset:0; display:none; align-items:center; justify-content:center; background:#000c; color:#fff; text-align:center; z-index:35; }
+  #death-screen .card { background:#201f24; border:1px solid #3a3f47; border-radius:18px; padding:28px 32px; max-width:420px; box-shadow:0 18px 60px #000a; }
+  #death-screen .emoji { font-size:64px; margin:0 0 14px; display:block; }
+  #death-screen h2 { margin:0 0 8px 0; font-size:26px; }
+  #death-screen p { margin:6px 0; opacity:0.85; }
   #overlay h1 { margin:0 0 8px 0; font-size:28px; }
   #overlay p { margin:6px 0; }
   #platform-select, #mode-select { position:fixed; inset:0; display:flex; align-items:center; justify-content:center; background:#000d; color:#fff; text-align:center; }
@@ -38,6 +43,8 @@
 </head>
 <body>
 <canvas id="game" width="960" height="540"></canvas>
+
+<audio id="wah-audio" preload="auto" src="data:audio/wav;base64,UklGRrh4AABXQVZFZm10IBAAAAABAAEAIlYAAESsAAACABAAZGF0YZR4AAAAAKQHKw98FnodDCQZKo0vPSAzQkpGS05OUktVXF1eYWhqa3F2e3+Ah4iLjI6RkpWXmJubn6CkpaepqquvscLLzM3S1dnb3N/j5Orr7fDz9Pj6/P3+/wAA"></audio>
 
 <div id="ui">
   <div class="pill">Level: <span id="level-indicator" class="good">1</span></div>
@@ -65,6 +72,14 @@
     <h1 id="ov-title">Finished!</h1>
     <p id="ov-body"></p>
     <p style="opacity:0.8">Press <b>R</b> to play again.</p>
+  </div>
+</div>
+
+<div id="death-screen">
+  <div class="card">
+    <span class="emoji" aria-hidden="true">😢</span>
+    <h2>Wah-wah... life lost!</h2>
+    <p>Take a breather and get back in there.</p>
   </div>
 </div>
 
@@ -157,6 +172,69 @@
   const touchControls = document.getElementById('touch-controls');
   const helpP2 = document.getElementById('help-p2');
   const p2Pills = Array.from(document.querySelectorAll('.p2-pill'));
+  const deathScreen = document.getElementById('death-screen');
+  const wahAudio = document.getElementById('wah-audio');
+  if (wahAudio) wahAudio.volume = 0.55;
+
+  let deathHideTimeout = null;
+
+  const playWahSound = () => {
+    if (!wahAudio) return;
+    try {
+      wahAudio.currentTime = 0;
+      wahAudio.play();
+    } catch (_) {
+      // ignore autoplay restrictions
+    }
+  };
+
+  const stopWahSound = () => {
+    if (!wahAudio) return;
+    wahAudio.pause();
+    wahAudio.currentTime = 0;
+  };
+
+  function showDeathScreen() {
+    if (!deathScreen) return;
+    if (deathHideTimeout) {
+      clearTimeout(deathHideTimeout);
+      deathHideTimeout = null;
+    }
+    deathScreen.style.display = 'flex';
+  }
+
+  function hideDeathScreen(immediate = false) {
+    if (!deathScreen) return;
+    if (deathHideTimeout) {
+      clearTimeout(deathHideTimeout);
+      deathHideTimeout = null;
+    }
+    if (immediate) {
+      deathScreen.style.display = 'none';
+      stopWahSound();
+      return;
+    }
+    deathHideTimeout = setTimeout(() => {
+      deathScreen.style.display = 'none';
+      stopWahSound();
+      deathHideTimeout = null;
+    }, 0);
+  }
+
+  function scheduleDeathScreenHide(delay = 900) {
+    if (!deathScreen) return;
+    if (deathHideTimeout) {
+      clearTimeout(deathHideTimeout);
+      deathHideTimeout = null;
+    }
+    deathHideTimeout = setTimeout(() => {
+      deathScreen.style.display = 'none';
+      stopWahSound();
+      deathHideTimeout = null;
+    }, delay);
+  }
+
+  window.playWahSound = playWahSound;
 
   // ===== world constants =====
   const TILE = 40;
@@ -579,9 +657,11 @@
 
   function resetLevel() {
     if (!gameMode) return;
+    hideDeathScreen(true);
     configureLevelDimensions();
     finished = false;
     overlay.style.display = 'none';
+    stopWahSound();
     trees = [];
     walls = [];
     lavas = [];
@@ -772,9 +852,12 @@
   }
 
   function handlePlayerDeath(player) {
+    showDeathScreen();
+    playWahSound();
     player.lives -= 1;
     player.deaths += 1;
     if (player.lives <= 0) {
+      updateUI();
       resetLevel();
       return true;
     }
@@ -785,6 +868,7 @@
     player.vy = 0;
     player.invuln = 30;
     updateUI();
+    scheduleDeathScreenHide(player.invuln * (1000 / 60) + 200);
     return false;
   }
 
