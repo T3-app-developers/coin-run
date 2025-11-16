@@ -64,9 +64,11 @@
   <div class="pill">P1 Coins: <span id="p1-coins" class="good">0</span></div>
   <div class="pill">P1 Wood: <span id="p1-wood" class="warn">0</span></div>
   <div class="pill">P1 Lives: <span id="p1-lives" class="good">3</span></div>
+  <div class="pill">P1 Gun: <span id="p1-gun" class="warn">None</span></div>
   <div class="pill p2-pill">P2 Coins: <span id="p2-coins" class="good">0</span></div>
   <div class="pill p2-pill">P2 Wood: <span id="p2-wood" class="warn">0</span></div>
   <div class="pill p2-pill">P2 Lives: <span id="p2-lives" class="good">3</span></div>
+  <div class="pill p2-pill">P2 Gun: <span id="p2-gun" class="warn">None</span></div>
   <div class="pill">Timer: <span id="timer" class="good">0:00.0</span></div>
   <div class="pill">Lava: <span id="lava" class="bad">20s</span></div>
   <div class="pill">Goal ▶</div>
@@ -182,11 +184,13 @@
       coins: document.getElementById('p1-coins'),
       wood: document.getElementById('p1-wood'),
       lives: document.getElementById('p1-lives'),
+      gun: document.getElementById('p1-gun'),
     },
     p2: {
       coins: document.getElementById('p2-coins'),
       wood: document.getElementById('p2-wood'),
       lives: document.getElementById('p2-lives'),
+      gun: document.getElementById('p2-gun'),
     }
   };
   const uiLevel = document.getElementById('level-indicator');
@@ -482,7 +486,10 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
     if (finished) return;
     for (const player of players) {
       if (player.finished) continue;
-      if (player.controls.attack && player.controls.attack.includes(key)) playerAttack(player);
+      if (player.controls.attack && player.controls.attack.includes(key)) {
+        if (hasUsableGun(player)) fireGun(player);
+        else playerAttack(player);
+      }
       if (player.controls.wall && player.controls.wall.includes(key)) placeWall(player);
       if (player.controls.lava && player.controls.lava.includes(key)) placeLava(player);
     }
@@ -584,6 +591,20 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
       this.controls = options.controls || {};
       this.attackCooldown = 0;
       this.dinoBites = 0;
+      const baseGun = {
+        gunType: 'Laser',
+        fireRate: 12,
+        projectileSpeed: 14,
+        projectileRange: TILE * 8,
+        ammo: Infinity,
+        maxAmmo: Infinity,
+      };
+      if (Object.prototype.hasOwnProperty.call(options, 'gun')) {
+        this.gun = options.gun ? { ...baseGun, ...options.gun } : null;
+      } else {
+        this.gun = { ...baseGun };
+      }
+      this.gunCooldown = 0;
     }
     aabb() { return {x:this.x, y:this.y, w:this.w, h:this.h}; }
     centerX() { return this.x + this.w/2; }
@@ -822,7 +843,7 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
   }
 
   class Bullet {
-    constructor(x, y, vx, { owner = null, faction = 'enemy' } = {}) {
+    constructor(x, y, vx, { owner = null, faction = 'enemy', range = Infinity } = {}) {
       this.x = x;
       this.y = y;
       this.vx = vx;
@@ -832,6 +853,7 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
       this.dead = false;
       this.owner = owner;
       this.faction = faction;
+      this.rangeRemaining = range ?? Infinity;
     }
     aabb() {
       return { x: this.x - this.w/2, y: this.y - this.h/2, w: this.w, h: this.h };
@@ -1108,31 +1130,35 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
     updateUI();
   }
 
+  function hasUsableGun(player) {
+    return !!(player && player.gun && (player.gun.ammo === Infinity || player.gun.ammo > 0));
+  }
+
+  function fireGun(player) {
+    if (!player || !player.gun) return false;
+    if (player.gunCooldown > 0) return false;
+    const gun = player.gun;
+    if (gun.ammo !== Infinity && gun.ammo <= 0) return false;
+
+    const projectileSpeed = gun.projectileSpeed ?? 14;
+    const projectileRange = gun.projectileRange ?? TILE * 8;
+    bullets.push(new Bullet(
+      player.centerX() + player.facing * (player.w / 2 + 8),
+      player.y + player.h * 0.45,
+      player.facing * projectileSpeed,
+      { owner: player, faction: 'player', range: projectileRange }
+    ));
+
+    player.gunCooldown = gun.fireRate ?? 12;
+    if (Number.isFinite(gun.ammo)) {
+      gun.ammo = Math.max(0, gun.ammo - 1);
+    }
+    updateUI();
+    return true;
+  }
+
   function playerAttack(player) {
     if (player.attackCooldown > 0) return;
-
-    const projectileDistance = TILE * 3;
-    let nearestDist = null;
-    for (const enemy of enemies) {
-      if (enemy.dead) continue;
-      const dx = enemy.centerX() - player.centerX();
-      const facingMatch = Math.abs(dx) < 1 || sign(dx) === player.facing;
-      if (!facingMatch) continue;
-      const dist = Math.abs(dx);
-      if (nearestDist === null || dist < nearestDist) {
-        nearestDist = dist;
-      }
-    }
-
-    if (nearestDist !== null && nearestDist >= projectileDistance) {
-      bullets.push(new Bullet(
-        player.centerX() + player.facing * (player.w / 2 + 8),
-        player.y + player.h * 0.45,
-        player.facing * 14,
-        { owner: player, faction: 'player' }
-      ));
-    }
-
     let hitEnemy = false;
     for (const enemy of enemies) {
       if (enemy.dead) continue;
@@ -1283,6 +1309,7 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
 
       if (player.invuln > 0) player.invuln -= dt;
       if (player.attackCooldown > 0) player.attackCooldown = Math.max(0, player.attackCooldown - dt);
+      if (player.gunCooldown > 0) player.gunCooldown = Math.max(0, player.gunCooldown - dt);
       for (const l of lavas) {
         if (aabbOverlap(player.aabb(), l.aabb()) && player.invuln <= 0) {
           if (handlePlayerDeath(player)) return;
@@ -1442,6 +1469,26 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
     }
   }
 
+  function describeGun(player) {
+    if (!player || !player.gun) return 'None';
+    const type = player.gun.gunType || 'Unknown';
+    const ammoValue = player.gun.ammo;
+    const ammo = ammoValue === Infinity
+      ? '∞'
+      : Math.max(0, Math.floor(Number.isFinite(ammoValue) ? ammoValue : 0));
+    return `${type} (${ammo})`;
+  }
+
+  function updateGunHud(el, player) {
+    if (!el) return;
+    el.textContent = describeGun(player);
+    const hasGun = !!(player && player.gun);
+    const hasAmmo = hasGun && (player.gun.ammo === Infinity || player.gun.ammo > 0);
+    el.classList.toggle('good', hasAmmo);
+    el.classList.toggle('warn', !hasGun);
+    el.classList.toggle('bad', hasGun && !hasAmmo);
+  }
+
   function updateUI() {
     const [p1, p2] = players;
     if (uiLevel) {
@@ -1454,19 +1501,23 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
       ui.p1.coins.textContent = p1.coins;
       ui.p1.wood.textContent = p1.wood;
       ui.p1.lives.textContent = `${p1.lives} (${p1.dinoBites}/${BOSS_BITES_TO_RESPAWN})`;
+      updateGunHud(ui.p1.gun, p1);
     } else {
       ui.p1.coins.textContent = '0';
       ui.p1.wood.textContent = '0';
       ui.p1.lives.textContent = `0 (0/${BOSS_BITES_TO_RESPAWN})`;
+      updateGunHud(ui.p1.gun, null);
     }
     if (p2) {
       ui.p2.coins.textContent = p2.coins;
       ui.p2.wood.textContent = p2.wood;
       ui.p2.lives.textContent = `${p2.lives} (${p2.dinoBites}/${BOSS_BITES_TO_RESPAWN})`;
+      updateGunHud(ui.p2.gun, p2);
     } else {
       ui.p2.coins.textContent = '0';
       ui.p2.wood.textContent = '0';
       ui.p2.lives.textContent = `0 (0/${BOSS_BITES_TO_RESPAWN})`;
+      updateGunHud(ui.p2.gun, null);
     }
   }
 
