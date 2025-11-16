@@ -68,15 +68,15 @@
   <div class="pill p2-pill">P2 Wood: <span id="p2-wood" class="warn">0</span></div>
   <div class="pill p2-pill">P2 Lives: <span id="p2-lives" class="good">3</span></div>
   <div class="pill">Timer: <span id="timer" class="good">0:00.0</span></div>
-  <div class="pill">Lava: <span id="lava" class="bad">hurts</span></div>
+  <div class="pill">Lava: <span id="lava" class="bad">20s</span></div>
   <div class="pill">Goal ▶</div>
 </div>
 
 <div id="help">
   <b>Controls</b><br>
-  <b>Player 1</b> – Move: <b>A/D</b> · Jump: <b>W</b>/<b>Space</b> · Mine: <b>E</b> (hold) · Attack: <b>X</b> (3 hits, ~2 lava pits away) · Wall: <b>1</b> · Lava: <b>2</b><br>
-  <span id="help-p2"><b>Player 2</b> – Move: <b>←/→</b> · Jump: <b>↑</b> · Mine: <b>/</b> (hold) · Attack: <b>.</b> (3 hits, ~2 lava pits away) · Wall: <b>[</b> · Lava: <b>]</b><br></span>
-  <span style="display:block; margin-top:8px; opacity:0.75;">Tip: line up about two lava pits away before attacking &mdash; each enemy needs three strikes.</span>
+  <b>Player 1</b> – Move: <b>A/D</b> · Jump: <b>W</b>/<b>Space</b> · Mine: <b>E</b> (hold) · Attack: <b>X</b> (laser: 3 hits for grunts, 10 for the boss) · Wall: <b>1</b> · Lava: <b>2</b><br>
+  <span id="help-p2"><b>Player 2</b> – Move: <b>←/→</b> · Jump: <b>↑</b> · Mine: <b>/</b> (hold) · Attack: <b>.</b> (laser: 3 hits for grunts, 10 for the boss) · Wall: <b>[</b> · Lava: <b>]</b><br></span>
+  <span style="display:block; margin-top:8px; opacity:0.75;">Tip: the volcano erupts every 20 seconds and the dino boss at the goal needs ten laser hits &mdash; it must chomp you three times before you lose a life.</span>
   Restart: <b>R</b> &nbsp;|&nbsp; Toggle Hitboxes: <b>H</b>
 </div>
 
@@ -144,7 +144,7 @@
   <div class="cluster actions">
     <button class="touch-btn" type="button" data-key="space">Jump</button>
     <button class="touch-btn" type="button" data-key="e">Mine<span>Hold</span></button>
-    <button class="touch-btn" type="button" data-key="x">Attack<span>3 hits</span></button>
+    <button class="touch-btn" type="button" data-key="x">Attack<span>Laser</span></button>
     <button class="touch-btn" type="button" data-key="1">Wall</button>
     <button class="touch-btn" type="button" data-key="2">Lava</button>
   </div>
@@ -191,6 +191,7 @@
   };
   const uiLevel = document.getElementById('level-indicator');
   const uiTimer = document.getElementById('timer');
+  const uiLavaStatus = document.getElementById('lava');
   const overlay = document.getElementById('overlay');
   const overlayCard = document.getElementById('overlay-card');
   const celebrationScreen = document.getElementById('celebration-screen');
@@ -408,6 +409,9 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
   const ENEMY_ATTACK_TOLERANCE = TILE * 0.6;
   const ENEMY_ATTACK_VERTICAL_TOLERANCE = TILE;
   const ENEMY_HITS_TO_DEFEAT = 3;
+  const BOSS_HITS_TO_DEFEAT = 10;
+  const BOSS_BITES_TO_RESPAWN = 3;
+  const BOSS_BITE_COOLDOWN = 45;
 
   const VOLCANO_STEPS = 12;
   const VOLCANO_STEP_HEIGHT = 12;
@@ -417,6 +421,8 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
   const VOLCANO_LAVA_HEIGHT = 42;
   const VOLCANO_LAVA_RIM = 22;
   const VOLCANO_WIDTH = VOLCANO_STEPS * TILE * 2 + VOLCANO_CRATER_WIDTH;
+  const VOLCANO_ERUPTION_INTERVAL = 20 * 60;
+  const VOLCANO_ERUPTION_DURATION = 150;
 
   // physics
   const GRAV = 0.9;
@@ -577,6 +583,7 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
       this.headColor = options.headColor || '#2fd06c';
       this.controls = options.controls || {};
       this.attackCooldown = 0;
+      this.dinoBites = 0;
     }
     aabb() { return {x:this.x, y:this.y, w:this.w, h:this.h}; }
     centerX() { return this.x + this.w/2; }
@@ -619,6 +626,7 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
       this.theme = options.theme ?? 'grass';
       const surface = options.surfaceY ?? (GROUND_Y + this.depth - this.h);
       this.y = surface;
+      this.baseY = surface;
       this.phase = rand(0, 1000);
     }
     aabb() { return {x:this.x, y:this.y, w:this.w, h:this.h}; }
@@ -642,6 +650,7 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
       rim: VOLCANO_LAVA_RIM,
       theme: 'volcano'
     });
+    lava.baseY = lava.y;
     const volcanoObj = {
       x: clampedBase,
       width: VOLCANO_WIDTH,
@@ -655,6 +664,10 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
       lava,
       safeMin: clampedBase - margin,
       safeMax: clampedBase + VOLCANO_WIDTH + margin,
+      eruptionTimer: VOLCANO_ERUPTION_INTERVAL,
+      eruptionTicks: 0,
+      isErupting: false,
+      explosionPulse: 0,
       groundAt(px) {
         if (px < this.x || px > this.x + this.width) return GROUND_Y;
         if (px >= this.craterX && px <= this.craterX + this.craterWidth) return GROUND_Y;
@@ -777,6 +790,37 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
     }
   }
 
+  class DinoBoss extends Enemy {
+    constructor(x) {
+      super(x);
+      this.isBoss = true;
+      this.w = 88;
+      this.h = 70;
+      this.range = 120;
+      this.speed = 1.1;
+      this.hp = BOSS_HITS_TO_DEFEAT;
+      this.baseX = clamp(x, 160, levelLength - this.w - 80);
+      this.x = this.baseX;
+      this.y = groundHeightAt(this.centerX()) - this.h;
+      this.biteCooldown = 0;
+    }
+    takeHit() {
+      if (this.dead) return false;
+      this.hp -= 1;
+      this.hitFlash = 18;
+      if (this.hp <= 0) {
+        this.dead = true;
+      }
+      return true;
+    }
+    update(dt, players) {
+      if (this.biteCooldown > 0) {
+        this.biteCooldown = Math.max(0, this.biteCooldown - dt);
+      }
+      return super.update(dt, players, false);
+    }
+  }
+
   class Bullet {
     constructor(x, y, vx, { owner = null, faction = 'enemy' } = {}) {
       this.x = x;
@@ -820,6 +864,66 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
     return Math.min(GROUND_Y, volcano.groundAt(px));
   }
 
+  function updateVolcanoHud() {
+    if (!uiLavaStatus) return;
+    if (!volcano) {
+      uiLavaStatus.textContent = 'calm';
+      uiLavaStatus.classList.remove('warn', 'bad');
+      uiLavaStatus.classList.add('good');
+      return;
+    }
+    if (volcano.isErupting) {
+      uiLavaStatus.textContent = 'eruption!';
+      uiLavaStatus.classList.add('bad');
+      uiLavaStatus.classList.remove('good', 'warn');
+      return;
+    }
+    const seconds = Math.max(0, Math.ceil(volcano.eruptionTimer / 60));
+    uiLavaStatus.textContent = `${seconds}s`;
+    uiLavaStatus.classList.toggle('warn', seconds <= 5 && seconds > 2);
+    uiLavaStatus.classList.toggle('bad', seconds <= 2);
+    uiLavaStatus.classList.toggle('good', seconds > 5);
+  }
+
+  function updateVolcano(dt) {
+    if (!volcano) return false;
+    if (volcano.isErupting) {
+      volcano.eruptionTicks -= dt;
+      volcano.lava.y = Math.max(volcano.rimY - 24, volcano.lava.y - 1.2 * dt);
+      if (!finished) {
+        const blastMin = volcano.x - TILE;
+        const blastMax = volcano.x + volcano.width + TILE;
+        for (const player of players) {
+          if (player.invuln > 0) continue;
+          const cx = player.centerX();
+          if (cx >= blastMin && cx <= blastMax) {
+            if (handlePlayerDeath(player)) return true;
+          }
+        }
+      }
+      if (volcano.eruptionTicks <= 0) {
+        volcano.isErupting = false;
+        volcano.eruptionTimer = VOLCANO_ERUPTION_INTERVAL;
+        volcano.lava.y = volcano.lava.baseY;
+      }
+    } else {
+      volcano.eruptionTimer -= dt;
+      if (volcano.eruptionTimer <= 0) {
+        volcano.isErupting = true;
+        volcano.eruptionTicks = VOLCANO_ERUPTION_DURATION;
+        volcano.explosionPulse = 1;
+      }
+      if (volcano.lava.baseY !== undefined) {
+        volcano.lava.y = Math.min(volcano.lava.baseY, volcano.lava.y + 0.5 * dt);
+      }
+    }
+    if (volcano.explosionPulse > 0) {
+      volcano.explosionPulse = Math.max(0, volcano.explosionPulse - dt * 0.02);
+    }
+    updateVolcanoHud();
+    return false;
+  }
+
   function configureLevelDimensions() {
     const config = LEVELS[levelIndex] || LEVELS[0];
     levelLength = BASE_LEVEL_LEN * config.lengthMultiplier;
@@ -844,6 +948,7 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
     enemies = [];
     bullets = [];
     volcano = createVolcano(tileX(levelLength * 0.55));
+    updateVolcanoHud();
     players = [
       new Player(100, GROUND_Y - 34, {
         label: 'P1',
@@ -927,6 +1032,9 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
         enemies.push(new Enemy(ex));
       }
     }
+
+    const bossSpawnX = clamp(goalX - TILE * 3, 200, levelLength - 240);
+    enemies.push(new DinoBoss(bossSpawnX));
 
     camX = 0;
     runStartTime = performance.now();
@@ -1048,11 +1156,27 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
     return a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y;
   }
 
+  function handleBossBite(player, boss) {
+    if (player.invuln > 0) return false;
+    if (boss && boss.biteCooldown > 0) return false;
+    if (boss) boss.biteCooldown = BOSS_BITE_COOLDOWN;
+    player.dinoBites = (player.dinoBites || 0) + 1;
+    updateUI();
+    if (player.dinoBites >= BOSS_BITES_TO_RESPAWN) {
+      player.dinoBites = 0;
+      updateUI();
+      return handlePlayerDeath(player);
+    }
+    player.invuln = 25;
+    return false;
+  }
+
   function handlePlayerDeath(player) {
     showDeathScreen();
     playWahSound();
     player.lives -= 1;
     player.deaths += 1;
+    player.dinoBites = 0;
     if (player.lives <= 0) {
       updateUI();
       resetLevel();
@@ -1087,6 +1211,8 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
     } else if (!runStartTime) {
       uiTimer.textContent = formatTime(0);
     }
+
+    if (updateVolcano(dt)) return;
 
     for (const player of players) {
       // controls
@@ -1211,7 +1337,11 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
         for (const player of players) {
           if (player.finished || player.invuln > 0) continue;
           if (aabbOverlap(player.aabb(), enemy.aabb())) {
-            if (handlePlayerDeath(player)) return;
+            if (enemy.isBoss) {
+              if (handleBossBite(player, enemy)) return;
+            } else if (handlePlayerDeath(player)) {
+              return;
+            }
             break;
           }
         }
@@ -1278,15 +1408,16 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
 
     // finish check
     if (!finished && players.length) {
+      const bossAlive = enemies.some(e => e.isBoss);
       for (const player of players) {
-        if (!player.finished && player.x > goalX) {
+        if (!player.finished && player.x > goalX && !bossAlive) {
           player.finished = true;
           player.vx = 0;
           player.vy = 0;
           player.grounded = true;
         }
       }
-      if (players.every(p => p.finished)) {
+      if (!bossAlive && players.every(p => p.finished)) {
         finished = true;
         finishDuration = elapsedTime;
         const summary = players.map(p => `${p.label}: Coins <b>${p.coins}</b> · Wood <b>${p.wood}</b> · Deaths <b>${p.deaths}</b>`).join('<br>');
@@ -1322,20 +1453,20 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
     if (p1) {
       ui.p1.coins.textContent = p1.coins;
       ui.p1.wood.textContent = p1.wood;
-      ui.p1.lives.textContent = p1.lives;
+      ui.p1.lives.textContent = `${p1.lives} (${p1.dinoBites}/${BOSS_BITES_TO_RESPAWN})`;
     } else {
       ui.p1.coins.textContent = '0';
       ui.p1.wood.textContent = '0';
-      ui.p1.lives.textContent = '0';
+      ui.p1.lives.textContent = `0 (0/${BOSS_BITES_TO_RESPAWN})`;
     }
     if (p2) {
       ui.p2.coins.textContent = p2.coins;
       ui.p2.wood.textContent = p2.wood;
-      ui.p2.lives.textContent = p2.lives;
+      ui.p2.lives.textContent = `${p2.lives} (${p2.dinoBites}/${BOSS_BITES_TO_RESPAWN})`;
     } else {
       ui.p2.coins.textContent = '0';
       ui.p2.wood.textContent = '0';
-      ui.p2.lives.textContent = '0';
+      ui.p2.lives.textContent = `0 (0/${BOSS_BITES_TO_RESPAWN})`;
     }
   }
 
@@ -1465,6 +1596,16 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
     ctx.fillRect(v.lipLeft - 6, rimY - 6, (v.lipRight - v.lipLeft) + 12, 6);
     ctx.fillStyle = '#2c1a12';
     ctx.fillRect(v.lipLeft - 4, rimY - 2, (v.lipRight - v.lipLeft) + 8, 4);
+
+    if (v.isErupting || v.explosionPulse > 0.01) {
+      const intensity = v.isErupting ? 1 : v.explosionPulse;
+      ctx.fillStyle = `rgba(255, 132, 76, ${0.3 * intensity})`;
+      ctx.beginPath();
+      ctx.ellipse(v.craterX + v.craterWidth/2, rimY - 40, 120, 60, 0, 0, Math.PI*2);
+      ctx.fill();
+      ctx.fillStyle = `rgba(255, 214, 94, ${0.4 * intensity})`;
+      ctx.fillRect(v.craterX, rimY - 6, v.craterWidth, 6);
+    }
 
     ctx.strokeStyle = '#3b2419';
     ctx.lineWidth = 2;
@@ -1641,8 +1782,82 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
     ctx.restore();
   }
 
+  function drawBoss(enemy) {
+    if (enemy.dead) return;
+    ctx.save(); ctx.translate(-camX,0);
+    const groundUnder = groundHeightAt(enemy.centerX());
+    ctx.fillStyle = '#0005';
+    ctx.beginPath();
+    ctx.ellipse(enemy.centerX(), groundUnder - 2, 26, 6, 0, 0, Math.PI*2);
+    ctx.fill();
+
+    const bodyHeight = enemy.h * 0.7;
+    const bodyY = enemy.y + enemy.h - bodyHeight;
+    ctx.fillStyle = '#32713b';
+    ctx.beginPath();
+    ctx.roundRect(enemy.x, bodyY, enemy.w, bodyHeight, 24);
+    ctx.fill();
+
+    ctx.fillStyle = '#4ca254';
+    ctx.beginPath();
+    ctx.roundRect(enemy.x + 16, bodyY + 12, enemy.w - 32, bodyHeight - 20, 18);
+    ctx.fill();
+
+    ctx.fillStyle = '#28652f';
+    const tailDir = enemy.facing > 0 ? -1 : 1;
+    ctx.beginPath();
+    ctx.ellipse(enemy.x + (tailDir > 0 ? enemy.w + 30 : -30), bodyY + bodyHeight * 0.65, 40, 14, 0, 0, Math.PI*2);
+    ctx.fill();
+
+    const headWidth = 46;
+    const headHeight = 32;
+    const headX = enemy.facing > 0 ? enemy.x + enemy.w - headWidth : enemy.x;
+    ctx.fillStyle = '#3c8f48';
+    ctx.beginPath();
+    ctx.roundRect(headX, enemy.y + 6, headWidth, headHeight, 16);
+    ctx.fill();
+    ctx.fillStyle = '#1c2b16';
+    const eyeX = enemy.facing > 0 ? headX + headWidth - 16 : headX + 8;
+    ctx.fillRect(eyeX, enemy.y + 14, 10, 6);
+    ctx.fillStyle = '#f6f1ce';
+    ctx.fillRect(eyeX + (enemy.facing > 0 ? 2 : -2), enemy.y + 14, 6, 4);
+
+    ctx.fillStyle = '#fef9d6';
+    for (let i=0; i<4; i++) {
+      const toothX = headX + 6 + i * 8;
+      ctx.fillRect(toothX, enemy.y + headHeight + 4, 4, 6);
+    }
+
+    ctx.fillStyle = '#215929';
+    ctx.fillRect(enemy.x + 14, bodyY + bodyHeight - 14, 14, 24);
+    ctx.fillRect(enemy.x + enemy.w - 28, bodyY + bodyHeight - 14, 14, 24);
+
+    const hpRatio = clamp(enemy.hp / BOSS_HITS_TO_DEFEAT, 0, 1);
+    ctx.fillStyle = '#0009';
+    ctx.fillRect(enemy.x - 16, enemy.y - 24, enemy.w + 32, 10);
+    ctx.fillStyle = '#9ef79a';
+    ctx.fillRect(enemy.x - 16, enemy.y - 24, (enemy.w + 32) * hpRatio, 10);
+
+    if (enemy.hitFlash > 0) {
+      const flash = clamp(enemy.hitFlash / 18, 0, 1);
+      ctx.fillStyle = `rgba(255, 255, 255, ${0.25 * flash})`;
+      ctx.fillRect(enemy.x - 4, enemy.y - 10, enemy.w + 8, enemy.h + 16);
+    }
+
+    ctx.restore();
+
+    if (debugShowHit) {
+      const a=enemy.aabb();
+      ctx.save(); ctx.translate(-camX,0); ctx.strokeStyle='#fff8'; ctx.strokeRect(a.x, a.y, a.w, a.h); ctx.restore();
+    }
+  }
+
   function drawEnemy(enemy) {
     if (enemy.dead) return;
+    if (enemy.isBoss) {
+      drawBoss(enemy);
+      return;
+    }
     ctx.save(); ctx.translate(-camX,0);
     const groundUnder = groundHeightAt(enemy.centerX());
     ctx.fillStyle = '#0003';
