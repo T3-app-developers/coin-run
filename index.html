@@ -34,17 +34,24 @@
   #celebration-screen .celebration-burst .star-e { top:40%; left:-4%; width:20px; height:20px; animation-delay:-0.9s; background:linear-gradient(135deg, #8ec5fc, #e0c3fc); }
   @keyframes floaty { 0% { transform:translateY(0); } 50% { transform:translateY(-10px); } 100% { transform:translateY(0); } }
   @keyframes twinkle { 0% { transform:scale(0.6) rotate(0deg); opacity:0; } 20% { opacity:0.9; } 50% { transform:scale(1.1) rotate(28deg); opacity:0.7; } 80% { opacity:0.9; } 100% { transform:scale(0.6) rotate(60deg); opacity:0; } }
-  #platform-select, #mode-select { position:fixed; inset:0; display:flex; align-items:center; justify-content:center; background:#000d; color:#fff; text-align:center; }
+  #platform-select, #mode-select, #biome-select { position:fixed; inset:0; display:flex; align-items:center; justify-content:center; background:#000d; color:#fff; text-align:center; }
   #platform-select { z-index:30; }
   #mode-select { z-index:20; }
-  #platform-select .card, #mode-select .card { background:#1f232a; border:1px solid #3a3f47; border-radius:18px; padding:28px 32px; max-width:520px; box-shadow:0 18px 60px #0008; }
-  #platform-select h1, #mode-select h1 { margin:0 0 12px 0; font-size:30px; }
-  #platform-select p, #mode-select p { margin:8px 0; opacity:0.85; }
+  #biome-select { z-index:25; }
+  #platform-select .card, #mode-select .card, #biome-select .card { background:#1f232a; border:1px solid #3a3f47; border-radius:18px; padding:28px 32px; max-width:780px; box-shadow:0 18px 60px #0008; }
+  #platform-select h1, #mode-select h1, #biome-select h1 { margin:0 0 12px 0; font-size:30px; }
+  #platform-select p, #mode-select p, #biome-select p { margin:8px 0; opacity:0.85; }
   .mode-buttons { display:flex; gap:16px; justify-content:center; margin-top:18px; flex-wrap:wrap; }
-  .mode-btn, .platform-btn { background:#2f3540; border:1px solid #4a5160; color:#fff; font-weight:600; padding:12px 26px; border-radius:999px; font-size:18px; cursor:pointer; transition:transform 0.15s ease, background 0.15s ease, box-shadow 0.15s ease; }
-  .mode-btn:hover, .platform-btn:hover { background:#3d4554; box-shadow:0 0 0 3px #ffffff12; transform:translateY(-2px); }
-  .mode-btn:active, .platform-btn:active { transform:translateY(0); background:#28303c; }
+  .mode-btn, .platform-btn, .biome-btn { background:#2f3540; border:1px solid #4a5160; color:#fff; font-weight:600; padding:12px 26px; border-radius:14px; font-size:18px; cursor:pointer; transition:transform 0.15s ease, background 0.15s ease, box-shadow 0.15s ease; }
+  .mode-btn:hover, .platform-btn:hover, .biome-btn:hover { background:#3d4554; box-shadow:0 0 0 3px #ffffff12; transform:translateY(-2px); }
+  .mode-btn:active, .platform-btn:active, .biome-btn:active { transform:translateY(0); background:#28303c; }
   .hidden { display:none !important; }
+  .biome-grid { display:grid; grid-template-columns:repeat(auto-fit, minmax(140px, 1fr)); gap:12px; margin-top:18px; }
+  .biome-btn { text-align:left; display:flex; flex-direction:column; gap:6px; align-items:flex-start; min-height:120px; }
+  .biome-btn small { opacity:0.78; font-weight:500; }
+  .biome-btn strong { display:block; font-size:20px; }
+  .biome-pill { display:inline-flex; gap:6px; align-items:center; background:#3a414d; border:1px solid #4a5160; padding:6px 10px; border-radius:999px; font-size:14px; }
+  .biome-pill .icon { font-size:18px; }
   canvas { display:block; width:100vw; height:100vh; image-rendering: pixelated; }
   #touch-controls { position:fixed; inset:auto 0 0 0; display:flex; justify-content:space-between; padding:18px 20px; pointer-events:none; z-index:15; }
   #touch-controls .cluster { display:flex; gap:14px; pointer-events:auto; flex-wrap:wrap; }
@@ -62,15 +69,15 @@
 <div id="ui">
   <div class="pill">Level: <span id="level-indicator" class="good">1</span></div>
   <div class="pill">P1 Coins: <span id="p1-coins" class="good">0</span></div>
-  <div class="pill">P1 Wood: <span id="p1-wood" class="warn">0</span></div>
+  <div class="pill">P1 <span id="p1-resource-label">Wood</span>: <span id="p1-wood" class="warn">0</span></div>
   <div class="pill">P1 Lives: <span id="p1-lives" class="good">3</span></div>
   <div class="pill">P1 Gun: <span id="p1-gun" class="warn">None</span></div>
   <div class="pill p2-pill">P2 Coins: <span id="p2-coins" class="good">0</span></div>
-  <div class="pill p2-pill">P2 Wood: <span id="p2-wood" class="warn">0</span></div>
+  <div class="pill p2-pill">P2 <span id="p2-resource-label">Wood</span>: <span id="p2-wood" class="warn">0</span></div>
   <div class="pill p2-pill">P2 Lives: <span id="p2-lives" class="good">3</span></div>
   <div class="pill p2-pill">P2 Gun: <span id="p2-gun" class="warn">None</span></div>
   <div class="pill">Timer: <span id="timer" class="good">0:00.0</span></div>
-  <div class="pill">Lava: <span id="lava" class="bad">20s</span></div>
+  <div class="pill">Hazard: <span id="lava" class="bad">20s</span></div>
   <div class="pill">Goal ▶</div>
 </div>
 
@@ -78,7 +85,7 @@
   <b>Controls</b><br>
   <b>Player 1</b> – Move: <b>A/D</b> · Jump: <b>W</b>/<b>Space</b> · Mine: <b>E</b> (hold) · Attack: <b>X</b> (laser: 3 hits for grunts, 10 for the boss) · Wall: <b>1</b> · Lava: <b>2</b><br>
   <span id="help-p2"><b>Player 2</b> – Move: <b>←/→</b> · Jump: <b>↑</b> · Mine: <b>/</b> (hold) · Attack: <b>.</b> (laser: 3 hits for grunts, 10 for the boss) · Wall: <b>[</b> · Lava: <b>]</b><br></span>
-  <span style="display:block; margin-top:8px; opacity:0.75;">Tip: the volcano erupts every 20 seconds and the dino boss at the goal needs ten laser hits &mdash; it must chomp you three times before you lose a life.</span>
+  <span id="biome-tip" style="display:block; margin-top:8px; opacity:0.75;">Tip: pick a biome to customize your run.</span>
   Restart: <b>R</b> &nbsp;|&nbsp; Toggle Hitboxes: <b>H</b>
 </div>
 
@@ -129,12 +136,21 @@
 <div id="mode-select" class="hidden">
   <div class="card">
     <h1>Choose Game Mode</h1>
-    <p>Play solo or grab a friend! This choice sticks until you reload the page. You can press <b>1</b> or <b>2</b> to choose quickly.</p>
+    <p>Play solo or grab a friend! This choice sticks until you reload the page. You can press <b>1</b> or <b>2</b> to choose quickly. You will pick a biome at the start of every run.</p>
     <div class="mode-buttons">
       <button class="mode-btn" data-mode="1">One Player</button>
       <button class="mode-btn" data-mode="2">Two Players</button>
     </div>
     <p style="margin-top:18px; font-size:14px; opacity:0.7;">You can press <b>R</b> anytime during a run to restart the current mode.</p>
+  </div>
+</div>
+
+<div id="biome-select" class="hidden">
+  <div class="card">
+    <h1>Pick a Biome</h1>
+    <p>Choose a place to run, mine, and face the boss. Each biome keeps the rules but changes the vibe.</p>
+    <div id="biome-buttons" class="biome-grid"></div>
+    <p id="biome-blurb" style="margin-top:14px; font-size:14px; opacity:0.78;">Every start gives you another chance to switch things up.</p>
   </div>
 </div>
 
@@ -207,9 +223,17 @@
   const platformButtons = platformSelect.querySelectorAll('.platform-btn');
   const modeSelect = document.getElementById('mode-select');
   const modeButtons = modeSelect.querySelectorAll('.mode-btn');
+  const biomeSelect = document.getElementById('biome-select');
+  const biomeButtonsWrap = document.getElementById('biome-buttons');
+  const biomeBlurb = document.getElementById('biome-blurb');
   const touchControls = document.getElementById('touch-controls');
   const helpP2 = document.getElementById('help-p2');
   const p2Pills = Array.from(document.querySelectorAll('.p2-pill'));
+  const biomeTip = document.getElementById('biome-tip');
+  const resourceLabels = {
+    p1: document.getElementById('p1-resource-label'),
+    p2: document.getElementById('p2-resource-label'),
+  };
   const deathScreen = document.getElementById('death-screen');
   const wahAudio = document.getElementById('wah-audio');
   if (wahAudio) wahAudio.volume = 0.55;
@@ -417,6 +441,188 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
   const BOSS_BITES_TO_RESPAWN = 3;
   const BOSS_BITE_COOLDOWN = 45;
 
+  const BASE_BIOME = {
+    id: 'volcano',
+    label: 'Volcano Valley',
+    icon: '🌋',
+    resourceName: 'Wood',
+    resourceIcon: '🪵',
+    hazardName: 'Volcano',
+    hazardVerb: 'erupts',
+    hazardNoun: 'volcano',
+    minedItem: 'wood',
+    blurb: 'Classic lava slopes and piney trees.',
+    characters: {
+      p1: { head: '#2fd06c', body: '#2f3b52' },
+      p2: { head: '#3fb5ff', body: '#233149' },
+    },
+    palette: {
+      skyTop: '#6ec6ff', skyBottom: '#bfeaff', hillColor: '#9ed39b',
+      turfTop: '#90e084', turfMid: '#66ba5d', turfBottom: '#447d3d', edge: '#2f4f2d',
+      frontTop: '#4b3a25', frontMid: '#3a2718', frontBottom: '#1f140b', strata: '#0002', blade: '#9ef79a',
+      silhouetteType: 'trees', silhouetteColor: '#2f6130',
+      goalFlag: '#ffd166',
+      hazardBodyLight: '#6d3e2c', hazardBodyMid: '#543121', hazardBodyDark: '#2d1c14', hazardSide: '#4a2b1e', hazardLipLight: '#8f5539', hazardLipDark: '#2c1a12', hazardCavityTop: '#361f15', hazardCavityBottom: '#120805', hazardSmoke: '#f3ede4', hazardGlow: '#ff842c', hazardRimGlow: '#ffd65e',
+      lavaRimTop: '#6fa95c', lavaRimBottom: '#35592d', lavaWallDark: '#1c2b16', lavaWallMid: '#3f5a29', lavaCavityTop: '#331b11', lavaCavityBottom: '#0f0603', lavaFillLight: '#ffb56b', lavaFillMid: '#ff6b3a', lavaFillDark: '#d62020', lavaStroke: '#ffd166', lavaGlow: '#ff6b3a55',
+      resourceTrunk: '#7c4f2a', resourceCanopy: '#3a7d3a', resourceAccent: '#3a7d3a',
+      wallPrimary: '#9399a3', wallStroke: '#747b85',
+      coinPrimary: '#ffd166', coinEdge: '#c9a44f',
+      bulletPrimary: '#ff9e64', bulletHighlight: '#ffd8b2',
+      enemyPrimary: '#7f3232', enemySecondary: '#c54c4c', enemyAccent: '#532626', enemyHead: '#ffb27d', enemyEyeDark: '#2b1a1a', enemyEyeLight: '#f6f1ce',
+      bossBody: '#32713b', bossBelly: '#4ca254', bossTail: '#28652f', bossHead: '#3c8f48', bossEyeDark: '#1c2b16', bossEyeLight: '#f6f1ce', bossTooth: '#fef9d6', bossLeg: '#215929', hpFill: '#9ef79a'
+    }
+  };
+
+  const BIOMES = {
+    ice: {
+      id: 'ice',
+      label: 'Ice',
+      icon: '❄️',
+      resourceName: 'Ice',
+      resourceIcon: '🧊',
+      hazardName: 'Frost Geyser',
+      hazardVerb: 'erupts',
+      hazardNoun: 'geyser',
+      minedItem: 'ice',
+      blurb: 'Crystalline tundra with freezing vents and frosty loot.',
+      characters: {
+        p1: { head: '#b8f1ff', body: '#3a5d7f' },
+        p2: { head: '#c3e6ff', body: '#2e4b6a' },
+      },
+      palette: {
+        skyTop: '#8fd3ff', skyBottom: '#e5f6ff', hillColor: '#c7e7ff',
+        turfTop: '#dff4ff', turfMid: '#b6d9f2', turfBottom: '#7ea4c4', edge: '#88a8c8',
+        frontTop: '#5b7b9a', frontMid: '#3e5872', frontBottom: '#1c2f46', blade: '#eff8ff',
+        silhouetteType: 'ice', silhouetteColor: '#b5d9f5',
+        hazardBodyLight: '#78a6c8', hazardBodyMid: '#5c84a3', hazardBodyDark: '#2f4e69', hazardSide: '#2f4e69', hazardLipLight: '#c1e2ff', hazardLipDark: '#24405b', hazardCavityTop: '#28435d', hazardCavityBottom: '#0f1e2d', hazardSmoke: '#f5fbff', hazardGlow: '#a8dbff', hazardRimGlow: '#dff3ff',
+        lavaRimTop: '#cbe7ff', lavaRimBottom: '#7aa7c8', lavaWallDark: '#1f3649', lavaWallMid: '#3f617f', lavaCavityTop: '#1a2e40', lavaCavityBottom: '#0c1724', lavaFillLight: '#b7e8ff', lavaFillMid: '#6ad1ff', lavaFillDark: '#2f9dd9', lavaStroke: '#dff7ff', lavaGlow: '#8ecff9',
+        resourceTrunk: '#9ac9f5', resourceCanopy: '#d7f0ff', resourceAccent: '#bcdfff',
+        wallPrimary: '#b3cde5', wallStroke: '#90abc7',
+        bulletPrimary: '#7bd3ff', bulletHighlight: '#e4f7ff',
+        enemyPrimary: '#4f708a', enemySecondary: '#6f96b6', enemyAccent: '#a8cbea', enemyHead: '#d7eaff', enemyEyeDark: '#1c2733', enemyEyeLight: '#f1fbff',
+        bossBody: '#4f7b92', bossBelly: '#6ba3bb', bossTail: '#365a74', bossHead: '#375971', bossEyeDark: '#102032', bossEyeLight: '#e6f6ff', bossTooth: '#e8f5ff', bossLeg: '#2e4d64', hpFill: '#a9e2ff'
+      }
+    },
+    city: {
+      id: 'city',
+      label: 'City',
+      icon: '🏙️',
+      resourceName: 'Concrete',
+      resourceIcon: '🧱',
+      hazardName: 'Steam Stack',
+      hazardVerb: 'bursts',
+      hazardNoun: 'stack',
+      minedItem: 'concrete',
+      blurb: 'Industrial skyline, street lights, and hot vents from the undercity.',
+      characters: {
+        p1: { head: '#ffd166', body: '#3a3e4a' },
+        p2: { head: '#a6c1ff', body: '#2c3341' },
+      },
+      palette: {
+        skyTop: '#7f9abf', skyBottom: '#c5d4e8', hillColor: '#9fb4c9',
+        turfTop: '#b0b7c4', turfMid: '#8f97a4', turfBottom: '#6c727d', edge: '#59606d',
+        frontTop: '#4a4f59', frontMid: '#363a42', frontBottom: '#1f2228', blade: '#d5deea',
+        silhouetteType: 'city', silhouetteColor: '#556072',
+        hazardBodyLight: '#7b7f8a', hazardBodyMid: '#5b5f69', hazardBodyDark: '#30323a', hazardSide: '#2b2e35', hazardLipLight: '#d9dce3', hazardLipDark: '#1f232b', hazardCavityTop: '#2d3139', hazardCavityBottom: '#0f1218', hazardSmoke: '#e6f0ff', hazardGlow: '#ffcc7a', hazardRimGlow: '#ffe0a6',
+        lavaRimTop: '#a2a9b8', lavaRimBottom: '#5a5f6b', lavaWallDark: '#1f242d', lavaWallMid: '#3b424f', lavaCavityTop: '#242a35', lavaCavityBottom: '#0b0e14', lavaFillLight: '#ffd98a', lavaFillMid: '#ff9f46', lavaFillDark: '#d8572b', lavaStroke: '#ffe9b8', lavaGlow: '#ffb97a66',
+        resourceTrunk: '#7f8791', resourceCanopy: '#b8c0cc', resourceAccent: '#9099a8',
+        wallPrimary: '#9aa3b3', wallStroke: '#7a8291',
+        bulletPrimary: '#ffd98a', bulletHighlight: '#fff0c4',
+        enemyPrimary: '#5c4e6b', enemySecondary: '#8a6ad3', enemyAccent: '#403452', enemyHead: '#c8b7dd', enemyEyeDark: '#1d1826', enemyEyeLight: '#f1e6ff',
+        bossBody: '#4b5568', bossBelly: '#6a7891', bossTail: '#323848', bossHead: '#5b6b83', bossEyeDark: '#0f1117', bossEyeLight: '#f8f2ff', bossTooth: '#f5f5ff', bossLeg: '#323845', hpFill: '#ffd98a'
+      }
+    },
+    sand: {
+      id: 'sand',
+      label: 'Sand',
+      icon: '🏜️',
+      resourceName: 'Sandcastle',
+      resourceIcon: '🏰',
+      hazardName: 'Glass Dune',
+      hazardVerb: 'erupts',
+      hazardNoun: 'dune',
+      minedItem: 'sandcastle',
+      blurb: 'Sun-baked dunes, sandstone arches, and shimmering heat vents.',
+      characters: {
+        p1: { head: '#ffd38c', body: '#704c2e' },
+        p2: { head: '#ffe9b0', body: '#8a5b32' },
+      },
+      palette: {
+        skyTop: '#f3c27c', skyBottom: '#ffe7c1', hillColor: '#e2b76a',
+        turfTop: '#f5d19a', turfMid: '#e0b86e', turfBottom: '#c38b3a', edge: '#a26f28',
+        frontTop: '#c37c3a', frontMid: '#a4632c', frontBottom: '#5d3616', blade: '#fff4d3',
+        silhouetteType: 'dunes', silhouetteColor: '#d5a75b',
+        hazardBodyLight: '#d78d46', hazardBodyMid: '#ae6c2f', hazardBodyDark: '#6d3f19', hazardSide: '#7a4b21', hazardLipLight: '#f3d3a3', hazardLipDark: '#5a3519', hazardCavityTop: '#6a3818', hazardCavityBottom: '#2d1607', hazardSmoke: '#ffe8c2', hazardGlow: '#ffb86b', hazardRimGlow: '#ffdba6',
+        lavaRimTop: '#f6d7a1', lavaRimBottom: '#c48b41', lavaWallDark: '#4e2e12', lavaWallMid: '#825024', lavaCavityTop: '#4f2a12', lavaCavityBottom: '#221107', lavaFillLight: '#ffd480', lavaFillMid: '#ff9f3f', lavaFillDark: '#d45a2c', lavaStroke: '#ffe0a6', lavaGlow: '#ffba7a55',
+        resourceTrunk: '#c8923a', resourceCanopy: '#f3d9a5', resourceAccent: '#e6bd72',
+        wallPrimary: '#d6b57a', wallStroke: '#9c7a3f',
+        bulletPrimary: '#ffc176', bulletHighlight: '#ffe8bf',
+        enemyPrimary: '#7c4f2a', enemySecondary: '#d78d46', enemyAccent: '#4b2c16', enemyHead: '#f4d1a5', enemyEyeDark: '#2a1a10', enemyEyeLight: '#fff4d6',
+        bossBody: '#a06734', bossBelly: '#d18b4b', bossTail: '#7b4c25', bossHead: '#c37a3c', bossEyeDark: '#2a180d', bossEyeLight: '#ffe7c0', bossTooth: '#ffe9c6', bossLeg: '#7b4c25', hpFill: '#ffd98a'
+      }
+    },
+    water: {
+      id: 'water',
+      label: 'Water',
+      icon: '🌊',
+      resourceName: 'Fish Cake',
+      resourceIcon: '🍣',
+      hazardName: 'Geothermal Vent',
+      hazardVerb: 'erupts',
+      hazardNoun: 'vent',
+      minedItem: 'fish cake',
+      blurb: 'Underwater ruins, kelp silhouettes, and vents of steaming bubbles.',
+      characters: {
+        p1: { head: '#9bf0ff', body: '#1f5e6c' },
+        p2: { head: '#d9fff4', body: '#2c7a86' },
+      },
+      palette: {
+        skyTop: '#6fd2e8', skyBottom: '#c1f3ff', hillColor: '#7bd0d9',
+        turfTop: '#9be0d7', turfMid: '#55b8b5', turfBottom: '#2d6f78', edge: '#1f515a',
+        frontTop: '#3a6b73', frontMid: '#264d53', frontBottom: '#132b2e', blade: '#d6fbf6',
+        silhouetteType: 'kelp', silhouetteColor: '#3b8c80',
+        hazardBodyLight: '#3a92a0', hazardBodyMid: '#2c6c77', hazardBodyDark: '#123b45', hazardSide: '#1d4f59', hazardLipLight: '#8ae2e3', hazardLipDark: '#0f323a', hazardCavityTop: '#103642', hazardCavityBottom: '#04171d', hazardSmoke: '#e6fcff', hazardGlow: '#8be7ff', hazardRimGlow: '#c5f7ff',
+        lavaRimTop: '#8fdfe3', lavaRimBottom: '#2f6c7c', lavaWallDark: '#0e2a33', lavaWallMid: '#1b4a56', lavaCavityTop: '#0d2831', lavaCavityBottom: '#031419', lavaFillLight: '#5de1ff', lavaFillMid: '#22b2d1', lavaFillDark: '#107a9c', lavaStroke: '#c8f6ff', lavaGlow: '#5de1ff55',
+        resourceTrunk: '#2c7a86', resourceCanopy: '#8bf2de', resourceAccent: '#c6fff0',
+        wallPrimary: '#5f9fb0', wallStroke: '#3c6d7a',
+        bulletPrimary: '#8bf1ff', bulletHighlight: '#e9ffff',
+        enemyPrimary: '#2d6f78', enemySecondary: '#55b8b5', enemyAccent: '#18444c', enemyHead: '#b8f4f8', enemyEyeDark: '#0c262c', enemyEyeLight: '#e6ffff',
+        bossBody: '#2f7c8c', bossBelly: '#4cc0c1', bossTail: '#1f5965', bossHead: '#2a7080', bossEyeDark: '#0a1d25', bossEyeLight: '#d6ffff', bossTooth: '#eaffff', bossLeg: '#1f5965', hpFill: '#8bf2de'
+      }
+    },
+    space: {
+      id: 'space',
+      label: 'Space',
+      icon: '🪐',
+      resourceName: 'Meteor',
+      resourceIcon: '☄️',
+      hazardName: 'Impact Crater',
+      hazardVerb: 'pulses',
+      hazardNoun: 'crater',
+      minedItem: 'meteor',
+      blurb: 'Star-speckled sky, lunar rock, and a crater that occasionally rumbles.',
+      characters: {
+        p1: { head: '#e6d3ff', body: '#3a2a5b' },
+        p2: { head: '#c4b0ff', body: '#4c2f6e' },
+      },
+      palette: {
+        skyTop: '#1e1236', skyBottom: '#4c2a5f', hillColor: '#2f1d45',
+        turfTop: '#5a3b7a', turfMid: '#4a2f66', turfBottom: '#331f48', edge: '#261637',
+        frontTop: '#2f1b44', frontMid: '#221433', frontBottom: '#140a21', blade: '#ccb9f8',
+        silhouetteType: 'craters', silhouetteColor: '#3d2855',
+        hazardBodyLight: '#60418a', hazardBodyMid: '#4c326f', hazardBodyDark: '#2c1d43', hazardSide: '#35234f', hazardLipLight: '#9576c0', hazardLipDark: '#241638', hazardCavityTop: '#241738', hazardCavityBottom: '#0d0818', hazardSmoke: '#e9d9ff', hazardGlow: '#b287ff', hazardRimGlow: '#e3c6ff',
+        lavaRimTop: '#7b5aa6', lavaRimBottom: '#3d275b', lavaWallDark: '#1a0f2c', lavaWallMid: '#2c1b3f', lavaCavityTop: '#190f29', lavaCavityBottom: '#0b0616', lavaFillLight: '#b15cff', lavaFillMid: '#7535d6', lavaFillDark: '#3b187f', lavaStroke: '#f1ddff', lavaGlow: '#b15cff55',
+        resourceTrunk: '#5c3f7a', resourceCanopy: '#c2a4ff', resourceAccent: '#8b6dd6',
+        wallPrimary: '#7b5aa6', wallStroke: '#563b7a',
+        bulletPrimary: '#cfb1ff', bulletHighlight: '#f4e8ff',
+        enemyPrimary: '#4a2f6e', enemySecondary: '#7b5aa6', enemyAccent: '#2a1a3f', enemyHead: '#d9c3ff', enemyEyeDark: '#140c1f', enemyEyeLight: '#f3eaff',
+        bossBody: '#5b3c82', bossBelly: '#8c66c5', bossTail: '#3b245a', bossHead: '#7448a8', bossEyeDark: '#0e0717', bossEyeLight: '#f3eaff', bossTooth: '#f4e8ff', bossLeg: '#3b245a', hpFill: '#cfb1ff'
+      }
+    },
+  };
+
+  const DEFAULT_BIOME_ID = 'ice';
+
   const VOLCANO_STEPS = 12;
   const VOLCANO_STEP_HEIGHT = 12;
   const VOLCANO_CRATER_WIDTH = TILE * 3;
@@ -439,6 +645,9 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
   // game state
   let platformMode = null;
   let gameMode = null;
+  let activeBiomeId = null;
+  let activeBiome = null;
+  let pendingBiomeReset = false;
   let keys = {};
   let debugShowHit = false;
   let finished = false;
@@ -453,6 +662,90 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
   }
 
   updateModeHud(false);
+
+  const biomeEntries = Object.values(BIOMES);
+
+  function mergeBiomeConfig(config) {
+    const palette = { ...BASE_BIOME.palette, ...(config && config.palette ? config.palette : {}) };
+    const characters = { ...BASE_BIOME.characters, ...(config && config.characters ? config.characters : {}) };
+    return { ...BASE_BIOME, ...(config || {}), palette, characters };
+  }
+
+  function ensureActiveBiome(id = activeBiomeId) {
+    const resolved = mergeBiomeConfig(BIOMES[id] || BIOMES[DEFAULT_BIOME_ID] || BASE_BIOME);
+    activeBiomeId = resolved.id;
+    activeBiome = resolved;
+    return resolved;
+  }
+
+  function palette() {
+    return ensureActiveBiome().palette;
+  }
+
+  function updateBiomeTip() {
+    const b = ensureActiveBiome();
+    const interval = Math.round(VOLCANO_ERUPTION_INTERVAL / 60);
+    if (biomeTip) biomeTip.textContent = `Tip: the ${b.hazardNoun.toLowerCase()} ${b.hazardVerb} every ${interval} seconds and the dino boss at the goal needs ten laser hits — it must chomp you three times before you lose a life.`;
+  }
+
+  function updateResourceLabels() {
+    const b = ensureActiveBiome();
+    if (resourceLabels.p1) resourceLabels.p1.textContent = b.resourceName;
+    if (resourceLabels.p2) resourceLabels.p2.textContent = b.resourceName;
+  }
+
+  function describeBiome(b) {
+    return `${b.icon} ${b.label} mines ${b.resourceName} and faces a ${b.hazardName.toLowerCase()}.`;
+  }
+
+  function chooseBiome(id) {
+    ensureActiveBiome(id);
+    updateBiomeTip();
+    updateResourceLabels();
+    if (biomeBlurb && activeBiome) biomeBlurb.textContent = describeBiome(activeBiome);
+    if (biomeSelect) {
+      biomeSelect.classList.add('hidden');
+      biomeSelect.style.display = 'none';
+    }
+    pendingBiomeReset = false;
+    resetLevel();
+  }
+
+  function showBiomeSelect() {
+    pendingBiomeReset = true;
+    if (!biomeSelect) { resetLevel(); return; }
+    keys = {};
+    clearVirtualInputs();
+    biomeSelect.classList.remove('hidden');
+    biomeSelect.style.display = 'flex';
+    updateBiomeTip();
+    if (biomeBlurb) {
+      const next = ensureActiveBiome();
+      biomeBlurb.textContent = describeBiome(next);
+    }
+  }
+
+  function buildBiomeButtons() {
+    if (!biomeButtonsWrap) return;
+    biomeButtonsWrap.innerHTML = '';
+    biomeEntries.forEach(b => {
+      const btn = document.createElement('button');
+      btn.className = 'biome-btn';
+      btn.type = 'button';
+      btn.dataset.biome = b.id;
+      btn.innerHTML = `
+        <strong>${b.icon} ${b.label}</strong>
+        <small>${b.hazardName} · mines ${b.resourceName}</small>
+        <span class="biome-pill"><span class="icon">${b.resourceIcon}</span>${b.resourceName}</span>
+      `;
+      btn.addEventListener('click', () => chooseBiome(b.id));
+      biomeButtonsWrap.appendChild(btn);
+    });
+  }
+
+  buildBiomeButtons();
+  updateResourceLabels();
+  updateBiomeTip();
 
   const VIRTUAL_KEY_ALIASES = {
     space: ' ',
@@ -479,7 +772,7 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
         if (levelIndex < LEVELS.length - 1) levelIndex += 1;
         else levelIndex = 0;
       }
-      resetLevel();
+      showBiomeSelect();
       return;
     }
     if (key === 'h' || key === 'H') { debugShowHit = !debugShowHit; }
@@ -560,7 +853,7 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
     levelIndex = 0;
     updateModeHud(gameMode === 2);
     modeSelect.style.display = 'none';
-    resetLevel();
+    showBiomeSelect();
   }
 
   modeButtons.forEach(btn => {
@@ -617,12 +910,14 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
   }
 
   class Tree {
-    constructor(x) {
+    constructor(x, biome = null) {
       this.x = x;
-      this.w = 30;
-      this.h = 100;
+      const style = biome?.resourceNode || {};
+      this.variant = biome?.id || 'default';
+      this.w = style.w || 30;
+      this.h = style.h || 100;
       this.baseY = GROUND_Y - this.h;
-      this.hp = 3; // number of "chunks"
+      this.hp = style.hp || 3; // number of "chunks"
       this.progress = 0; // chopping progress per segment
       this.dead = false;
     }
@@ -645,6 +940,8 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
       this.h = options.height ?? LAVA_HEIGHT;
       this.rim = options.rim ?? LAVA_RIM;
       this.theme = options.theme ?? 'grass';
+      this.palette = options.palette || null;
+      this.variant = options.variant || null;
       const surface = options.surfaceY ?? (GROUND_Y + this.depth - this.h);
       this.y = surface;
       this.baseY = surface;
@@ -653,7 +950,7 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
     aabb() { return {x:this.x, y:this.y, w:this.w, h:this.h}; }
   }
 
-  function createVolcano(baseX) {
+  function createVolcano(baseX, biome = activeBiome) {
     const margin = TILE * 2;
     const slopeWidth = VOLCANO_STEPS * TILE;
     const clampedBase = clamp(baseX, 240, Math.max(240, levelLength - VOLCANO_WIDTH - 240));
@@ -669,7 +966,9 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
       depth: VOLCANO_CRATER_DEPTH,
       height: VOLCANO_LAVA_HEIGHT,
       rim: VOLCANO_LAVA_RIM,
-      theme: 'volcano'
+      theme: biome?.id || 'volcano',
+      palette: biome?.palette,
+      variant: 'hazard'
     });
     lava.baseY = lava.y;
     const volcanoObj = {
@@ -683,6 +982,7 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
       lipLeft,
       lipRight,
       lava,
+      biome,
       safeMin: clampedBase - margin,
       safeMax: clampedBase + VOLCANO_WIDTH + margin,
       eruptionTimer: VOLCANO_ERUPTION_INTERVAL,
@@ -888,14 +1188,15 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
 
   function updateVolcanoHud() {
     if (!uiLavaStatus) return;
+    const hazardLabel = ensureActiveBiome().hazardName || 'Hazard';
     if (!volcano) {
-      uiLavaStatus.textContent = 'calm';
+      uiLavaStatus.textContent = hazardLabel;
       uiLavaStatus.classList.remove('warn', 'bad');
       uiLavaStatus.classList.add('good');
       return;
     }
     if (volcano.isErupting) {
-      uiLavaStatus.textContent = 'eruption!';
+      uiLavaStatus.textContent = `${hazardLabel}!`;
       uiLavaStatus.classList.add('bad');
       uiLavaStatus.classList.remove('good', 'warn');
       return;
@@ -954,6 +1255,10 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
 
   function resetLevel() {
     if (!gameMode) return;
+    if (pendingBiomeReset || !activeBiome) { showBiomeSelect(); return; }
+    ensureActiveBiome();
+    updateResourceLabels();
+    updateBiomeTip();
     hideDeathScreen(true);
     configureLevelDimensions();
     finished = false;
@@ -969,13 +1274,14 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
     coins = [];
     enemies = [];
     bullets = [];
-    volcano = createVolcano(tileX(levelLength * 0.55));
+    volcano = createVolcano(tileX(levelLength * 0.55), activeBiome);
     updateVolcanoHud();
+    const chars = activeBiome.characters || BASE_BIOME.characters;
     players = [
       new Player(100, GROUND_Y - 34, {
         label: 'P1',
-        headColor: '#2fd06c',
-        bodyColor: '#2f3b52',
+        headColor: chars.p1?.head || '#2fd06c',
+        bodyColor: chars.p1?.body || '#2f3b52',
         controls: {
           left: ['a','A'],
           right: ['d','D'],
@@ -990,8 +1296,8 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
     if (gameMode === 2) {
       players.push(new Player(160, GROUND_Y - 34, {
         label: 'P2',
-        headColor: '#3fb5ff',
-        bodyColor: '#233149',
+        headColor: chars.p2?.head || '#3fb5ff',
+        bodyColor: chars.p2?.body || '#233149',
         controls: {
           left: ['ArrowLeft'],
           right: ['ArrowRight'],
@@ -1017,7 +1323,7 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
         attempts++;
       } while (volcano && x > volcano.safeMin && x < volcano.safeMax && attempts < 8);
       if (volcano && x > volcano.safeMin && x < volcano.safeMax) continue;
-      trees.push(new Tree(x));
+      trees.push(new Tree(x, activeBiome));
     }
     // sprinkle a few natural hazards
     for (let i=0; i<6; i++) {
@@ -1028,7 +1334,7 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
         attempts++;
       } while (volcano && x > volcano.safeMin - TILE && x < volcano.safeMax + TILE && attempts < 12);
       if (volcano && x > volcano.safeMin - TILE && x < volcano.safeMax + TILE) continue;
-      lavas.push(new Lava(tileX(x)));
+      lavas.push(new Lava(tileX(x), { theme: activeBiome.id, palette: activeBiome.palette }));
     }
     if (volcano) {
       lavas.push(volcano.lava);
@@ -1125,7 +1431,7 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
     const tx = tileX(ahead);
     const ty = LAVA_SURFACE_Y;
     if (!spaceFreeForLava(tx, ty)) return;
-    lavas.push(new Lava(tx));
+    lavas.push(new Lava(tx, { theme: activeBiome?.id, palette: activeBiome?.palette }));
     player.wood -= 1;
     updateUI();
   }
@@ -1205,7 +1511,7 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
     player.dinoBites = 0;
     if (player.lives <= 0) {
       updateUI();
-      resetLevel();
+      showBiomeSelect();
       return true;
     }
     if (player.coins > 0) player.coins -= 1;
@@ -1447,7 +1753,8 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
       if (!bossAlive && players.every(p => p.finished)) {
         finished = true;
         finishDuration = elapsedTime;
-        const summary = players.map(p => `${p.label}: Coins <b>${p.coins}</b> · Wood <b>${p.wood}</b> · Deaths <b>${p.deaths}</b>`).join('<br>');
+        const resourceLabel = ensureActiveBiome().resourceName || 'Resource';
+        const summary = players.map(p => `${p.label}: Coins <b>${p.coins}</b> · ${resourceLabel} <b>${p.wood}</b> · Deaths <b>${p.deaths}</b>`).join('<br>');
         const config = LEVELS[levelIndex] || LEVELS[0];
         const isFinalLevel = levelIndex >= LEVELS.length - 1;
         const nextConfig = LEVELS[levelIndex + 1];
@@ -1523,17 +1830,18 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
 
   // ===== drawing =====
   function drawGround() {
+    const pal = palette();
     // sky
     const grd = ctx.createLinearGradient(0,0,0,H);
-    grd.addColorStop(0,'#6ec6ff');
-    grd.addColorStop(1,'#bfeaff');
+    grd.addColorStop(0, pal.skyTop || '#6ec6ff');
+    grd.addColorStop(1, pal.skyBottom || '#bfeaff');
     ctx.fillStyle = grd;
     ctx.fillRect(0,0,W,H);
 
     // far hills
     ctx.save();
     ctx.translate(-camX*0.3,0);
-    ctx.fillStyle = '#9ed39b';
+    ctx.fillStyle = pal.hillColor || '#9ed39b';
     const hillSpacing = 500;
     const hillCount = Math.ceil((levelLength + W) / hillSpacing);
     for (let i=0;i<hillCount;i++){
@@ -1554,31 +1862,31 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
     ctx.translate(-camX,0);
     const turfTop = GROUND_Y - GROUND_SURFACE;
     const turfGrad = ctx.createLinearGradient(0, turfTop, 0, GROUND_Y + 4);
-    turfGrad.addColorStop(0, '#90e084');
-    turfGrad.addColorStop(0.45, '#66ba5d');
-    turfGrad.addColorStop(1, '#447d3d');
+    turfGrad.addColorStop(0, pal.turfTop || '#90e084');
+    turfGrad.addColorStop(0.45, pal.turfMid || '#66ba5d');
+    turfGrad.addColorStop(1, pal.turfBottom || '#447d3d');
     ctx.fillStyle = turfGrad;
     ctx.fillRect(0, turfTop, levelLength, GROUND_SURFACE + 4);
-    ctx.fillStyle = '#2f4f2d';
+    ctx.fillStyle = pal.edge || '#2f4f2d';
     ctx.fillRect(0, GROUND_Y - 2, levelLength, 2);
     ctx.fillStyle = '#0003';
     ctx.fillRect(0, GROUND_Y, levelLength, 2);
 
     const frontGrad = ctx.createLinearGradient(0, GROUND_Y, 0, H);
-    frontGrad.addColorStop(0, '#4b3a25');
-    frontGrad.addColorStop(0.5, '#3a2718');
-    frontGrad.addColorStop(1, '#1f140b');
+    frontGrad.addColorStop(0, pal.frontTop || '#4b3a25');
+    frontGrad.addColorStop(0.5, pal.frontMid || '#3a2718');
+    frontGrad.addColorStop(1, pal.frontBottom || '#1f140b');
     ctx.fillStyle = frontGrad;
     ctx.fillRect(0, GROUND_Y, levelLength, H-GROUND_Y);
 
     // subtle stratified dirt lines
-    ctx.fillStyle = '#0002';
+    ctx.fillStyle = pal.strata || '#0002';
     for (let y = GROUND_Y + 18; y < H; y += 26) {
       ctx.fillRect(0, y, levelLength, 4);
     }
 
     // grass blades
-    ctx.strokeStyle = '#9ef79a';
+    ctx.strokeStyle = pal.blade || '#9ef79a';
     ctx.lineWidth = 1;
     for (let x=0; x<levelLength; x+=8) {
       const gx = x + Math.sin((x+performance.now()*0.002)*0.1)*1.2;
@@ -1590,13 +1898,78 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
     // goal flag
     ctx.fillStyle = '#333';
     ctx.fillRect(goalX, GROUND_Y-60, 4, 60);
-    ctx.fillStyle = '#ffd166';
+    ctx.fillStyle = pal.goalFlag || '#ffd166';
     ctx.beginPath();
     ctx.moveTo(goalX+4, GROUND_Y-56);
     ctx.lineTo(goalX+54, GROUND_Y-46);
     ctx.lineTo(goalX+4, GROUND_Y-36);
     ctx.closePath();
     ctx.fill();
+    ctx.restore();
+  }
+
+  function drawBackdrop() {
+    const pal = palette();
+    ctx.save(); ctx.translate(-camX*0.6,0);
+    const silhouetteColor = pal.silhouetteColor || '#2f6130';
+    ctx.fillStyle = silhouetteColor;
+    const silhouetteSpacing = 220;
+    const silhouetteCount = Math.ceil((levelLength + W) / silhouetteSpacing);
+    for (let i=0;i<silhouetteCount;i++){
+      const x = i*silhouetteSpacing + 100;
+      const type = pal.silhouetteType || 'trees';
+      if (type === 'city') {
+        const base = GROUND_Y;
+        const widths = [50, 36, 28];
+        widths.forEach((w, idx) => {
+          const h = 60 + (idx * 18) + (i % 2 === 0 ? 12 : 0);
+          ctx.fillRect(x + idx * 26, base - h, w, h);
+        });
+      } else if (type === 'ice') {
+        ctx.beginPath();
+        ctx.moveTo(x, GROUND_Y);
+        ctx.lineTo(x + 24, GROUND_Y - 80);
+        ctx.lineTo(x + 48, GROUND_Y);
+        ctx.closePath();
+        ctx.fill();
+        ctx.fillRect(x + 18, GROUND_Y - 50, 12, 50);
+      } else if (type === 'dunes') {
+        ctx.beginPath();
+        ctx.moveTo(x - 40, GROUND_Y);
+        ctx.quadraticCurveTo(x + 20, GROUND_Y - 40, x + 80, GROUND_Y);
+        ctx.lineTo(x + 80, GROUND_Y + 30);
+        ctx.lineTo(x - 40, GROUND_Y + 30);
+        ctx.closePath();
+        ctx.fill();
+      } else if (type === 'kelp') {
+        const stemH = 90;
+        ctx.beginPath();
+        ctx.moveTo(x, GROUND_Y);
+        ctx.quadraticCurveTo(x + 12, GROUND_Y - stemH * 0.4, x - 6, GROUND_Y - stemH);
+        ctx.quadraticCurveTo(x + 10, GROUND_Y - stemH * 0.6, x + 4, GROUND_Y - stemH * 0.2);
+        ctx.lineTo(x + 8, GROUND_Y);
+        ctx.closePath();
+        ctx.fill();
+      } else if (type === 'craters') {
+        ctx.beginPath();
+        ctx.ellipse(x + 24, GROUND_Y - 12, 46, 22, 0, 0, Math.PI*2);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.ellipse(x + 18, GROUND_Y - 22, 18, 10, 0, 0, Math.PI*2);
+        ctx.fill();
+        ctx.globalAlpha = 0.6;
+        ctx.fillRect(x + 8, GROUND_Y - 140, 3, 3);
+        ctx.fillRect(x + 42, GROUND_Y - 120, 2, 2);
+        ctx.fillRect(x - 12, GROUND_Y - 100, 2, 2);
+        ctx.globalAlpha = 1;
+      } else {
+        ctx.fillRect(x+14, GROUND_Y-70, 12, 70);
+        ctx.beginPath();
+        ctx.roundRect(x, GROUND_Y-110, 40, 30, 10); ctx.fill();
+        ctx.beginPath();
+        ctx.roundRect(x-6, GROUND_Y-90, 52, 34, 12); ctx.fill();
+      }
+    }
     ctx.restore();
   }
 
@@ -1608,11 +1981,12 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
     const baseY = GROUND_Y;
     const rimY = v.rimY;
     const smokeSeed = performance.now() * 0.0015;
+    const pal = (v.biome && v.biome.palette) ? v.biome.palette : palette();
 
     const bodyGrad = ctx.createLinearGradient(0, rimY, 0, baseY + 80);
-    bodyGrad.addColorStop(0, '#6d3e2c');
-    bodyGrad.addColorStop(0.5, '#543121');
-    bodyGrad.addColorStop(1, '#2d1c14');
+    bodyGrad.addColorStop(0, pal.hazardBodyLight || '#6d3e2c');
+    bodyGrad.addColorStop(0.5, pal.hazardBodyMid || '#543121');
+    bodyGrad.addColorStop(1, pal.hazardBodyDark || '#2d1c14');
     ctx.fillStyle = bodyGrad;
     ctx.beginPath();
     ctx.moveTo(v.x, baseY);
@@ -1622,7 +1996,7 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
     ctx.closePath();
     ctx.fill();
 
-    ctx.fillStyle = '#4a2b1e';
+    ctx.fillStyle = pal.hazardSide || '#4a2b1e';
     ctx.beginPath();
     ctx.moveTo(v.x, baseY);
     ctx.lineTo(v.lipLeft, rimY);
@@ -1638,27 +2012,29 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
 
     const cavityBottom = baseY + v.lava.depth + 40;
     const cavityGrad = ctx.createLinearGradient(0, rimY, 0, cavityBottom);
-    cavityGrad.addColorStop(0, '#361f15');
-    cavityGrad.addColorStop(1, '#120805');
+    cavityGrad.addColorStop(0, pal.hazardCavityTop || '#361f15');
+    cavityGrad.addColorStop(1, pal.hazardCavityBottom || '#120805');
     ctx.fillStyle = cavityGrad;
     ctx.fillRect(v.craterX, rimY, v.craterWidth, cavityBottom - rimY);
 
-    ctx.fillStyle = '#8f5539';
+    ctx.fillStyle = pal.hazardLipLight || '#8f5539';
     ctx.fillRect(v.lipLeft - 6, rimY - 6, (v.lipRight - v.lipLeft) + 12, 6);
-    ctx.fillStyle = '#2c1a12';
+    ctx.fillStyle = pal.hazardLipDark || '#2c1a12';
     ctx.fillRect(v.lipLeft - 4, rimY - 2, (v.lipRight - v.lipLeft) + 8, 4);
 
     if (v.isErupting || v.explosionPulse > 0.01) {
       const intensity = v.isErupting ? 1 : v.explosionPulse;
-      ctx.fillStyle = `rgba(255, 132, 76, ${0.3 * intensity})`;
+      const glowTone = pal.hazardGlow || '#ff842c';
+      const rimTone = pal.hazardRimGlow || '#ffd65e';
+      ctx.fillStyle = `${glowTone}${Math.round(0.3 * intensity * 255).toString(16).padStart(2,'0')}`;
       ctx.beginPath();
       ctx.ellipse(v.craterX + v.craterWidth/2, rimY - 40, 120, 60, 0, 0, Math.PI*2);
       ctx.fill();
-      ctx.fillStyle = `rgba(255, 214, 94, ${0.4 * intensity})`;
+      ctx.fillStyle = `${rimTone}${Math.round(0.4 * intensity * 255).toString(16).padStart(2,'0')}`;
       ctx.fillRect(v.craterX, rimY - 6, v.craterWidth, 6);
     }
 
-    ctx.strokeStyle = '#3b2419';
+    ctx.strokeStyle = pal.hazardSide || '#3b2419';
     ctx.lineWidth = 2;
     for (let i=1; i<=VOLCANO_STEPS; i++) {
       const t = i / VOLCANO_STEPS;
@@ -1678,7 +2054,7 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
       ctx.globalAlpha = alpha;
       const sx = v.craterX + v.craterWidth/2 + Math.sin(smokeSeed + i*0.6) * 20;
       const sy = rimY - 24 - i * 20 - Math.cos(smokeSeed*1.3 + i) * 6;
-      ctx.fillStyle = '#f3ede4';
+      ctx.fillStyle = pal.hazardSmoke || '#f3ede4';
       ctx.beginPath();
       ctx.ellipse(sx, sy, 28 - i*3, 14 - i*2, 0, 0, Math.PI*2);
       ctx.fill();
@@ -1697,17 +2073,84 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
     if (tr.dead) return;
     ctx.save();
     ctx.translate(-camX,0);
-    // trunk
-    ctx.fillStyle = '#7c4f2a';
-    ctx.fillRect(tr.x + 10, tr.baseY + 30, 10, tr.h - 30);
-    // canopy
-    ctx.fillStyle = '#3a7d3a';
-    ctx.beginPath();
-    ctx.roundRect(tr.x, tr.baseY, tr.w, 40, 10);
-    ctx.fill();
-    ctx.beginPath();
-    ctx.roundRect(tr.x-6, tr.baseY+18, tr.w+12, 34, 12);
-    ctx.fill();
+    const pal = palette();
+    const trunk = pal.resourceTrunk || '#7c4f2a';
+    const canopy = pal.resourceCanopy || '#3a7d3a';
+    const accent = pal.resourceAccent || canopy;
+    const type = tr.variant || 'default';
+
+    if (type === 'ice') {
+      ctx.fillStyle = canopy;
+      ctx.beginPath();
+      ctx.moveTo(tr.x + tr.w/2, tr.baseY - 30);
+      ctx.lineTo(tr.x + tr.w - 4, tr.baseY + 40);
+      ctx.lineTo(tr.x + 4, tr.baseY + 40);
+      ctx.closePath();
+      ctx.fill();
+      ctx.fillStyle = accent;
+      ctx.beginPath();
+      ctx.moveTo(tr.x + tr.w/2, tr.baseY - 10);
+      ctx.lineTo(tr.x + tr.w - 10, tr.baseY + 32);
+      ctx.lineTo(tr.x + 10, tr.baseY + 32);
+      ctx.closePath();
+      ctx.fill();
+      ctx.fillStyle = trunk;
+      ctx.fillRect(tr.x + tr.w/2 - 6, tr.baseY + 32, 12, tr.h - 32);
+    } else if (type === 'city') {
+      ctx.fillStyle = trunk;
+      ctx.fillRect(tr.x, tr.baseY + tr.h - 40, tr.w, 40);
+      ctx.fillStyle = canopy;
+      ctx.fillRect(tr.x + 4, tr.baseY + 10, tr.w - 8, tr.h - 30);
+      ctx.fillStyle = accent;
+      for (let i=0; i<3; i++) {
+        ctx.fillRect(tr.x + 6, tr.baseY + 18 + i*20, tr.w - 12, 6);
+      }
+    } else if (type === 'sand') {
+      ctx.fillStyle = canopy;
+      ctx.fillRect(tr.x, tr.baseY + 20, tr.w, tr.h - 20);
+      ctx.fillStyle = accent;
+      for (let i=0; i<3; i++) {
+        ctx.fillRect(tr.x + 6 + i*8, tr.baseY, 6, 20);
+      }
+      ctx.beginPath();
+      ctx.moveTo(tr.x, tr.baseY + 20);
+      ctx.lineTo(tr.x + tr.w/2, tr.baseY - 6);
+      ctx.lineTo(tr.x + tr.w, tr.baseY + 20);
+      ctx.closePath();
+      ctx.fill();
+    } else if (type === 'water') {
+      ctx.fillStyle = canopy;
+      ctx.beginPath();
+      ctx.roundRect(tr.x, tr.baseY + 20, tr.w, tr.h - 20, 8);
+      ctx.fill();
+      ctx.fillStyle = accent;
+      ctx.beginPath();
+      ctx.roundRect(tr.x + 6, tr.baseY + 8, tr.w - 12, 22, 10);
+      ctx.fill();
+      ctx.fillStyle = trunk;
+      ctx.fillRect(tr.x + tr.w/2 - 8, tr.baseY + tr.h - 28, 16, 28);
+    } else if (type === 'space') {
+      ctx.fillStyle = canopy;
+      ctx.beginPath();
+      ctx.roundRect(tr.x, tr.baseY + 16, tr.w, tr.h - 16, 12);
+      ctx.fill();
+      ctx.fillStyle = accent;
+      ctx.beginPath();
+      ctx.ellipse(tr.x + tr.w/2, tr.baseY + 26, tr.w/2, 12, 0, 0, Math.PI*2);
+      ctx.fill();
+      ctx.fillStyle = trunk;
+      ctx.fillRect(tr.x + tr.w/2 - 10, tr.baseY + tr.h - 30, 20, 30);
+    } else {
+      ctx.fillStyle = trunk;
+      ctx.fillRect(tr.x + 10, tr.baseY + 30, 10, tr.h - 30);
+      ctx.fillStyle = canopy;
+      ctx.beginPath();
+      ctx.roundRect(tr.x, tr.baseY, tr.w, 40, 10);
+      ctx.fill();
+      ctx.beginPath();
+      ctx.roundRect(tr.x-6, tr.baseY+18, tr.w+12, 34, 12);
+      ctx.fill();
+    }
 
     // chop progress bar if nearby / active
     const near = players.some(p => Math.abs((tr.x + tr.w/2) - p.centerX()) < 38 && Math.abs((tr.baseY + tr.h) - p.bottom()) < 50);
@@ -1732,11 +2175,11 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
 
   function drawWall(w) {
     ctx.save(); ctx.translate(-camX,0);
-    // block
-    ctx.fillStyle = '#9399a3';
+    const pal = palette();
+    ctx.fillStyle = pal.wallPrimary || '#9399a3';
     ctx.fillRect(w.x, w.y, w.w, w.h);
     // fake brick lines
-    ctx.strokeStyle = '#747b85';
+    ctx.strokeStyle = pal.wallStroke || '#747b85';
     ctx.lineWidth = 1;
     for (let y=0; y<w.h; y+=10) {
       ctx.beginPath(); ctx.moveTo(w.x, w.y+y); ctx.lineTo(w.x+w.w, w.y+y); ctx.stroke();
@@ -1753,43 +2196,44 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
     const pitTop = GROUND_Y;
     const pitBottom = pitTop + l.depth;
     const lavaTop = l.y;
+    const pal = l.palette || palette();
 
-    if (l.theme !== 'volcano') {
+    if (l.variant === 'hazard') {
+      ctx.fillStyle = pal.lavaWallDark || '#2a1811';
+      ctx.fillRect(l.x - 10, pitTop, l.w + 20, l.depth + 40);
+      ctx.fillStyle = pal.lavaWallMid || '#4d2c1c';
+      ctx.fillRect(l.x - 6, pitTop - 8, l.w + 12, 8);
+    } else {
       const rimTop = GROUND_Y - l.rim;
       const rimGrad = ctx.createLinearGradient(0, rimTop, 0, pitTop);
-      rimGrad.addColorStop(0, '#6fa95c');
-      rimGrad.addColorStop(1, '#35592d');
+      rimGrad.addColorStop(0, pal.lavaRimTop || '#6fa95c');
+      rimGrad.addColorStop(1, pal.lavaRimBottom || '#35592d');
       ctx.fillStyle = rimGrad;
       ctx.fillRect(l.x - 8, rimTop, l.w + 16, l.rim);
 
       const wallGrad = ctx.createLinearGradient(l.x - 8, pitTop, l.x + l.w + 8, pitTop);
-      wallGrad.addColorStop(0, '#1c2b16');
-      wallGrad.addColorStop(0.12, '#3f5a29');
-      wallGrad.addColorStop(0.88, '#3f5a29');
-      wallGrad.addColorStop(1, '#1c2b16');
+      wallGrad.addColorStop(0, pal.lavaWallDark || '#1c2b16');
+      wallGrad.addColorStop(0.12, pal.lavaWallMid || '#3f5a29');
+      wallGrad.addColorStop(0.88, pal.lavaWallMid || '#3f5a29');
+      wallGrad.addColorStop(1, pal.lavaWallDark || '#1c2b16');
       ctx.fillStyle = wallGrad;
       ctx.fillRect(l.x - 8, pitTop, l.w + 16, l.depth);
 
       const cavityGrad = ctx.createLinearGradient(0, pitTop, 0, pitBottom);
-      cavityGrad.addColorStop(0, '#331b11');
-      cavityGrad.addColorStop(1, '#0f0603');
+      cavityGrad.addColorStop(0, pal.lavaCavityTop || '#331b11');
+      cavityGrad.addColorStop(1, pal.lavaCavityBottom || '#0f0603');
       ctx.fillStyle = cavityGrad;
       ctx.fillRect(l.x, pitTop, l.w, l.depth);
-    } else {
-      ctx.fillStyle = '#2a1811';
-      ctx.fillRect(l.x - 10, pitTop, l.w + 20, l.depth + 40);
-      ctx.fillStyle = '#4d2c1c';
-      ctx.fillRect(l.x - 6, pitTop - 8, l.w + 12, 8);
     }
 
     const lavaGrad = ctx.createLinearGradient(0, lavaTop, 0, pitBottom);
-    lavaGrad.addColorStop(0, '#ffb56b');
-    lavaGrad.addColorStop(0.45, '#ff6b3a');
-    lavaGrad.addColorStop(1, '#d62020');
+    lavaGrad.addColorStop(0, pal.lavaFillLight || '#ffb56b');
+    lavaGrad.addColorStop(0.45, pal.lavaFillMid || '#ff6b3a');
+    lavaGrad.addColorStop(1, pal.lavaFillDark || '#d62020');
     ctx.fillStyle = lavaGrad;
     ctx.fillRect(l.x, lavaTop, l.w, pitBottom - lavaTop);
 
-    ctx.strokeStyle = '#ffd166';
+    ctx.strokeStyle = pal.lavaStroke || '#ffd166';
     ctx.lineWidth = 2;
     const t = performance.now()*0.003 + l.phase;
     ctx.beginPath();
@@ -1800,8 +2244,8 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
     ctx.stroke();
 
     const glow = ctx.createRadialGradient(l.x + l.w/2, lavaTop + (pitBottom - lavaTop)/2, 0, l.x + l.w/2, lavaTop + (pitBottom - lavaTop)/2, l.w * 1.2);
-    glow.addColorStop(0, '#ff6b3a55');
-    glow.addColorStop(1, '#ff6b3a00');
+    glow.addColorStop(0, pal.lavaGlow || '#ff6b3a55');
+    glow.addColorStop(1, '#00000000');
     ctx.fillStyle = glow;
     ctx.globalCompositeOperation = 'lighter';
     ctx.fillRect(l.x - 24, lavaTop - 16, l.w + 48, pitBottom - lavaTop + 32);
@@ -1817,12 +2261,13 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
   function drawCoin(c) {
     if (c.collected) return;
     ctx.save(); ctx.translate(-camX,0);
+    const pal = palette();
     const bob = Math.sin(c.t*4) * 3;
     ctx.beginPath();
     ctx.arc(c.x, c.y + bob, c.r, 0, Math.PI*2);
-    ctx.fillStyle = '#ffd166';
+    ctx.fillStyle = pal.coinPrimary || '#ffd166';
     ctx.fill();
-    ctx.strokeStyle = '#c9a44f';
+    ctx.strokeStyle = pal.coinEdge || '#c9a44f';
     ctx.lineWidth = 2;
     ctx.stroke();
     // inner shine
@@ -1836,6 +2281,7 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
   function drawBoss(enemy) {
     if (enemy.dead) return;
     ctx.save(); ctx.translate(-camX,0);
+    const pal = palette();
     const groundUnder = groundHeightAt(enemy.centerX());
     ctx.fillStyle = '#0005';
     ctx.beginPath();
@@ -1844,17 +2290,17 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
 
     const bodyHeight = enemy.h * 0.7;
     const bodyY = enemy.y + enemy.h - bodyHeight;
-    ctx.fillStyle = '#32713b';
+    ctx.fillStyle = pal.bossBody || '#32713b';
     ctx.beginPath();
     ctx.roundRect(enemy.x, bodyY, enemy.w, bodyHeight, 24);
     ctx.fill();
 
-    ctx.fillStyle = '#4ca254';
+    ctx.fillStyle = pal.bossBelly || '#4ca254';
     ctx.beginPath();
     ctx.roundRect(enemy.x + 16, bodyY + 12, enemy.w - 32, bodyHeight - 20, 18);
     ctx.fill();
 
-    ctx.fillStyle = '#28652f';
+    ctx.fillStyle = pal.bossTail || '#28652f';
     const tailDir = enemy.facing > 0 ? -1 : 1;
     ctx.beginPath();
     ctx.ellipse(enemy.x + (tailDir > 0 ? enemy.w + 30 : -30), bodyY + bodyHeight * 0.65, 40, 14, 0, 0, Math.PI*2);
@@ -1863,30 +2309,30 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
     const headWidth = 46;
     const headHeight = 32;
     const headX = enemy.facing > 0 ? enemy.x + enemy.w - headWidth : enemy.x;
-    ctx.fillStyle = '#3c8f48';
+    ctx.fillStyle = pal.bossHead || '#3c8f48';
     ctx.beginPath();
     ctx.roundRect(headX, enemy.y + 6, headWidth, headHeight, 16);
     ctx.fill();
-    ctx.fillStyle = '#1c2b16';
+    ctx.fillStyle = pal.bossEyeDark || '#1c2b16';
     const eyeX = enemy.facing > 0 ? headX + headWidth - 16 : headX + 8;
     ctx.fillRect(eyeX, enemy.y + 14, 10, 6);
-    ctx.fillStyle = '#f6f1ce';
+    ctx.fillStyle = pal.bossEyeLight || '#f6f1ce';
     ctx.fillRect(eyeX + (enemy.facing > 0 ? 2 : -2), enemy.y + 14, 6, 4);
 
-    ctx.fillStyle = '#fef9d6';
+    ctx.fillStyle = pal.bossTooth || '#fef9d6';
     for (let i=0; i<4; i++) {
       const toothX = headX + 6 + i * 8;
       ctx.fillRect(toothX, enemy.y + headHeight + 4, 4, 6);
     }
 
-    ctx.fillStyle = '#215929';
+    ctx.fillStyle = pal.bossLeg || '#215929';
     ctx.fillRect(enemy.x + 14, bodyY + bodyHeight - 14, 14, 24);
     ctx.fillRect(enemy.x + enemy.w - 28, bodyY + bodyHeight - 14, 14, 24);
 
     const hpRatio = clamp(enemy.hp / BOSS_HITS_TO_DEFEAT, 0, 1);
     ctx.fillStyle = '#0009';
     ctx.fillRect(enemy.x - 16, enemy.y - 24, enemy.w + 32, 10);
-    ctx.fillStyle = '#9ef79a';
+    ctx.fillStyle = pal.hpFill || '#9ef79a';
     ctx.fillRect(enemy.x - 16, enemy.y - 24, (enemy.w + 32) * hpRatio, 10);
 
     if (enemy.hitFlash > 0) {
@@ -1910,17 +2356,18 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
       return;
     }
     ctx.save(); ctx.translate(-camX,0);
+    const pal = palette();
     const groundUnder = groundHeightAt(enemy.centerX());
     ctx.fillStyle = '#0003';
     ctx.beginPath();
     ctx.ellipse(enemy.centerX(), groundUnder - 2, 12, 4, 0, 0, Math.PI*2);
     ctx.fill();
 
-    ctx.fillStyle = '#532626';
+    ctx.fillStyle = pal.enemyAccent || '#532626';
     ctx.fillRect(enemy.x + 2, enemy.y + 14, enemy.w - 4, enemy.h - 14);
-    ctx.fillStyle = '#7f3232';
+    ctx.fillStyle = pal.enemyPrimary || '#7f3232';
     ctx.fillRect(enemy.x, enemy.y + 6, enemy.w, enemy.h - 16);
-    ctx.fillStyle = '#c54c4c';
+    ctx.fillStyle = pal.enemySecondary || '#c54c4c';
     ctx.fillRect(enemy.x + 4, enemy.y + 8, enemy.w - 8, enemy.h - 20);
 
     if (enemy.hitFlash > 0) {
@@ -1932,9 +2379,9 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
     const headSize = 16;
     const headX = enemy.x + (enemy.w - headSize) / 2;
     const headY = enemy.y - headSize + 6;
-    ctx.fillStyle = '#ffb27d';
+    ctx.fillStyle = pal.enemyHead || '#ffb27d';
     ctx.fillRect(headX, headY, headSize, headSize);
-    ctx.fillStyle = '#2b1a1a';
+    ctx.fillStyle = pal.enemyEyeDark || '#2b1a1a';
     ctx.fillRect(headX + 4, headY + 8, 8, 3);
     ctx.fillRect(headX + (enemy.facing > 0 ? 8 : 2), headY + 4, 3, 3);
     ctx.fillRect(headX + (enemy.facing > 0 ? 4 : 10), headY + 4, 3, 3);
@@ -1959,10 +2406,11 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
   function drawBullet(bullet) {
     if (bullet.dead) return;
     ctx.save(); ctx.translate(-camX,0);
+    const pal = palette();
     const rect = bullet.aabb();
-    ctx.fillStyle = '#ff9e64';
+    ctx.fillStyle = pal.bulletPrimary || '#ff9e64';
     ctx.fillRect(rect.x, rect.y, rect.w, rect.h);
-    ctx.fillStyle = '#ffd8b2';
+    ctx.fillStyle = pal.bulletHighlight || '#ffd8b2';
     if (bullet.vx > 0) {
       ctx.fillRect(rect.x + rect.w - 4, rect.y, 4, rect.h);
     } else {
@@ -2049,20 +2497,7 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
     ctx.clearRect(0,0,W,H);
     drawGround();
 
-    // parallax trees (background silhouettes)
-    ctx.save(); ctx.translate(-camX*0.6,0);
-    ctx.fillStyle = '#2f6130';
-    const silhouetteSpacing = 220;
-    const silhouetteCount = Math.ceil((levelLength + W) / silhouetteSpacing);
-    for (let i=0;i<silhouetteCount;i++){
-      const x = i*silhouetteSpacing + 100;
-      ctx.fillRect(x+14, GROUND_Y-70, 12, 70);
-      ctx.beginPath();
-      ctx.roundRect(x, GROUND_Y-110, 40, 30, 10); ctx.fill();
-      ctx.beginPath();
-      ctx.roundRect(x-6, GROUND_Y-90, 52, 34, 12); ctx.fill();
-    }
-    ctx.restore();
+    drawBackdrop();
 
     // midground: volcano, trees, walls, lava, coins, player
     drawVolcano(volcano);
