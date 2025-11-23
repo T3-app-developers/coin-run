@@ -52,6 +52,12 @@
   .biome-btn strong { display:block; font-size:20px; }
   .biome-pill { display:inline-flex; gap:6px; align-items:center; background:#3a414d; border:1px solid #4a5160; padding:6px 10px; border-radius:999px; font-size:14px; }
   .biome-pill .icon { font-size:18px; }
+  .biome-description { margin-top:16px; text-align:left; background:#252b34; border:1px solid #333c47; border-radius:12px; padding:14px 16px; box-shadow: inset 0 0 0 1px #ffffff0a; }
+  .biome-description h2 { margin:0 0 8px 0; font-size:18px; letter-spacing:0.3px; }
+  .biome-description p { margin:4px 0; opacity:0.9; }
+  .biome-features { list-style:disc; padding-left:20px; margin:8px 0; color:#eaeaea; opacity:0.9; }
+  .biome-features li { margin:4px 0; }
+  .biome-boss { margin-top:8px; font-weight:600; color:#ffd166; }
   canvas { display:block; width:100vw; height:100vh; image-rendering: pixelated; }
   #touch-controls { position:fixed; inset:auto 0 0 0; display:flex; justify-content:space-between; padding:18px 20px; pointer-events:none; z-index:15; }
   #touch-controls .cluster { display:flex; gap:14px; pointer-events:auto; flex-wrap:wrap; }
@@ -145,14 +151,19 @@
   </div>
 </div>
 
-<div id="biome-select" class="hidden">
-  <div class="card">
-    <h1>Pick a Biome</h1>
-    <p>Choose a place to run, mine, and face the boss. Each biome keeps the rules but changes the vibe.</p>
-    <div id="biome-buttons" class="biome-grid"></div>
-    <p id="biome-blurb" style="margin-top:14px; font-size:14px; opacity:0.78;">Every start gives you another chance to switch things up.</p>
+  <div id="biome-select" class="hidden">
+    <div class="card">
+      <h1>Pick a Biome</h1>
+      <p>Choose a place to run, mine, and face the boss. Each biome keeps the rules but changes the vibe.</p>
+      <div id="biome-buttons" class="biome-grid"></div>
+      <div class="biome-description">
+        <h2 id="biome-title">Biome vibe</h2>
+        <p id="biome-blurb" style="margin-top:6px; font-size:14px; opacity:0.9;">Every start gives you another chance to switch things up.</p>
+        <ul id="biome-features" class="biome-features"></ul>
+        <p id="biome-boss" class="biome-boss"></p>
+      </div>
+    </div>
   </div>
-</div>
 
 <div id="touch-controls" class="hidden">
   <div class="cluster move">
@@ -226,6 +237,9 @@
   const biomeSelect = document.getElementById('biome-select');
   const biomeButtonsWrap = document.getElementById('biome-buttons');
   const biomeBlurb = document.getElementById('biome-blurb');
+  const biomeTitle = document.getElementById('biome-title');
+  const biomeFeatures = document.getElementById('biome-features');
+  const biomeBoss = document.getElementById('biome-boss');
   const touchControls = document.getElementById('touch-controls');
   const helpP2 = document.getElementById('help-p2');
   const p2Pills = Array.from(document.querySelectorAll('.p2-pill'));
@@ -452,6 +466,12 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
     hazardNoun: 'volcano',
     minedItem: 'wood',
     blurb: 'Classic lava slopes and piney trees.',
+    features: [
+      'Crisp teal skies and pine silhouettes wrap around warm lava embers.',
+      'Glowing coins and spruce-green ramps guide the eye toward the summit.',
+      'Resource trees match the slopey rock strata so nothing feels out of place.',
+    ],
+    bossGoal: 'A forest-colored dino that blends into the peaks; its amber eyes and molten breath tie back to the erupting rim.',
     characters: {
       p1: { head: '#2fd06c', body: '#2f3b52' },
       p2: { head: '#3fb5ff', body: '#233149' },
@@ -474,6 +494,18 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
   };
 
   const BIOMES = {
+    volcano: {
+      ...BASE_BIOME,
+      label: 'Volcano Valley',
+      icon: '🌋',
+      blurb: 'Emerald slopes cut by glowing lava seams and pine crowns.',
+      features: [
+        'Lava channels glow against mossy rock, tying together the hazard and ground.',
+        'Tree resources mirror the pine silhouettes on the distant hills.',
+        'Gold coins and banners pop against the teal sky for a clean goal line.',
+      ],
+      bossGoal: 'A magma-charged dino perched near the caldera whose green armor echoes the hills beneath it.',
+    },
     ice: {
       id: 'ice',
       label: 'Ice',
@@ -485,6 +517,12 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
       hazardNoun: 'geyser',
       minedItem: 'ice',
       blurb: 'Crystalline tundra with freezing vents and frosty loot.',
+      features: [
+        'Pastel skies fade into frosted hills, keeping the whole scene airy.',
+        'Ice bricks and trees share the same glacial gradients for a tidy palette.',
+        'Hazard vents glow cyan so you can read danger against the snow.',
+      ],
+      bossGoal: 'A glacier-backed dino with pale armor plates and frosted claws that feel carved from the same ice you mine.',
       characters: {
         p1: { head: '#b8f1ff', body: '#3a5d7f' },
         p2: { head: '#c3e6ff', body: '#2e4b6a' },
@@ -514,6 +552,12 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
       hazardNoun: 'stack',
       minedItem: 'concrete',
       blurb: 'Industrial skyline, street lights, and hot vents from the undercity.',
+      features: [
+        'Cool steel blues and sodium lamps set a clean dusk-in-the-city gradient.',
+        'Concrete resources echo the blocky silhouettes in the distance.',
+        'Vents glow amber like traffic lights so hazards feel urban, not random.',
+      ],
+      bossGoal: 'A steel-plated dino with subway-yellow eyes, framed by smokestacks to feel like the city built it.',
       characters: {
         p1: { head: '#ffd166', body: '#3a3e4a' },
         p2: { head: '#a6c1ff', body: '#2c3341' },
@@ -543,6 +587,12 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
       hazardNoun: 'dune',
       minedItem: 'sandcastle',
       blurb: 'Sun-baked dunes, sandstone arches, and shimmering heat vents.',
+      features: [
+        'Layered oranges and golds match the sandstone arches and ramps.',
+        'Coin shine pairs with the sun-bleached highlights on every ledge.',
+        'Glass dunes bloom with warm light so hazards feel like desert mirages.',
+      ],
+      bossGoal: 'A dune-swept dino with amber plating and turquoise eyes that echo oasis tiles near the goal.',
       characters: {
         p1: { head: '#ffd38c', body: '#704c2e' },
         p2: { head: '#ffe9b0', body: '#8a5b32' },
@@ -572,6 +622,12 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
       hazardNoun: 'vent',
       minedItem: 'fish cake',
       blurb: 'Underwater ruins, kelp silhouettes, and vents of steaming bubbles.',
+      features: [
+        'Blue-green gradients drift from surface light to deep teal shadows.',
+        'Coral pillars and kelp silhouettes line up with the resource trees.',
+        'Bubble vents glow aqua so the hazard reads like part of the reef.',
+      ],
+      bossGoal: 'A reef-armored dino with coral horns and tidepool eyes waiting in the ruins beyond the goal arch.',
       characters: {
         p1: { head: '#9bf0ff', body: '#1f5e6c' },
         p2: { head: '#d9fff4', body: '#2c7a86' },
@@ -601,6 +657,12 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
       hazardNoun: 'crater',
       minedItem: 'meteor',
       blurb: 'Star-speckled sky, lunar rock, and a crater that occasionally rumbles.',
+      features: [
+        'Nebula purples fade into dusty rock so the ground feels otherworldly.',
+        'Meteor resources sparkle with the same starlight as the horizon.',
+        'Craters glow magenta when active, matching the cosmic hazard flare.',
+      ],
+      bossGoal: 'A low-gravity dino with comet stripes and pale starlit eyes guarding the lunar outpost ahead.',
       characters: {
         p1: { head: '#e6d3ff', body: '#3a2a5b' },
         p2: { head: '#c4b0ff', body: '#4c2f6e' },
@@ -621,7 +683,7 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
     },
   };
 
-  const DEFAULT_BIOME_ID = 'ice';
+  const DEFAULT_BIOME_ID = 'volcano';
 
   const VOLCANO_STEPS = 12;
   const VOLCANO_STEP_HEIGHT = 12;
@@ -695,14 +757,40 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
   }
 
   function describeBiome(b) {
-    return `${b.icon} ${b.label} mines ${b.resourceName} and faces a ${b.hazardName.toLowerCase()}.`;
+    const hazard = b.hazardName.toLowerCase();
+    const base = b.blurb || `${b.icon} ${b.label}`;
+    return `${b.icon} ${b.label} · ${base} You mine ${b.resourceName} and face the ${hazard}.`;
+  }
+
+  function renderBiomeDetails(b) {
+    if (!b) return;
+    if (biomeTitle) biomeTitle.textContent = `${b.icon} ${b.label}`;
+    if (biomeBlurb) biomeBlurb.textContent = b.blurb || describeBiome(b);
+    if (biomeFeatures) {
+      biomeFeatures.innerHTML = '';
+      if (b.features && b.features.length) {
+        biomeFeatures.classList.remove('hidden');
+        b.features.forEach(text => {
+          const li = document.createElement('li');
+          li.textContent = text;
+          biomeFeatures.appendChild(li);
+        });
+      } else {
+        biomeFeatures.classList.add('hidden');
+      }
+    }
+    if (biomeBoss) {
+      const hasBoss = Boolean(b.bossGoal);
+      biomeBoss.textContent = hasBoss ? `End boss: ${b.bossGoal}` : '';
+      biomeBoss.classList.toggle('hidden', !hasBoss);
+    }
   }
 
   function chooseBiome(id) {
     ensureActiveBiome(id);
     updateBiomeTip();
     updateResourceLabels();
-    if (biomeBlurb && activeBiome) biomeBlurb.textContent = describeBiome(activeBiome);
+    if (activeBiome) renderBiomeDetails(activeBiome);
     if (biomeSelect) {
       biomeSelect.classList.add('hidden');
       biomeSelect.style.display = 'none';
@@ -721,7 +809,7 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
     updateBiomeTip();
     if (biomeBlurb) {
       const next = ensureActiveBiome();
-      biomeBlurb.textContent = describeBiome(next);
+      renderBiomeDetails(next);
     }
   }
 
@@ -738,6 +826,7 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
         <small>${b.hazardName} · mines ${b.resourceName}</small>
         <span class="biome-pill"><span class="icon">${b.resourceIcon}</span>${b.resourceName}</span>
       `;
+      btn.addEventListener('mouseenter', () => renderBiomeDetails(mergeBiomeConfig(b)));
       btn.addEventListener('click', () => chooseBiome(b.id));
       biomeButtonsWrap.appendChild(btn);
     });
@@ -746,6 +835,7 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
   buildBiomeButtons();
   updateResourceLabels();
   updateBiomeTip();
+  renderBiomeDetails(ensureActiveBiome());
 
   const VIRTUAL_KEY_ALIASES = {
     space: ' ',
