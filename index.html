@@ -76,12 +76,26 @@
   .biome-features li { margin:4px 0; }
   .biome-boss { margin-top:8px; font-weight:600; color:#ffd166; }
   canvas { display:block; width:100vw; height:100vh; image-rendering: pixelated; }
+  .chat-ui { display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+  .chat-form { display:flex; align-items:center; gap:6px; background:#2b2f36; border:1px solid #3a3f47; padding:6px 8px; border-radius:12px; box-shadow: inset 0 0 0 1px #00000020; }
+  .chat-form button { background:#3a414d; color:#fff; border:1px solid #4a5160; border-radius:10px; padding:8px 10px; font-weight:700; cursor:pointer; }
+  .chat-form button:hover { background:#4a5362; }
+  .chat-input { background:#1f232a; border:1px solid #3a3f47; color:#eaeaea; border-radius:10px; padding:8px 10px; min-width:150px; font-size:14px; }
+  .chat-send { font-size:13px; padding:8px 12px; }
   #touch-controls { position:fixed; inset:auto 0 0 0; display:flex; justify-content:space-between; padding:18px 20px; pointer-events:none; z-index:15; }
   #touch-controls .cluster { display:flex; gap:14px; pointer-events:auto; flex-wrap:wrap; }
   #touch-controls .cluster.actions { justify-content:flex-end; }
   .touch-btn { background:#2b2f36; border:1px solid #3a3f47; color:#fff; font-weight:600; font-size:16px; padding:16px 18px; border-radius:18px; min-width:68px; text-transform:uppercase; touch-action:none; user-select:none; opacity:0.85; transition:background 0.15s ease, opacity 0.15s ease, box-shadow 0.15s ease; }
   .touch-btn:active, .touch-btn.active { background:#3d4554; opacity:1; box-shadow:0 0 0 3px #ffffff12; }
   .touch-btn span { display:block; font-size:12px; font-weight:500; opacity:0.8; margin-top:4px; text-transform:none; }
+  #chat-ui { display:flex; align-items:center; gap:10px; margin-left:auto; }
+  .chat-lane { display:flex; align-items:center; gap:6px; }
+  .chat-btn { background:#2f3540; color:#fff; border:1px solid #4a5160; border-radius:12px; padding:6px 10px; font-weight:700; cursor:pointer; box-shadow: inset 0 0 0 1px #00000030; }
+  .chat-btn:hover { background:#3a414d; }
+  .chat-btn:focus-visible, .chat-input:focus-visible { outline:2px solid #9ef79a; outline-offset:2px; }
+  .chat-input { background:#1f232a; border:1px solid #3a3f47; border-radius:10px; color:#eaeaea; padding:6px 8px; min-width:140px; font-weight:600; box-shadow: inset 0 0 0 1px #00000020; }
+  .chat-input::placeholder { color:#7c8695; }
+  .chat-lane.hidden { display:none; }
 </style>
 </head>
 <body>
@@ -102,6 +116,18 @@
   <div class="pill">Timer: <span id="timer" class="good">0:00.0</span></div>
   <div class="pill">Hazard: <span id="lava" class="bad">20s</span></div>
   <div class="pill">Goal ▶</div>
+  <div id="chat-ui" class="chat-ui hidden">
+    <form class="chat-form" data-target="p1">
+      <button type="button" class="chat-launch" data-target="p1">Chat to P1</button>
+      <input class="chat-input" type="text" name="chat-p1" autocomplete="off" placeholder="Message player 1" maxlength="80" />
+      <button type="submit" class="chat-send">Send</button>
+    </form>
+    <form class="chat-form" data-target="p2">
+      <button type="button" class="chat-launch" data-target="p2">Chat to P2</button>
+      <input class="chat-input" type="text" name="chat-p2" autocomplete="off" placeholder="Message player 2" maxlength="80" />
+      <button type="submit" class="chat-send">Send</button>
+    </form>
+  </div>
 </div>
 
 <div id="help">
@@ -109,7 +135,8 @@
   <b>Player 1</b> – Move: <b>A/D</b> · Jump: <b>W</b>/<b>Space</b> · Mine: <b>E</b> (hold) · Attack: <b>X</b> (laser: 3 hits for grunts, 10 for the boss) · Wall: <b>1</b> · Lava: <b>2</b><br>
   <span id="help-p2"><b>Player 2</b> – Move: <b>←/→</b> · Jump: <b>↑</b> · Mine: <b>/</b> (hold) · Attack: <b>.</b> (laser: 3 hits for grunts, 10 for the boss) · Wall: <b>[</b> · Lava: <b>]</b><br></span>
   <span id="biome-tip" style="display:block; margin-top:8px; opacity:0.75;">Tip: pick a biome to customize your run.</span>
-  <span id="remote-tip" style="display:block; margin-top:6px; opacity:0.8;">Player 2 can join remotely: choose Two Players, share the link+code, then your friend taps on-screen buttons while you keep your keyboard active.</span>
+  <span id="remote-hint">Remote P2: pick <b>Remote Co-Op</b> below, then open <code>?controller=1</code> on your phone/controller page to send <code>{ key, pressed }</code> events over WebSocket. Keyboard still works as fallback.</span>
+  <span id="remote-status"></span>
   Restart: <b>R</b> &nbsp;|&nbsp; Toggle Hitboxes: <b>H</b>
 </div>
 
@@ -191,6 +218,7 @@
     <div class="mode-buttons">
       <button class="mode-btn" data-mode="1">One Player</button>
       <button class="mode-btn" data-mode="2">Two Players</button>
+      <button class="mode-btn" data-mode="remote">Remote Co-Op</button>
     </div>
     <p style="margin-top:18px; font-size:14px; opacity:0.7;">You can press <b>R</b> anytime during a run to restart the current mode.</p>
   </div>
@@ -226,6 +254,10 @@
 
 <script>
 (() => {
+  const queryParams = new URLSearchParams(window.location.search);
+  const isControllerPage = queryParams.get('controller') === '1';
+  const REMOTE_SOCKET_PATH = '/remote';
+
   // ===== helpers =====
   const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
   const rand = (a, b) => Math.random() * (b - a) + a;
@@ -238,6 +270,73 @@
     const tenths = totalTenths % 10;
     return `${minutes}:${seconds.toString().padStart(2,'0')}.${tenths}`;
   };
+
+  const VIRTUAL_KEY_ALIASES = {
+    space: ' ',
+    Space: ' ',
+  };
+
+  function resolveVirtualKey(raw) {
+    if (!raw) return raw;
+    return VIRTUAL_KEY_ALIASES.hasOwnProperty(raw) ? VIRTUAL_KEY_ALIASES[raw] : raw;
+  }
+
+  function buildRemoteSocketUrl() {
+    const proto = window.location.protocol === 'https:' ? 'wss' : 'ws';
+    return `${proto}://${window.location.host}${REMOTE_SOCKET_PATH}`;
+  }
+
+  function renderControllerPage() {
+    const wsUrl = buildRemoteSocketUrl();
+    document.body.innerHTML = `
+      <div id="controller-ui">
+        <h1>Remote P2 Controller</h1>
+        <p>Connected players listen for <code>{ key, pressed }</code> over WebSocket at <code>${wsUrl}</code>.</p>
+        <div class="controller-grid">
+          <button class="controller-btn" data-key="ArrowUp">Jump</button>
+          <button class="controller-btn" data-key=".">Attack</button>
+          <button class="controller-btn" data-key="/">Mine</button>
+          <button class="controller-btn" data-key="ArrowLeft">Left</button>
+          <button class="controller-btn" data-key="ArrowRight">Right</button>
+          <button class="controller-btn" data-key="[">Wall</button>
+          <button class="controller-btn" data-key="]">Lava</button>
+          <button class="controller-btn" data-key="r">Restart</button>
+          <button class="controller-btn" data-key="h">Hitboxes</button>
+        </div>
+        <div id="controller-status" class="controller-status">Connecting to ${wsUrl}...</div>
+      </div>
+    `;
+    const statusEl = document.getElementById('controller-status');
+    const buttons = Array.from(document.querySelectorAll('.controller-btn'));
+    const socket = new WebSocket(wsUrl);
+    const setStatus = (msg) => { if (statusEl) statusEl.textContent = msg; };
+    const sendPayload = (key, pressed) => {
+      if (socket.readyState !== WebSocket.OPEN) return;
+      socket.send(JSON.stringify({ key, pressed }));
+    };
+    const down = (btn) => {
+      btn.classList.add('active');
+      sendPayload(resolveVirtualKey(btn.dataset.key), true);
+    };
+    const up = (btn) => {
+      btn.classList.remove('active');
+      sendPayload(resolveVirtualKey(btn.dataset.key), false);
+    };
+    buttons.forEach(btn => {
+      btn.addEventListener('pointerdown', (e) => { e.preventDefault(); down(btn); });
+      btn.addEventListener('pointerup', () => up(btn));
+      btn.addEventListener('pointercancel', () => up(btn));
+      btn.addEventListener('pointerleave', (e) => { if (e.buttons === 0) up(btn); });
+    });
+    socket.addEventListener('open', () => setStatus(`Connected to ${wsUrl}. Send inputs to control Player 2.`));
+    socket.addEventListener('close', () => setStatus('Connection closed. Reopen this page when the host is ready.'));
+    socket.addEventListener('error', () => setStatus('Connection error. Check that the game tab is listening.'));
+  }
+
+  if (isControllerPage) {
+    renderControllerPage();
+    return;
+  }
 
   // ===== canvas & sizing =====
   const canvas = document.getElementById('game');
@@ -294,15 +393,9 @@
     p1: document.getElementById('p1-resource-label'),
     p2: document.getElementById('p2-resource-label'),
   };
-  const remoteCard = document.getElementById('remote-share');
-  const remoteCodeEl = document.getElementById('remote-code');
-  const remoteLinkEl = document.getElementById('remote-link');
-  const remoteQrEl = document.getElementById('remote-qr');
-  const remoteStatusEl = document.getElementById('remote-status');
-  const remoteMessagesEl = document.getElementById('remote-messages');
-  const remoteRefreshBtn = document.getElementById('remote-refresh');
-  const remoteChatForm = document.getElementById('remote-chat-form');
-  const remoteChatInput = document.getElementById('remote-chat-input');
+  const chatUi = document.getElementById('chat-ui');
+  const chatForms = chatUi ? Array.from(chatUi.querySelectorAll('.chat-form')) : [];
+  const chatInputs = chatUi ? Array.from(chatUi.querySelectorAll('.chat-input')) : [];
   const deathScreen = document.getElementById('death-screen');
   const wahAudio = document.getElementById('wah-audio');
   if (wahAudio) wahAudio.volume = 0.55;
@@ -324,6 +417,21 @@
     wahAudio.pause();
     wahAudio.currentTime = 0;
   };
+
+  function clearChatState() {
+    Object.keys(chatState).forEach(key => {
+      chatState[key].text = '';
+      chatState[key].expiresAt = 0;
+    });
+    chatInputs.forEach(input => { input.value = ''; });
+  }
+
+  function setPlayerChat(target, message) {
+    const key = target === 'p2' ? 'p2' : 'p1';
+    const text = (message || '').trim();
+    chatState[key].text = text;
+    chatState[key].expiresAt = text ? performance.now() + CHAT_LIFETIME_MS : 0;
+  }
 
   function showDeathScreen() {
     if (!deathScreen) return;
@@ -792,12 +900,26 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
   let remoteSessionCode = '';
   let remoteSocket = null;
   let remoteConnected = false;
+  const inputSources = {
+    keyboard: new Set(),
+    virtual: new Set(),
+    remote: new Set(),
+  };
+  let remoteMode = false;
+  let remoteSocket = null;
+  let remoteReconnectTimer = null;
+  const remoteStatusDisplay = document.getElementById('remote-status');
   let debugShowHit = false;
   let finished = false;
   let runStartTime = 0;
   let elapsedTime = 0;
   let finishDuration = 0;
   const virtualButtons = [];
+  const CHAT_LIFETIME_MS = 4500;
+  const chatState = {
+    p1: { text: '', expiresAt: 0 },
+    p2: { text: '', expiresAt: 0 },
+  };
 
   const REMOTE_WS_BASE = 'wss://free.blr2.piesocket.com/v3';
   const REMOTE_WS_KEY = 'demouid';
@@ -808,11 +930,36 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
   function updateModeHud(showSecondPlayer) {
     p2Pills.forEach(el => el.classList.toggle('hidden', !showSecondPlayer));
     if (helpP2) helpP2.classList.toggle('hidden', !showSecondPlayer);
-    if (remoteTip) remoteTip.classList.toggle('hidden', !showSecondPlayer);
-    updateRemoteShareUi();
+    if (chatUi) chatUi.classList.toggle('hidden', !showSecondPlayer);
+    if (chatLanes.p2?.lane) chatLanes.p2.lane.classList.toggle('hidden', !showSecondPlayer);
+    if (!showSecondPlayer) clearChatInputs();
   }
 
   updateModeHud(false);
+
+  function bindChatUi() {
+    chatForms.forEach(form => {
+      const target = form.dataset.target || 'p1';
+      const input = form.querySelector('.chat-input');
+      const launch = form.querySelector('.chat-launch');
+      if (launch && input) {
+        launch.addEventListener('click', () => {
+          input.focus();
+          input.select();
+        });
+      }
+      form.addEventListener('submit', (e) => {
+        e.preventDefault();
+        if (!input) return;
+        const text = (input.value || '').trim();
+        if (!text) return;
+        setPlayerChat(target, text);
+        input.value = '';
+      });
+    });
+  }
+
+  bindChatUi();
 
   const biomeEntries = Object.values(BIOMES);
 
@@ -844,6 +991,75 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
     const b = ensureActiveBiome();
     if (resourceLabels.p1) resourceLabels.p1.textContent = b.resourceName;
     if (resourceLabels.p2) resourceLabels.p2.textContent = b.resourceName;
+  }
+
+  function clearChatInputs() {
+    activeChatPlayer = null;
+    Object.values(chatLanes).forEach(({ input }) => {
+      if (input) {
+        input.value = '';
+        input.blur();
+      }
+    });
+  }
+
+  function applyChatMessage(playerLabel, text) {
+    const player = players.find(p => p.label === playerLabel);
+    if (!player) return;
+    player.chatText = text;
+    player.chatUntil = performance.now() + CHAT_VISIBLE_MS;
+  }
+
+  function closeChatInput() {
+    activeChatPlayer = null;
+    Object.values(chatLanes).forEach(({ input }) => input?.blur());
+  }
+
+  function submitChat(playerKey) {
+    const lane = chatLanes[playerKey];
+    if (!lane || !lane.input) return;
+    if (gameMode !== 2) { closeChatInput(); return; }
+    const text = lane.input.value.trim();
+    if (text) {
+      applyChatMessage(playerKey.toUpperCase(), text);
+    }
+    lane.input.value = '';
+    closeChatInput();
+  }
+
+  function focusChat(playerKey) {
+    const lane = chatLanes[playerKey];
+    if (!lane || !lane.input) return;
+    if (gameMode !== 2) return;
+    activeChatPlayer = playerKey;
+    lane.input.focus();
+    lane.input.select();
+  }
+
+  function setupChatLane(playerKey) {
+    const lane = chatLanes[playerKey];
+    if (!lane) return;
+    const { button, input } = lane;
+    if (button) button.addEventListener('click', () => focusChat(playerKey));
+    if (input) {
+      input.addEventListener('focus', () => { activeChatPlayer = playerKey; });
+      input.addEventListener('blur', () => {
+        if (activeChatPlayer === playerKey) activeChatPlayer = null;
+      });
+      input.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          e.stopPropagation();
+          submitChat(playerKey);
+        } else if (e.key === 'Escape') {
+          e.preventDefault();
+          e.stopPropagation();
+          closeChatInput();
+        } else {
+          e.stopPropagation();
+        }
+      });
+    }
   }
 
   function describeBiome(b) {
@@ -892,7 +1108,7 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
   function showBiomeSelect() {
     pendingBiomeReset = true;
     if (!biomeSelect) { resetLevel(); return; }
-    keys = {};
+    resetInputState();
     clearVirtualInputs();
     biomeSelect.classList.remove('hidden');
     biomeSelect.style.display = 'flex';
@@ -926,16 +1142,8 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
   updateResourceLabels();
   updateBiomeTip();
   renderBiomeDetails(ensureActiveBiome());
-
-  const VIRTUAL_KEY_ALIASES = {
-    space: ' ',
-    Space: ' ',
-  };
-
-  function resolveVirtualKey(raw) {
-    if (!raw) return raw;
-    return VIRTUAL_KEY_ALIASES.hasOwnProperty(raw) ? VIRTUAL_KEY_ALIASES[raw] : raw;
-  }
+  setupChatLane('p1');
+  setupChatLane('p2');
 
   function isKeyActiveForPlayer(player, key) {
     const resolved = resolveVirtualKey(key);
@@ -1076,7 +1284,8 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
   function clearVirtualInputs() {
     virtualButtons.forEach(({btn, key}) => {
       btn.classList.remove('active');
-      keys[key] = false;
+      inputSources.virtual.delete(key);
+      recomputeKey(key);
     });
   }
 
@@ -1123,14 +1332,14 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
           if (btn.setPointerCapture) btn.setPointerCapture(e.pointerId);
         }
         btn.classList.add('active');
-        handleKeyDown(resolvedKey);
+        handleKeyDown(resolvedKey, 'virtual');
       };
       const release = (e) => {
         if (e && btn.releasePointerCapture && btn.hasPointerCapture && btn.hasPointerCapture(e.pointerId)) {
           btn.releasePointerCapture(e.pointerId);
         }
         btn.classList.remove('active');
-        handleKeyUp(resolvedKey);
+        handleKeyUp(resolvedKey, 'virtual');
       };
       btn.addEventListener('pointerdown', press);
       btn.addEventListener('pointerup', release);
@@ -1165,19 +1374,28 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
   });
 
   function setGameMode(mode) {
-    gameMode = mode === 2 ? 2 : 1;
+    remoteMode = mode === 'remote';
+    if (!remoteMode) teardownRemoteSocket();
+    gameMode = remoteMode ? 2 : (mode === 2 ? 2 : 1);
     levelIndex = 0;
     if (gameMode === 2) startRemoteSession();
     else stopRemoteSession();
     updateModeHud(gameMode === 2);
     modeSelect.style.display = 'none';
+    if (remoteMode) {
+      setRemoteStatus(`Remote P2 armed. Open ${window.location.pathname}?controller=1 on another device to play.`);
+      connectRemoteSocket();
+    } else {
+      setRemoteStatus('Remote disabled. Choose Remote Co-Op to enable phone controls.');
+    }
     showBiomeSelect();
   }
 
   modeButtons.forEach(btn => {
     btn.addEventListener('click', () => {
-      const mode = parseInt(btn.dataset.mode, 10);
-      setGameMode(Number.isNaN(mode) ? 1 : mode);
+      const raw = btn.dataset.mode;
+      const mode = raw === 'remote' ? 'remote' : parseInt(raw, 10);
+      setGameMode(Number.isNaN(mode) ? (raw === 'remote' ? 'remote' : 1) : mode);
     });
   });
 
@@ -1212,6 +1430,8 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
       this.lives = 3;
       this.deaths = 0;
       this.finished = false;
+      this.chatText = '';
+      this.chatUntil = 0;
       this.label = options.label || 'P';
       this.bodyColor = options.bodyColor || '#2f3b52';
       this.headColor = options.headColor || '#2fd06c';
@@ -1597,6 +1817,7 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
     updateResourceLabels();
     updateBiomeTip();
     hideDeathScreen(true);
+    clearChatState();
     configureLevelDimensions();
     finished = false;
     overlay.style.display = 'none';
@@ -1611,6 +1832,7 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
     coins = [];
     enemies = [];
     bullets = [];
+    clearChatInputs();
     volcano = createVolcano(tileX(levelLength * 0.55), activeBiome);
     updateVolcanoHud();
     const chars = activeBiome.characters || BASE_BIOME.characters;
@@ -1705,25 +1927,48 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
     runStartTime = performance.now();
     elapsedTime = 0;
     finishDuration = 0;
-    keys = {};
-    remoteKeys = {};
+    resetInputState();
     clearVirtualInputs();
     updateUI();
     uiTimer.textContent = formatTime(0);
   }
 
   // ===== controls =====
+  function isTypingTarget(el) {
+    if (!el) return false;
+    const tag = el.tagName;
+    return tag === 'INPUT' || tag === 'TEXTAREA' || el.isContentEditable;
+  }
+
   window.addEventListener('keydown', (e) => {
     if (!platformMode) return;
+    if (isTypingTarget(e.target)) return;
     if (!gameMode) {
       if (e.key === '1') setGameMode(1);
       if (e.key === '2') setGameMode(2);
+      if (e.key === '3') setGameMode('remote');
+      return;
+    }
+    const chatTarget = Object.values(chatLanes).some(({ input }) => input && input === e.target);
+    const chatHidden = !chatUi || chatUi.classList.contains('hidden');
+    if (chatHidden === false) {
+      const wantsP1 = CHAT_HOTKEYS.p1.includes(e.key);
+      const wantsP2 = CHAT_HOTKEYS.p2.includes(e.key);
+      if (wantsP1 || (wantsP2 && gameMode === 2)) {
+        e.preventDefault();
+        focusChat(wantsP1 ? 'p1' : 'p2');
+        return;
+      }
+    }
+    if (activeChatPlayer || chatTarget) {
+      if (e.key === 'Escape') closeChatInput();
       return;
     }
     handleKeyDown(e.key);
   });
   window.addEventListener('keyup', (e) => {
     if (!platformMode || !gameMode) return;
+    if (isTypingTarget(e.target)) return;
     handleKeyUp(e.key);
   });
 
@@ -3027,6 +3272,37 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
     if (player.invuln > 0) {
       ctx.fillStyle = '#ffffff55';
       ctx.fillRect(player.x-2, player.y-18, player.w+4, player.h+20);
+    }
+
+    const chat = chatState[player.label.toLowerCase()];
+    if (chat && chat.text) {
+      const now = performance.now();
+      if (chat.expiresAt > now) {
+        const remaining = chat.expiresAt - now;
+        const opacity = clamp(remaining / CHAT_LIFETIME_MS, 0, 1);
+        const padding = 7;
+        ctx.font = '600 12px system-ui';
+        const text = chat.text;
+        const textWidth = ctx.measureText(text).width;
+        const boxW = textWidth + padding * 2;
+        const boxH = 22;
+        const boxX = player.centerX() - boxW / 2;
+        const boxY = head.y - boxH - 6;
+        ctx.fillStyle = `rgba(31, 35, 42, ${0.8 * opacity})`;
+        ctx.strokeStyle = `rgba(58, 63, 71, ${0.9 * opacity})`;
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.roundRect(boxX, boxY, boxW, boxH, 8);
+        ctx.fill();
+        ctx.stroke();
+        ctx.fillStyle = `rgba(234, 234, 234, ${opacity})`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(text, player.centerX(), boxY + boxH / 2);
+      } else {
+        chat.text = '';
+        chat.expiresAt = 0;
+      }
     }
 
     ctx.fillStyle = '#ffffffdd';
