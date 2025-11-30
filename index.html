@@ -59,6 +59,12 @@
   .biome-features li { margin:4px 0; }
   .biome-boss { margin-top:8px; font-weight:600; color:#ffd166; }
   canvas { display:block; width:100vw; height:100vh; image-rendering: pixelated; }
+  .chat-ui { display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+  .chat-form { display:flex; align-items:center; gap:6px; background:#2b2f36; border:1px solid #3a3f47; padding:6px 8px; border-radius:12px; box-shadow: inset 0 0 0 1px #00000020; }
+  .chat-form button { background:#3a414d; color:#fff; border:1px solid #4a5160; border-radius:10px; padding:8px 10px; font-weight:700; cursor:pointer; }
+  .chat-form button:hover { background:#4a5362; }
+  .chat-input { background:#1f232a; border:1px solid #3a3f47; color:#eaeaea; border-radius:10px; padding:8px 10px; min-width:150px; font-size:14px; }
+  .chat-send { font-size:13px; padding:8px 12px; }
   #touch-controls { position:fixed; inset:auto 0 0 0; display:flex; justify-content:space-between; padding:18px 20px; pointer-events:none; z-index:15; }
   #touch-controls .cluster { display:flex; gap:14px; pointer-events:auto; flex-wrap:wrap; }
   #touch-controls .cluster.actions { justify-content:flex-end; }
@@ -93,15 +99,17 @@
   <div class="pill">Timer: <span id="timer" class="good">0:00.0</span></div>
   <div class="pill">Hazard: <span id="lava" class="bad">20s</span></div>
   <div class="pill">Goal ▶</div>
-  <div id="chat-ui" class="hidden">
-    <div class="chat-lane" id="p1-chat">
-      <button type="button" class="chat-btn" id="p1-chat-btn">P1 Chat</button>
-      <input type="text" class="chat-input" id="p1-chat-input" maxlength="80" placeholder="Press T to chat" />
-    </div>
-    <div class="chat-lane" id="p2-chat">
-      <button type="button" class="chat-btn" id="p2-chat-btn">P2 Chat</button>
-      <input type="text" class="chat-input" id="p2-chat-input" maxlength="80" placeholder="Press Enter to chat" />
-    </div>
+  <div id="chat-ui" class="chat-ui hidden">
+    <form class="chat-form" data-target="p1">
+      <button type="button" class="chat-launch" data-target="p1">Chat to P1</button>
+      <input class="chat-input" type="text" name="chat-p1" autocomplete="off" placeholder="Message player 1" maxlength="80" />
+      <button type="submit" class="chat-send">Send</button>
+    </form>
+    <form class="chat-form" data-target="p2">
+      <button type="button" class="chat-launch" data-target="p2">Chat to P2</button>
+      <input class="chat-input" type="text" name="chat-p2" autocomplete="off" placeholder="Message player 2" maxlength="80" />
+      <button type="submit" class="chat-send">Send</button>
+    </form>
   </div>
 </div>
 
@@ -341,18 +349,8 @@
     p2: document.getElementById('p2-resource-label'),
   };
   const chatUi = document.getElementById('chat-ui');
-  const chatLanes = {
-    p1: {
-      lane: document.getElementById('p1-chat'),
-      button: document.getElementById('p1-chat-btn'),
-      input: document.getElementById('p1-chat-input'),
-    },
-    p2: {
-      lane: document.getElementById('p2-chat'),
-      button: document.getElementById('p2-chat-btn'),
-      input: document.getElementById('p2-chat-input'),
-    },
-  };
+  const chatForms = chatUi ? Array.from(chatUi.querySelectorAll('.chat-form')) : [];
+  const chatInputs = chatUi ? Array.from(chatUi.querySelectorAll('.chat-input')) : [];
   const deathScreen = document.getElementById('death-screen');
   const wahAudio = document.getElementById('wah-audio');
   if (wahAudio) wahAudio.volume = 0.55;
@@ -374,6 +372,21 @@
     wahAudio.pause();
     wahAudio.currentTime = 0;
   };
+
+  function clearChatState() {
+    Object.keys(chatState).forEach(key => {
+      chatState[key].text = '';
+      chatState[key].expiresAt = 0;
+    });
+    chatInputs.forEach(input => { input.value = ''; });
+  }
+
+  function setPlayerChat(target, message) {
+    const key = target === 'p2' ? 'p2' : 'p1';
+    const text = (message || '').trim();
+    chatState[key].text = text;
+    chatState[key].expiresAt = text ? performance.now() + CHAT_LIFETIME_MS : 0;
+  }
 
   function showDeathScreen() {
     if (!deathScreen) return;
@@ -853,126 +866,11 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
   let elapsedTime = 0;
   let finishDuration = 0;
   const virtualButtons = [];
-  let activeChatPlayer = null;
-  const CHAT_VISIBLE_MS = 3600;
-  const CHAT_HOTKEYS = {
-    p1: ['t', 'T'],
-    p2: ['Enter'],
+  const CHAT_LIFETIME_MS = 4500;
+  const chatState = {
+    p1: { text: '', expiresAt: 0 },
+    p2: { text: '', expiresAt: 0 },
   };
-
-  function resetInputState() {
-    keys = {};
-    Object.values(inputSources).forEach(set => set.clear());
-  }
-
-  function recomputeKey(key) {
-    keys[key] = inputSources.keyboard.has(key) || inputSources.virtual.has(key) || inputSources.remote.has(key);
-  }
-
-  function onKeyPressed(key) {
-    if (!key) return;
-    if (key === 'r' || key === 'R') {
-      if (finished) {
-        if (levelIndex < LEVELS.length - 1) levelIndex += 1;
-        else levelIndex = 0;
-      }
-      showBiomeSelect();
-      return;
-    }
-    if (key === 'h' || key === 'H') { debugShowHit = !debugShowHit; }
-    if (finished) return;
-    for (const player of players) {
-      if (player.finished) continue;
-      if (player.controls.attack && player.controls.attack.includes(key)) {
-        if (hasUsableGun(player)) fireGun(player);
-        else playerAttack(player);
-      }
-      if (player.controls.wall && player.controls.wall.includes(key)) placeWall(player);
-      if (player.controls.lava && player.controls.lava.includes(key)) placeLava(player);
-    }
-  }
-
-  function handleKeyChange(key, pressed, source = 'keyboard') {
-    const resolvedKey = resolveVirtualKey(key);
-    if (!resolvedKey || !inputSources[source]) return;
-    const wasDown = !!keys[resolvedKey];
-    if (pressed) inputSources[source].add(resolvedKey);
-    else inputSources[source].delete(resolvedKey);
-    recomputeKey(resolvedKey);
-    const isDown = !!keys[resolvedKey];
-    if (pressed && !wasDown) onKeyPressed(resolvedKey);
-    if (!pressed && wasDown && !isDown && source === 'remote') {
-      // Keep parity with keyboard/touch releases; no-op other than state.
-    }
-  }
-
-  function handleKeyDown(key, source = 'keyboard') {
-    handleKeyChange(key, true, source);
-  }
-
-  function handleKeyUp(key, source = 'keyboard') {
-    handleKeyChange(key, false, source);
-  }
-
-  function setRemoteStatus(text) {
-    if (remoteStatusDisplay) remoteStatusDisplay.textContent = text;
-  }
-
-  function clearRemoteInputs() {
-    const active = Array.from(inputSources.remote);
-    inputSources.remote.clear();
-    active.forEach(recomputeKey);
-  }
-
-  function teardownRemoteSocket() {
-    if (remoteReconnectTimer) {
-      clearTimeout(remoteReconnectTimer);
-      remoteReconnectTimer = null;
-    }
-    if (remoteSocket) {
-      remoteSocket.close();
-      remoteSocket = null;
-    }
-    clearRemoteInputs();
-  }
-
-  function handleRemoteEvent(raw) {
-    let payload = null;
-    try {
-      payload = typeof raw === 'string' ? JSON.parse(raw) : JSON.parse(raw?.data ?? '{}');
-    } catch (err) {
-      return;
-    }
-    if (!payload || typeof payload.key !== 'string') return;
-    const pressed = !!payload.pressed;
-    if (pressed) handleKeyDown(payload.key, 'remote');
-    else handleKeyUp(payload.key, 'remote');
-  }
-
-  function connectRemoteSocket() {
-    if (!remoteMode) return;
-    teardownRemoteSocket();
-    const url = buildRemoteSocketUrl();
-    setRemoteStatus(`Connecting remote at ${url}...`);
-    try {
-      remoteSocket = new WebSocket(url);
-    } catch (err) {
-      setRemoteStatus('Remote socket could not open.');
-      return;
-    }
-    const socketRef = remoteSocket;
-    socketRef.addEventListener('message', (e) => handleRemoteEvent(e.data));
-    socketRef.addEventListener('open', () => setRemoteStatus(`Remote connected at ${url}.`));
-    socketRef.addEventListener('error', () => setRemoteStatus('Remote connection error; retrying...'));
-    socketRef.addEventListener('close', () => {
-      if (remoteSocket !== socketRef) return;
-      setRemoteStatus('Remote disconnected. Waiting for controller...');
-      clearRemoteInputs();
-      if (remoteMode) remoteReconnectTimer = setTimeout(connectRemoteSocket, 1500);
-    });
-  }
-
-  setRemoteStatus('Remote disabled. Choose Remote Co-Op to enable phone controls.');
 
   function updateModeHud(showSecondPlayer) {
     p2Pills.forEach(el => el.classList.toggle('hidden', !showSecondPlayer));
@@ -983,6 +881,30 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
   }
 
   updateModeHud(false);
+
+  function bindChatUi() {
+    chatForms.forEach(form => {
+      const target = form.dataset.target || 'p1';
+      const input = form.querySelector('.chat-input');
+      const launch = form.querySelector('.chat-launch');
+      if (launch && input) {
+        launch.addEventListener('click', () => {
+          input.focus();
+          input.select();
+        });
+      }
+      form.addEventListener('submit', (e) => {
+        e.preventDefault();
+        if (!input) return;
+        const text = (input.value || '').trim();
+        if (!text) return;
+        setPlayerChat(target, text);
+        input.value = '';
+      });
+    });
+  }
+
+  bindChatUi();
 
   const biomeEntries = Object.values(BIOMES);
 
@@ -1686,6 +1608,7 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
     updateResourceLabels();
     updateBiomeTip();
     hideDeathScreen(true);
+    clearChatState();
     configureLevelDimensions();
     finished = false;
     overlay.style.display = 'none';
@@ -1802,8 +1725,15 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
   }
 
   // ===== controls =====
+  function isTypingTarget(el) {
+    if (!el) return false;
+    const tag = el.tagName;
+    return tag === 'INPUT' || tag === 'TEXTAREA' || el.isContentEditable;
+  }
+
   window.addEventListener('keydown', (e) => {
     if (!platformMode) return;
+    if (isTypingTarget(e.target)) return;
     if (!gameMode) {
       if (e.key === '1') setGameMode(1);
       if (e.key === '2') setGameMode(2);
@@ -1829,8 +1759,7 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
   });
   window.addEventListener('keyup', (e) => {
     if (!platformMode || !gameMode) return;
-    const chatTarget = Object.values(chatLanes).some(({ input }) => input && input === e.target);
-    if (activeChatPlayer || chatTarget) return;
+    if (isTypingTarget(e.target)) return;
     handleKeyUp(e.key);
   });
 
@@ -3136,31 +3065,35 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
       ctx.fillRect(player.x-2, player.y-18, player.w+4, player.h+20);
     }
 
-    const now = performance.now();
-    if (player.chatText && now < player.chatUntil) {
-      ctx.font = '700 12px system-ui';
-      const text = player.chatText;
-      const metrics = ctx.measureText(text);
-      const padding = 8;
-      const boxW = metrics.width + padding * 2;
-      const boxH = 24;
-      const boxX = player.centerX() - boxW / 2;
-      const boxY = player.y - 44;
-      ctx.fillStyle = '#0f1117dd';
-      ctx.beginPath();
-      ctx.roundRect(boxX, boxY, boxW, boxH, 8);
-      ctx.fill();
-      ctx.fillStyle = '#ffffff66';
-      ctx.beginPath();
-      ctx.moveTo(player.centerX() - 6, boxY + boxH);
-      ctx.lineTo(player.centerX(), boxY + boxH + 6);
-      ctx.lineTo(player.centerX() + 6, boxY + boxH);
-      ctx.closePath();
-      ctx.fill();
-      ctx.fillStyle = '#eaeaea';
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.fillText(text, player.centerX(), boxY + boxH / 2);
+    const chat = chatState[player.label.toLowerCase()];
+    if (chat && chat.text) {
+      const now = performance.now();
+      if (chat.expiresAt > now) {
+        const remaining = chat.expiresAt - now;
+        const opacity = clamp(remaining / CHAT_LIFETIME_MS, 0, 1);
+        const padding = 7;
+        ctx.font = '600 12px system-ui';
+        const text = chat.text;
+        const textWidth = ctx.measureText(text).width;
+        const boxW = textWidth + padding * 2;
+        const boxH = 22;
+        const boxX = player.centerX() - boxW / 2;
+        const boxY = head.y - boxH - 6;
+        ctx.fillStyle = `rgba(31, 35, 42, ${0.8 * opacity})`;
+        ctx.strokeStyle = `rgba(58, 63, 71, ${0.9 * opacity})`;
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.roundRect(boxX, boxY, boxW, boxH, 8);
+        ctx.fill();
+        ctx.stroke();
+        ctx.fillStyle = `rgba(234, 234, 234, ${opacity})`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(text, player.centerX(), boxY + boxH / 2);
+      } else {
+        chat.text = '';
+        chat.expiresAt = 0;
+      }
     }
 
     ctx.fillStyle = '#ffffffdd';
