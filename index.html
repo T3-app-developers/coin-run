@@ -1179,9 +1179,9 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
   }
 
   function setRemoteStatus(label, connected = false) {
-    if (!remoteStatusEl) return;
-    remoteStatusEl.textContent = label;
-    remoteStatusEl.classList.toggle('offline', !connected);
+    if (!remoteStatusDisplay) return;
+    remoteStatusDisplay.textContent = label;
+    remoteStatusDisplay.classList.toggle('offline', !connected);
   }
 
   function updateRemoteShareUi() {
@@ -1234,7 +1234,7 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
   function connectRemoteSocket() {
     if (!remoteSessionCode) remoteSessionCode = generateRemoteCode();
     closeRemoteSocket();
-    if (!remoteStatusEl) return;
+    if (!remoteStatusDisplay) return;
     setRemoteStatus('Connecting...', false);
     try {
       remoteSocket = new WebSocket(remoteSocketUrl(remoteSessionCode));
