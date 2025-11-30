@@ -65,6 +65,14 @@
   .touch-btn { background:#2b2f36; border:1px solid #3a3f47; color:#fff; font-weight:600; font-size:16px; padding:16px 18px; border-radius:18px; min-width:68px; text-transform:uppercase; touch-action:none; user-select:none; opacity:0.85; transition:background 0.15s ease, opacity 0.15s ease, box-shadow 0.15s ease; }
   .touch-btn:active, .touch-btn.active { background:#3d4554; opacity:1; box-shadow:0 0 0 3px #ffffff12; }
   .touch-btn span { display:block; font-size:12px; font-weight:500; opacity:0.8; margin-top:4px; text-transform:none; }
+  #chat-ui { display:flex; align-items:center; gap:10px; margin-left:auto; }
+  .chat-lane { display:flex; align-items:center; gap:6px; }
+  .chat-btn { background:#2f3540; color:#fff; border:1px solid #4a5160; border-radius:12px; padding:6px 10px; font-weight:700; cursor:pointer; box-shadow: inset 0 0 0 1px #00000030; }
+  .chat-btn:hover { background:#3a414d; }
+  .chat-btn:focus-visible, .chat-input:focus-visible { outline:2px solid #9ef79a; outline-offset:2px; }
+  .chat-input { background:#1f232a; border:1px solid #3a3f47; border-radius:10px; color:#eaeaea; padding:6px 8px; min-width:140px; font-weight:600; box-shadow: inset 0 0 0 1px #00000020; }
+  .chat-input::placeholder { color:#7c8695; }
+  .chat-lane.hidden { display:none; }
 </style>
 </head>
 <body>
@@ -85,6 +93,16 @@
   <div class="pill">Timer: <span id="timer" class="good">0:00.0</span></div>
   <div class="pill">Hazard: <span id="lava" class="bad">20s</span></div>
   <div class="pill">Goal ▶</div>
+  <div id="chat-ui" class="hidden">
+    <div class="chat-lane" id="p1-chat">
+      <button type="button" class="chat-btn" id="p1-chat-btn">P1 Chat</button>
+      <input type="text" class="chat-input" id="p1-chat-input" maxlength="80" placeholder="Press T to chat" />
+    </div>
+    <div class="chat-lane" id="p2-chat">
+      <button type="button" class="chat-btn" id="p2-chat-btn">P2 Chat</button>
+      <input type="text" class="chat-input" id="p2-chat-input" maxlength="80" placeholder="Press Enter to chat" />
+    </div>
+  </div>
 </div>
 
 <div id="help">
@@ -247,6 +265,19 @@
   const resourceLabels = {
     p1: document.getElementById('p1-resource-label'),
     p2: document.getElementById('p2-resource-label'),
+  };
+  const chatUi = document.getElementById('chat-ui');
+  const chatLanes = {
+    p1: {
+      lane: document.getElementById('p1-chat'),
+      button: document.getElementById('p1-chat-btn'),
+      input: document.getElementById('p1-chat-input'),
+    },
+    p2: {
+      lane: document.getElementById('p2-chat'),
+      button: document.getElementById('p2-chat-btn'),
+      input: document.getElementById('p2-chat-input'),
+    },
   };
   const deathScreen = document.getElementById('death-screen');
   const wahAudio = document.getElementById('wah-audio');
@@ -739,10 +770,19 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
   let elapsedTime = 0;
   let finishDuration = 0;
   const virtualButtons = [];
+  let activeChatPlayer = null;
+  const CHAT_VISIBLE_MS = 3600;
+  const CHAT_HOTKEYS = {
+    p1: ['t', 'T'],
+    p2: ['Enter'],
+  };
 
   function updateModeHud(showSecondPlayer) {
     p2Pills.forEach(el => el.classList.toggle('hidden', !showSecondPlayer));
     if (helpP2) helpP2.classList.toggle('hidden', !showSecondPlayer);
+    if (chatUi) chatUi.classList.toggle('hidden', !showSecondPlayer);
+    if (chatLanes.p2?.lane) chatLanes.p2.lane.classList.toggle('hidden', !showSecondPlayer);
+    if (!showSecondPlayer) clearChatInputs();
   }
 
   updateModeHud(false);
@@ -777,6 +817,75 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
     const b = ensureActiveBiome();
     if (resourceLabels.p1) resourceLabels.p1.textContent = b.resourceName;
     if (resourceLabels.p2) resourceLabels.p2.textContent = b.resourceName;
+  }
+
+  function clearChatInputs() {
+    activeChatPlayer = null;
+    Object.values(chatLanes).forEach(({ input }) => {
+      if (input) {
+        input.value = '';
+        input.blur();
+      }
+    });
+  }
+
+  function applyChatMessage(playerLabel, text) {
+    const player = players.find(p => p.label === playerLabel);
+    if (!player) return;
+    player.chatText = text;
+    player.chatUntil = performance.now() + CHAT_VISIBLE_MS;
+  }
+
+  function closeChatInput() {
+    activeChatPlayer = null;
+    Object.values(chatLanes).forEach(({ input }) => input?.blur());
+  }
+
+  function submitChat(playerKey) {
+    const lane = chatLanes[playerKey];
+    if (!lane || !lane.input) return;
+    if (gameMode !== 2) { closeChatInput(); return; }
+    const text = lane.input.value.trim();
+    if (text) {
+      applyChatMessage(playerKey.toUpperCase(), text);
+    }
+    lane.input.value = '';
+    closeChatInput();
+  }
+
+  function focusChat(playerKey) {
+    const lane = chatLanes[playerKey];
+    if (!lane || !lane.input) return;
+    if (gameMode !== 2) return;
+    activeChatPlayer = playerKey;
+    lane.input.focus();
+    lane.input.select();
+  }
+
+  function setupChatLane(playerKey) {
+    const lane = chatLanes[playerKey];
+    if (!lane) return;
+    const { button, input } = lane;
+    if (button) button.addEventListener('click', () => focusChat(playerKey));
+    if (input) {
+      input.addEventListener('focus', () => { activeChatPlayer = playerKey; });
+      input.addEventListener('blur', () => {
+        if (activeChatPlayer === playerKey) activeChatPlayer = null;
+      });
+      input.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          e.stopPropagation();
+          submitChat(playerKey);
+        } else if (e.key === 'Escape') {
+          e.preventDefault();
+          e.stopPropagation();
+          closeChatInput();
+        } else {
+          e.stopPropagation();
+        }
+      });
+    }
   }
 
   function describeBiome(b) {
@@ -859,6 +968,8 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
   updateResourceLabels();
   updateBiomeTip();
   renderBiomeDetails(ensureActiveBiome());
+  setupChatLane('p1');
+  setupChatLane('p2');
 
   const VIRTUAL_KEY_ALIASES = {
     space: ' ',
@@ -991,6 +1102,8 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
       this.lives = 3;
       this.deaths = 0;
       this.finished = false;
+      this.chatText = '';
+      this.chatUntil = 0;
       this.label = options.label || 'P';
       this.bodyColor = options.bodyColor || '#2f3b52';
       this.headColor = options.headColor || '#2fd06c';
@@ -1390,6 +1503,7 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
     coins = [];
     enemies = [];
     bullets = [];
+    clearChatInputs();
     volcano = createVolcano(tileX(levelLength * 0.55), activeBiome);
     updateVolcanoHud();
     const chars = activeBiome.characters || BASE_BIOME.characters;
@@ -1498,10 +1612,27 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
       if (e.key === '2') setGameMode(2);
       return;
     }
+    const chatTarget = Object.values(chatLanes).some(({ input }) => input && input === e.target);
+    const chatHidden = !chatUi || chatUi.classList.contains('hidden');
+    if (chatHidden === false) {
+      const wantsP1 = CHAT_HOTKEYS.p1.includes(e.key);
+      const wantsP2 = CHAT_HOTKEYS.p2.includes(e.key);
+      if (wantsP1 || (wantsP2 && gameMode === 2)) {
+        e.preventDefault();
+        focusChat(wantsP1 ? 'p1' : 'p2');
+        return;
+      }
+    }
+    if (activeChatPlayer || chatTarget) {
+      if (e.key === 'Escape') closeChatInput();
+      return;
+    }
     handleKeyDown(e.key);
   });
   window.addEventListener('keyup', (e) => {
     if (!platformMode || !gameMode) return;
+    const chatTarget = Object.values(chatLanes).some(({ input }) => input && input === e.target);
+    if (activeChatPlayer || chatTarget) return;
     handleKeyUp(e.key);
   });
 
@@ -2805,6 +2936,33 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
     if (player.invuln > 0) {
       ctx.fillStyle = '#ffffff55';
       ctx.fillRect(player.x-2, player.y-18, player.w+4, player.h+20);
+    }
+
+    const now = performance.now();
+    if (player.chatText && now < player.chatUntil) {
+      ctx.font = '700 12px system-ui';
+      const text = player.chatText;
+      const metrics = ctx.measureText(text);
+      const padding = 8;
+      const boxW = metrics.width + padding * 2;
+      const boxH = 24;
+      const boxX = player.centerX() - boxW / 2;
+      const boxY = player.y - 44;
+      ctx.fillStyle = '#0f1117dd';
+      ctx.beginPath();
+      ctx.roundRect(boxX, boxY, boxW, boxH, 8);
+      ctx.fill();
+      ctx.fillStyle = '#ffffff66';
+      ctx.beginPath();
+      ctx.moveTo(player.centerX() - 6, boxY + boxH);
+      ctx.lineTo(player.centerX(), boxY + boxH + 6);
+      ctx.lineTo(player.centerX() + 6, boxY + boxH);
+      ctx.closePath();
+      ctx.fill();
+      ctx.fillStyle = '#eaeaea';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(text, player.centerX(), boxY + boxH / 2);
     }
 
     ctx.fillStyle = '#ffffffdd';
