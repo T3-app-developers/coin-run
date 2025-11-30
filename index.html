@@ -136,7 +136,7 @@
   <span id="help-p2"><b>Player 2</b> – Move: <b>←/→</b> · Jump: <b>↑</b> · Mine: <b>/</b> (hold) · Attack: <b>.</b> (laser: 3 hits for grunts, 10 for the boss) · Wall: <b>[</b> · Lava: <b>]</b><br></span>
   <span id="biome-tip" style="display:block; margin-top:8px; opacity:0.75;">Tip: pick a biome to customize your run.</span>
   <span id="remote-hint">Remote P2: pick <b>Remote Co-Op</b> below, then open <code>?controller=1</code> on your phone/controller page to send <code>{ key, pressed }</code> events over WebSocket. Keyboard still works as fallback.</span>
-  <span id="remote-status"></span>
+  <span id="remote-status-inline" class="remote-status-display"></span>
   Restart: <b>R</b> &nbsp;|&nbsp; Toggle Hitboxes: <b>H</b>
 </div>
 
@@ -149,7 +149,7 @@
   </div>
   <div class="remote-row" style="margin-bottom:8px;">
     <a id="remote-link" href="#" target="_blank" rel="noreferrer">controller link</a>
-    <span class="remote-status offline" id="remote-status">Not connected</span>
+    <span class="remote-status offline remote-status-display" id="remote-status">Not connected</span>
   </div>
   <div class="remote-row" style="align-items:flex-start; gap:12px;">
     <img id="remote-qr" alt="QR code for the controller link" loading="lazy" />
@@ -907,7 +907,7 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
   };
   let remoteMode = false;
   let remoteReconnectTimer = null;
-  const remoteStatusDisplay = document.getElementById('remote-status');
+  const remoteStatusDisplays = Array.from(document.querySelectorAll('.remote-status-display'));
   let debugShowHit = false;
   let finished = false;
   let runStartTime = 0;
@@ -1179,9 +1179,11 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
   }
 
   function setRemoteStatus(label, connected = false) {
-    if (!remoteStatusDisplay) return;
-    remoteStatusDisplay.textContent = label;
-    remoteStatusDisplay.classList.toggle('offline', !connected);
+    if (!remoteStatusDisplays.length) return;
+    remoteStatusDisplays.forEach(el => {
+      el.textContent = label;
+      el.classList.toggle('offline', !connected);
+    });
   }
 
   function updateRemoteShareUi() {
@@ -1234,7 +1236,7 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
   function connectRemoteSocket() {
     if (!remoteSessionCode) remoteSessionCode = generateRemoteCode();
     closeRemoteSocket();
-    if (!remoteStatusDisplay) return;
+    if (!remoteStatusDisplays.length) return;
     setRemoteStatus('Connecting...', false);
     try {
       remoteSocket = new WebSocket(remoteSocketUrl(remoteSessionCode));
