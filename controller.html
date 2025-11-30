@@ -10,6 +10,11 @@
   .card { background:#1a1e26; border:1px solid #2d3440; border-radius:16px; padding:16px; box-shadow:0 10px 30px #0009; }
   h1 { margin:0 0 6px 0; font-size:24px; }
   p { margin:6px 0; opacity:0.85; line-height:1.4; }
+  .hidden { display:none !important; }
+  .mode-row { display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin:8px 0 4px; }
+  .mode-row strong { font-size:14px; letter-spacing:0.2px; }
+  .mode-btn { background:#252b37; border:1px solid #394251; padding:8px 12px; border-radius:10px; color:#eaeaea; font-weight:700; cursor:pointer; }
+  .mode-btn.active { background:#3a4354; box-shadow:0 0 0 3px #ffffff12; }
   form { display:flex; gap:10px; flex-wrap:wrap; margin:8px 0; }
   input[type="text"] { flex:1; min-width:140px; padding:10px 12px; border-radius:10px; border:1px solid #2d3440; background:#0b0d12; color:#fff; }
   button { background:#2f3540; border:1px solid #4a5160; color:#fff; font-weight:700; padding:10px 14px; border-radius:12px; cursor:pointer; }
@@ -18,9 +23,11 @@
   .status.ok { color:#9ef79a; }
   .status.warn { color:#ff9e64; }
   .grid { display:grid; grid-template-columns:repeat(auto-fit, minmax(120px, 1fr)); gap:10px; margin-top:12px; }
+  .grid.hidden { display:none; }
   .btn { width:100%; padding:14px 12px; text-align:center; border-radius:12px; border:1px solid #394251; background:#252b37; color:#fff; font-size:16px; font-weight:700; user-select:none; touch-action:none; }
   .btn small { display:block; font-size:12px; opacity:0.8; font-weight:600; }
   .btn:active, .btn.active { background:#3a4354; box-shadow:0 0 0 3px #ffffff12; }
+  .mode-hint { margin:6px 0 0; font-size:13px; opacity:0.8; }
   .chat { margin-top:14px; border:1px solid #2d3440; border-radius:12px; padding:10px; background:#12151c; }
   .chat-log { max-height:180px; overflow:auto; padding-right:4px; font-size:14px; }
   .chat-row { margin:2px 0; }
@@ -30,12 +37,18 @@
 <div class="wrap">
   <div class="card">
     <h1>Remote Controller</h1>
-    <p>Enter the code your host sees after choosing Two Players. Buttons send Arrow/Slash/Dot/[ ] to Player 2; keyboard fallback is still active on their side.</p>
+    <p>Enter the code your host sees after choosing Two Players. Pick mobile for on-screen buttons or desktop to drive the same controls from your keyboard.</p>
+    <div class="mode-row" role="group" aria-label="Select your device">
+      <strong>You're joining on:</strong>
+      <button type="button" class="mode-btn active" data-mode="mobile">📱 Mobile / Touch</button>
+      <button type="button" class="mode-btn" data-mode="desktop">🖥️ Desktop / Keyboard</button>
+    </div>
     <form id="join-form">
       <input id="code-input" type="text" maxlength="8" autocomplete="off" placeholder="Session code" />
       <button type="submit">Connect</button>
     </form>
     <div id="status" class="status warn">Not connected</div>
+    <p id="keyboard-hint" class="mode-hint hidden">Desktop mode: press ← → ↑ / . [ ] on your keyboard. Buttons stay ready for clicks if you prefer.</p>
     <div class="grid" id="controls">
       <button class="btn" data-action="ArrowLeft">⬅️ Left<small>Move</small></button>
       <button class="btn" data-action="ArrowRight">➡️ Right<small>Move</small></button>
@@ -68,10 +81,16 @@
   const chatForm = document.getElementById('chat-form');
   const chatInput = document.getElementById('chat-input');
   const chatLog = document.getElementById('chat-log');
+  const modeButtons = Array.from(document.querySelectorAll('.mode-btn'));
+  const controlsGrid = document.getElementById('controls');
+  const keyboardHint = document.getElementById('keyboard-hint');
+
+  const CONTROL_ACTIONS = ['ArrowLeft', 'ArrowRight', 'ArrowUp', '/', '.', '[', ']'];
 
   let socket = null;
   let sessionCode = '';
   let connected = false;
+  let controlMode = 'mobile';
 
   function remoteSocketUrl(code) {
     const channel = `${REMOTE_CHANNEL_PREFIX}${code}`;
@@ -174,12 +193,37 @@
 
   buttons.forEach(wireButton);
 
+  function updateControlMode(mode) {
+    controlMode = mode === 'desktop' ? 'desktop' : 'mobile';
+    modeButtons.forEach(btn => btn.classList.toggle('active', btn.dataset.mode === controlMode));
+    if (controlsGrid) controlsGrid.classList.toggle('hidden', controlMode === 'desktop');
+    if (keyboardHint) keyboardHint.classList.toggle('hidden', controlMode !== 'desktop');
+  }
+
+  modeButtons.forEach(btn => {
+    btn.addEventListener('click', () => updateControlMode(btn.dataset.mode || 'mobile'));
+  });
+
+  function handleKeyEvent(event, pressed) {
+    if (controlMode !== 'desktop') return;
+    if (event.repeat) return;
+    const action = event.key;
+    if (!CONTROL_ACTIONS.includes(action)) return;
+    event.preventDefault();
+    sendPayload({ action, pressed });
+  }
+
+  window.addEventListener('keydown', (e) => handleKeyEvent(e, true));
+  window.addEventListener('keyup', (e) => handleKeyEvent(e, false));
+
   if (joinForm) {
     joinForm.addEventListener('submit', (e) => {
       e.preventDefault();
       connect();
     });
   }
+
+  updateControlMode('mobile');
 
   if (chatForm) {
     chatForm.addEventListener('submit', (e) => {
