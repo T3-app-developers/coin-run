@@ -1829,8 +1829,6 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
   });
   window.addEventListener('keyup', (e) => {
     if (!platformMode || !gameMode) return;
-    const chatTarget = Object.values(chatLanes).some(({ input }) => input && input === e.target);
-    if (activeChatPlayer || chatTarget) return;
     handleKeyUp(e.key);
   });
 
