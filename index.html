@@ -15,12 +15,40 @@
   .good { color:#9ef79a; }
   .warn { color:#ff9e64; }
   .bad { color:#ff6b6b; }
-  #help { position:fixed; right:10px; top:10px; background:#2b2f36; border:1px solid #3a3f47; padding:10px 12px; border-radius:10px; max-width: 420px; line-height:1.2; font-size:14px; }
+  #help { position:fixed; right:10px; top:10px; background:#2b2f36; border:1px solid #3a3f47; padding:10px 12px; border-radius:10px; max-width: 420px; line-height:1.2; font-size:14px; box-shadow:0 12px 36px #0008; }
+  #help .help-header { display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:6px; }
+  #help .help-title { font-weight:700; }
+  #help.minimized { max-width:220px; }
+  #help.minimized .help-body { display:none; }
+  .panel-toggle { background:#2f3540; border:1px solid #4a5160; color:#fff; font-weight:600; padding:4px 8px; border-radius:8px; cursor:pointer; font-size:12px; }
+  .panel-toggle:hover { background:#3d4554; }
+  #remote-share { position:fixed; right:10px; top:180px; background:#232730; border:1px solid #3a3f47; padding:12px 14px; border-radius:12px; max-width: 420px; line-height:1.3; font-size:14px; box-shadow:0 12px 36px #0008; }
+  #remote-share .remote-header { display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:6px; }
+  #remote-share.minimized .remote-body { display:none; }
+  #remote-share.minimized { max-width:240px; }
+  #remote-share.hidden { display:none; }
+  #remote-share h3 { margin:0 0 6px 0; font-size:16px; letter-spacing:0.2px; }
+  #remote-share .remote-row { display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+  #remote-share code { background:#1b1f27; border:1px solid #333a46; padding:4px 8px; border-radius:8px; font-size:15px; letter-spacing:1.4px; }
+  #remote-share a { color:#8ad5ff; word-break:break-all; }
+  #remote-share img { width:120px; height:120px; border-radius:10px; border:1px solid #333a46; background:#161920; object-fit:cover; }
+  #remote-share .remote-status { font-weight:600; color:#9ef79a; }
+  #remote-share .remote-status.offline { color:#ff9e64; }
+  #remote-share button { background:#2f3540; border:1px solid #4a5160; color:#fff; font-weight:600; padding:8px 12px; border-radius:10px; cursor:pointer; }
+  #remote-share button:hover { background:#3d4554; }
+  #remote-share .remote-chat { margin-top:8px; border:1px solid #333a46; border-radius:10px; padding:8px; background:#1c2028; }
+  #remote-share .remote-chat h4 { margin:0 0 6px 0; font-size:14px; letter-spacing:0.2px; }
+  #remote-share .remote-messages { max-height:120px; overflow:auto; font-size:13px; line-height:1.4; padding-right:4px; }
+  #remote-share .remote-message { margin:2px 0; }
+  #remote-share .remote-chat form { display:flex; gap:6px; margin-top:6px; }
+  #remote-share .remote-chat input { flex:1; background:#0f1218; border:1px solid #2f3540; color:#fff; padding:6px 8px; border-radius:8px; }
   #overlay { position:fixed; inset:0; display:none; align-items:center; justify-content:center; background:#000a; color:#fff; text-align:center; transition:background 0.25s ease; }
   #overlay.celebrating { background:radial-gradient(circle at 50% 30%, #2e3c5fdd 0%, #141821ee 55%, #0a0c12f5 100%); }
   #overlay .card { background:#1f232a; border:1px solid #3a3f47; border-radius:14px; padding:22px 24px; max-width:560px; box-shadow:0 18px 60px #0009; }
   #overlay h1 { margin:0 0 8px 0; font-size:28px; }
   #overlay p { margin:6px 0; }
+  #death-screen { position:fixed; inset:0; display:none; align-items:center; justify-content:center; background:#000a; z-index:40; }
+  #death-screen .card { background:#1f232a; border:1px solid #3a3f47; border-radius:14px; padding:22px 24px; max-width:560px; box-shadow:0 18px 60px #0009; color:#fff; text-align:center; }
   #celebration-screen { position:relative; display:flex; flex-direction:column; align-items:center; gap:16px; max-width:720px; padding:12px; }
   #celebration-screen .celebration-card { position:relative; overflow:hidden; padding:36px 48px; border-radius:28px; background:linear-gradient(145deg, #283a5a, #1b2435 62%, #111722); border:1px solid #4b5973; box-shadow:0 22px 80px #000b, inset 0 0 0 1px #ffffff12; text-shadow:0 4px 30px #000d; }
   #celebration-screen .celebration-card::after { content:""; position:absolute; inset:18px; border-radius:22px; border:1px solid #ffffff12; pointer-events:none; }
@@ -38,24 +66,51 @@
   #celebration-screen .celebration-burst .star-e { top:40%; left:-4%; width:20px; height:20px; animation-delay:-0.9s; background:linear-gradient(135deg, #8ec5fc, #e0c3fc); }
   @keyframes floaty { 0% { transform:translateY(0); } 50% { transform:translateY(-10px); } 100% { transform:translateY(0); } }
   @keyframes twinkle { 0% { transform:scale(0.6) rotate(0deg); opacity:0; } 20% { opacity:0.9; } 50% { transform:scale(1.1) rotate(28deg); opacity:0.7; } 80% { opacity:0.9; } 100% { transform:scale(0.6) rotate(60deg); opacity:0; } }
-  #platform-select, #mode-select { position:fixed; inset:0; display:flex; align-items:center; justify-content:center; background:#000d; color:#fff; text-align:center; }
+  #platform-select, #mode-select, #biome-select { position:fixed; inset:0; display:flex; align-items:center; justify-content:center; background:#000d; color:#fff; text-align:center; }
   #platform-select { z-index:30; }
   #mode-select { z-index:20; }
-  #platform-select .card, #mode-select .card { background:#1f232a; border:1px solid #3a3f47; border-radius:18px; padding:28px 32px; max-width:520px; box-shadow:0 18px 60px #0008; }
-  #platform-select h1, #mode-select h1 { margin:0 0 12px 0; font-size:30px; }
-  #platform-select p, #mode-select p { margin:8px 0; opacity:0.85; }
+  #biome-select { z-index:25; }
+  #platform-select .card, #mode-select .card, #biome-select .card { background:#1f232a; border:1px solid #3a3f47; border-radius:18px; padding:28px 32px; max-width:780px; box-shadow:0 18px 60px #0008; }
+  #platform-select h1, #mode-select h1, #biome-select h1 { margin:0 0 12px 0; font-size:30px; }
+  #platform-select p, #mode-select p, #biome-select p { margin:8px 0; opacity:0.85; }
   .mode-buttons { display:flex; gap:16px; justify-content:center; margin-top:18px; flex-wrap:wrap; }
-  .mode-btn, .platform-btn { background:#2f3540; border:1px solid #4a5160; color:#fff; font-weight:600; padding:12px 26px; border-radius:999px; font-size:18px; cursor:pointer; transition:transform 0.15s ease, background 0.15s ease, box-shadow 0.15s ease; }
-  .mode-btn:hover, .platform-btn:hover { background:#3d4554; box-shadow:0 0 0 3px #ffffff12; transform:translateY(-2px); }
-  .mode-btn:active, .platform-btn:active { transform:translateY(0); background:#28303c; }
+  .mode-btn, .platform-btn, .biome-btn { background:#2f3540; border:1px solid #4a5160; color:#fff; font-weight:600; padding:12px 26px; border-radius:14px; font-size:18px; cursor:pointer; transition:transform 0.15s ease, background 0.15s ease, box-shadow 0.15s ease; }
+  .mode-btn:hover, .platform-btn:hover, .biome-btn:hover { background:#3d4554; box-shadow:0 0 0 3px #ffffff12; transform:translateY(-2px); }
+  .mode-btn:active, .platform-btn:active, .biome-btn:active { transform:translateY(0); background:#28303c; }
   .hidden { display:none !important; }
+  .biome-grid { display:grid; grid-template-columns:repeat(auto-fit, minmax(140px, 1fr)); gap:12px; margin-top:18px; }
+  .biome-btn { text-align:left; display:flex; flex-direction:column; gap:6px; align-items:flex-start; min-height:120px; }
+  .biome-btn small { opacity:0.78; font-weight:500; }
+  .biome-btn strong { display:block; font-size:20px; }
+  .biome-pill { display:inline-flex; gap:6px; align-items:center; background:#3a414d; border:1px solid #4a5160; padding:6px 10px; border-radius:999px; font-size:14px; }
+  .biome-pill .icon { font-size:18px; }
+  .biome-description { margin-top:16px; text-align:left; background:#252b34; border:1px solid #333c47; border-radius:12px; padding:14px 16px; box-shadow: inset 0 0 0 1px #ffffff0a; }
+  .biome-description h2 { margin:0 0 8px 0; font-size:18px; letter-spacing:0.3px; }
+  .biome-description p { margin:4px 0; opacity:0.9; }
+  .biome-features { list-style:disc; padding-left:20px; margin:8px 0; color:#eaeaea; opacity:0.9; }
+  .biome-features li { margin:4px 0; }
+  .biome-boss { margin-top:8px; font-weight:600; color:#ffd166; }
   canvas { display:block; width:100vw; height:100vh; image-rendering: pixelated; }
+  .chat-ui { display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+  .chat-form { display:flex; align-items:center; gap:6px; background:#2b2f36; border:1px solid #3a3f47; padding:6px 8px; border-radius:12px; box-shadow: inset 0 0 0 1px #00000020; }
+  .chat-form button { background:#3a414d; color:#fff; border:1px solid #4a5160; border-radius:10px; padding:8px 10px; font-weight:700; cursor:pointer; }
+  .chat-form button:hover { background:#4a5362; }
+  .chat-input { background:#1f232a; border:1px solid #3a3f47; color:#eaeaea; border-radius:10px; padding:8px 10px; min-width:150px; font-size:14px; }
+  .chat-send { font-size:13px; padding:8px 12px; }
   #touch-controls { position:fixed; inset:auto 0 0 0; display:flex; justify-content:space-between; padding:18px 20px; pointer-events:none; z-index:15; }
   #touch-controls .cluster { display:flex; gap:14px; pointer-events:auto; flex-wrap:wrap; }
   #touch-controls .cluster.actions { justify-content:flex-end; }
   .touch-btn { background:#2b2f36; border:1px solid #3a3f47; color:#fff; font-weight:600; font-size:16px; padding:16px 18px; border-radius:18px; min-width:68px; text-transform:uppercase; touch-action:none; user-select:none; opacity:0.85; transition:background 0.15s ease, opacity 0.15s ease, box-shadow 0.15s ease; }
   .touch-btn:active, .touch-btn.active { background:#3d4554; opacity:1; box-shadow:0 0 0 3px #ffffff12; }
   .touch-btn span { display:block; font-size:12px; font-weight:500; opacity:0.8; margin-top:4px; text-transform:none; }
+  #chat-ui { display:flex; align-items:center; gap:10px; margin-left:auto; }
+  .chat-lane { display:flex; align-items:center; gap:6px; }
+  .chat-btn { background:#2f3540; color:#fff; border:1px solid #4a5160; border-radius:12px; padding:6px 10px; font-weight:700; cursor:pointer; box-shadow: inset 0 0 0 1px #00000030; }
+  .chat-btn:hover { background:#3a414d; }
+  .chat-btn:focus-visible, .chat-input:focus-visible { outline:2px solid #9ef79a; outline-offset:2px; }
+  .chat-input { background:#1f232a; border:1px solid #3a3f47; border-radius:10px; color:#eaeaea; padding:6px 8px; min-width:140px; font-weight:600; box-shadow: inset 0 0 0 1px #00000020; }
+  .chat-input::placeholder { color:#7c8695; }
+  .chat-lane.hidden { display:none; }
 </style>
 </head>
 <body>
@@ -66,13 +121,15 @@
 <div id="ui">
   <div class="pill">Level: <span id="level-indicator" class="good">1</span></div>
   <div class="pill">P1 Coins: <span id="p1-coins" class="good">0</span></div>
-  <div class="pill">P1 Wood: <span id="p1-wood" class="warn">0</span></div>
+  <div class="pill">P1 <span id="p1-resource-label">Wood</span>: <span id="p1-wood" class="warn">0</span></div>
   <div class="pill">P1 Lives: <span id="p1-lives" class="good">3</span></div>
+  <div class="pill">P1 Gun: <span id="p1-gun" class="warn">None</span></div>
   <div class="pill p2-pill">P2 Coins: <span id="p2-coins" class="good">0</span></div>
-  <div class="pill p2-pill">P2 Wood: <span id="p2-wood" class="warn">0</span></div>
+  <div class="pill p2-pill">P2 <span id="p2-resource-label">Wood</span>: <span id="p2-wood" class="warn">0</span></div>
   <div class="pill p2-pill">P2 Lives: <span id="p2-lives" class="good">3</span></div>
+  <div class="pill p2-pill">P2 Gun: <span id="p2-gun" class="warn">None</span></div>
   <div class="pill">Timer: <span id="timer" class="good">0:00.0</span></div>
-  <div class="pill">Lava: <span id="lava" class="bad">20s</span></div>
+  <div class="pill">Hazard: <span id="lava" class="bad">20s</span></div>
   <div class="pill">Goal ▶</div>
   <div class="pill boss-pill hidden" id="boss-indicator">
     <span id="boss-label">Boss</span>
@@ -139,14 +196,29 @@
 <div id="mode-select" class="hidden">
   <div class="card">
     <h1>Choose Game Mode</h1>
-    <p>Play solo or grab a friend! This choice sticks until you reload the page. You can press <b>1</b> or <b>2</b> to choose quickly.</p>
+    <p>Play solo or grab a friend! This choice sticks until you reload the page. You can press <b>1</b> or <b>2</b> to choose quickly. You will pick a biome at the start of every run.</p>
     <div class="mode-buttons">
       <button class="mode-btn" data-mode="1">One Player</button>
       <button class="mode-btn" data-mode="2">Two Players</button>
+      <button class="mode-btn" data-mode="remote">Remote Co-Op</button>
     </div>
     <p style="margin-top:18px; font-size:14px; opacity:0.7;">You can press <b>R</b> anytime during a run to restart the current mode.</p>
   </div>
 </div>
+
+  <div id="biome-select" class="hidden">
+    <div class="card">
+      <h1>Pick a Biome</h1>
+      <p>Choose a place to run, mine, and face the boss. Each biome keeps the rules but changes the vibe.</p>
+      <div id="biome-buttons" class="biome-grid"></div>
+      <div class="biome-description">
+        <h2 id="biome-title">Biome vibe</h2>
+        <p id="biome-blurb" style="margin-top:6px; font-size:14px; opacity:0.9;">Every start gives you another chance to switch things up.</p>
+        <ul id="biome-features" class="biome-features"></ul>
+        <p id="biome-boss" class="biome-boss"></p>
+      </div>
+    </div>
+  </div>
 
 <div id="touch-controls" class="hidden">
   <div class="cluster move">
@@ -164,11 +236,40 @@
 
 <script>
 (() => {
+  const queryParams = new URLSearchParams(window.location.search);
+  const isControllerPage = queryParams.get('controller') === '1';
+  const REMOTE_WS_BASE = 'wss://free.blr2.piesocket.com/v3';
+  const REMOTE_WS_KEY = 'demouid';
+  const REMOTE_CHANNEL_PREFIX = 'coin-run-';
+
   // ===== helpers =====
   const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
   const rand = (a, b) => Math.random() * (b - a) + a;
   const irand = (a, b) => Math.floor(rand(a, b));
   const sign = (x) => x < 0 ? -1 : 1;
+  const hexToRgb = (hex) => {
+    if (!hex) return { r: 0, g: 0, b: 0 };
+    const clean = hex.replace('#', '');
+    const expanded = clean.length === 3
+      ? clean.split('').map((c) => c + c).join('')
+      : clean;
+    const value = parseInt(expanded, 16);
+    return {
+      r: (value >> 16) & 255,
+      g: (value >> 8) & 255,
+      b: value & 255,
+    };
+  };
+  const mixHex = (from, to, t) => {
+    const a = hexToRgb(from);
+    const b = hexToRgb(to);
+    const mix = (v1, v2) => Math.round(v1 + (v2 - v1) * t);
+    return `rgb(${mix(a.r, b.r)}, ${mix(a.g, b.g)}, ${mix(a.b, b.b)})`;
+  };
+  const hexToRgba = (hex, alpha) => {
+    const { r, g, b } = hexToRgb(hex);
+    return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+  };
   const formatTime = (sec) => {
     const totalTenths = Math.round(sec * 10);
     const minutes = Math.floor(totalTenths / 600);
@@ -176,6 +277,79 @@
     const tenths = totalTenths % 10;
     return `${minutes}:${seconds.toString().padStart(2,'0')}.${tenths}`;
   };
+
+  const VIRTUAL_KEY_ALIASES = {
+    space: ' ',
+    Space: ' ',
+  };
+
+  function resolveVirtualKey(raw) {
+    if (!raw) return raw;
+    return VIRTUAL_KEY_ALIASES.hasOwnProperty(raw) ? VIRTUAL_KEY_ALIASES[raw] : raw;
+  }
+
+  function remoteSocketUrl(code) {
+    const channel = `${REMOTE_CHANNEL_PREFIX}${code}`;
+    return `${REMOTE_WS_BASE}/${encodeURIComponent(channel)}?api_key=${encodeURIComponent(REMOTE_WS_KEY)}&notify_self=1`;
+  }
+
+  function renderControllerPage() {
+    const controllerCode = (queryParams.get('code') || '').trim().toUpperCase();
+    const wsUrl = controllerCode ? remoteSocketUrl(controllerCode) : 'Missing code';
+    document.body.innerHTML = `
+      <div id="controller-ui">
+        <h1>Remote P2 Controller</h1>
+        <p>Connected players listen for <code>{ action, pressed, code }</code> over WebSocket at <code>${wsUrl}</code>.</p>
+        <p>${controllerCode ? `Joining code <strong>${controllerCode}</strong>.` : 'Missing a join code. Open the controller link from the host screen.'}</p>
+        <div class="controller-grid">
+          <button class="controller-btn" data-key="ArrowUp">Jump</button>
+          <button class="controller-btn" data-key=".">Attack</button>
+          <button class="controller-btn" data-key="/">Mine</button>
+          <button class="controller-btn" data-key="ArrowLeft">Left</button>
+          <button class="controller-btn" data-key="ArrowRight">Right</button>
+          <button class="controller-btn" data-key="[">Wall</button>
+          <button class="controller-btn" data-key="]">Lava</button>
+          <button class="controller-btn" data-key="r">Restart</button>
+          <button class="controller-btn" data-key="h">Hitboxes</button>
+        </div>
+        <div id="controller-status" class="controller-status">Connecting to ${wsUrl}...</div>
+      </div>
+    `;
+    const statusEl = document.getElementById('controller-status');
+    const buttons = Array.from(document.querySelectorAll('.controller-btn'));
+    const socket = controllerCode ? new WebSocket(wsUrl) : null;
+    const setStatus = (msg) => { if (statusEl) statusEl.textContent = msg; };
+    const sendPayload = (key, pressed) => {
+      if (!socket || socket.readyState !== WebSocket.OPEN || !controllerCode) return;
+      socket.send(JSON.stringify({ action: key, pressed, code: controllerCode }));
+    };
+    const down = (btn) => {
+      btn.classList.add('active');
+      sendPayload(resolveVirtualKey(btn.dataset.key), true);
+    };
+    const up = (btn) => {
+      btn.classList.remove('active');
+      sendPayload(resolveVirtualKey(btn.dataset.key), false);
+    };
+    buttons.forEach(btn => {
+      btn.addEventListener('pointerdown', (e) => { e.preventDefault(); down(btn); });
+      btn.addEventListener('pointerup', () => up(btn));
+      btn.addEventListener('pointercancel', () => up(btn));
+      btn.addEventListener('pointerleave', (e) => { if (e.buttons === 0) up(btn); });
+    });
+    if (socket) {
+      socket.addEventListener('open', () => setStatus(`Connected to ${wsUrl}. Send inputs to control Player 2.`));
+      socket.addEventListener('close', () => setStatus('Connection closed. Reopen this page when the host is ready.'));
+      socket.addEventListener('error', () => setStatus('Connection error. Check that the game tab is listening.'));
+    } else {
+      setStatus('Missing code. Reopen this page from the host link to connect.');
+    }
+  }
+
+  if (isControllerPage) {
+    renderControllerPage();
+    return;
+  }
 
   // ===== canvas & sizing =====
   const canvas = document.getElementById('game');
@@ -194,11 +368,13 @@
       coins: document.getElementById('p1-coins'),
       wood: document.getElementById('p1-wood'),
       lives: document.getElementById('p1-lives'),
+      gun: document.getElementById('p1-gun'),
     },
     p2: {
       coins: document.getElementById('p2-coins'),
       wood: document.getElementById('p2-wood'),
       lives: document.getElementById('p2-lives'),
+      gun: document.getElementById('p2-gun'),
     }
   };
   const uiLevel = document.getElementById('level-indicator');
@@ -215,9 +391,48 @@
   const platformButtons = platformSelect.querySelectorAll('.platform-btn');
   const modeSelect = document.getElementById('mode-select');
   const modeButtons = modeSelect.querySelectorAll('.mode-btn');
+  const biomeSelect = document.getElementById('biome-select');
+  const biomeButtonsWrap = document.getElementById('biome-buttons');
+  const biomeBlurb = document.getElementById('biome-blurb');
+  const biomeTitle = document.getElementById('biome-title');
+  const biomeFeatures = document.getElementById('biome-features');
+  const biomeBoss = document.getElementById('biome-boss');
   const touchControls = document.getElementById('touch-controls');
   const helpP2 = document.getElementById('help-p2');
+  const helpPanel = document.getElementById('help');
+  const helpToggle = document.getElementById('help-toggle');
   const p2Pills = Array.from(document.querySelectorAll('.p2-pill'));
+  const biomeTip = document.getElementById('biome-tip');
+  const remoteTip = document.getElementById('remote-tip');
+  const remoteCard = document.getElementById('remote-share');
+  const remoteToggle = document.getElementById('remote-toggle');
+  const remoteCodeEl = document.getElementById('remote-code');
+  const remoteLinkEl = document.getElementById('remote-link');
+  const remoteQrEl = document.getElementById('remote-qr');
+  const remoteStatusEl = document.getElementById('remote-status');
+  const remoteRefreshBtn = document.getElementById('remote-refresh');
+  const remoteMessagesEl = document.getElementById('remote-messages');
+  const remoteChatForm = document.getElementById('remote-chat-form');
+  const remoteChatInput = document.getElementById('remote-chat-input');
+  const resourceLabels = {
+    p1: document.getElementById('p1-resource-label'),
+    p2: document.getElementById('p2-resource-label'),
+  };
+  const chatUi = document.getElementById('chat-ui');
+  const chatForms = chatUi ? Array.from(chatUi.querySelectorAll('.chat-form')) : [];
+  const chatInputs = chatUi ? Array.from(chatUi.querySelectorAll('.chat-input')) : [];
+  const getChatLane = (target) => {
+    const lane = chatForms.find(form => (form.dataset.target || '').toLowerCase() === target) || null;
+    return {
+      lane,
+      button: lane ? lane.querySelector('.chat-launch') : null,
+      input: lane ? lane.querySelector('.chat-input') : null,
+    };
+  };
+  const chatLanes = {
+    p1: getChatLane('p1'),
+    p2: getChatLane('p2'),
+  };
   const deathScreen = document.getElementById('death-screen');
   const wahAudio = document.getElementById('wah-audio');
   const bossIndicator = document.getElementById('boss-indicator');
@@ -245,6 +460,21 @@
     wahAudio.pause();
     wahAudio.currentTime = 0;
   };
+
+  function clearChatState() {
+    Object.keys(chatState).forEach(key => {
+      chatState[key].text = '';
+      chatState[key].expiresAt = 0;
+    });
+    chatInputs.forEach(input => { input.value = ''; });
+  }
+
+  function setPlayerChat(target, message) {
+    const key = target === 'p2' ? 'p2' : 'p1';
+    const text = (message || '').trim();
+    chatState[key].text = text;
+    chatState[key].expiresAt = text ? performance.now() + CHAT_LIFETIME_MS : 0;
+  }
 
   function showDeathScreen() {
     if (!deathScreen) return;
@@ -447,6 +677,7 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
   const LAVA_DEPTH = 46;
   const LAVA_HEIGHT = 20;
   const LAVA_SURFACE_Y = GROUND_Y + LAVA_DEPTH - LAVA_HEIGHT;
+  const LIGHT_DIR = { x: -1, y: -1 };
   const ENEMY_ATTACK_DISTANCE = TILE * 2;
   const ENEMY_ATTACK_TOLERANCE = TILE * 0.6;
   const ENEMY_ATTACK_VERTICAL_TOLERANCE = TILE;
@@ -458,6 +689,258 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
   const JUMP_BOOST_MULTIPLIER = 1.2;
   const SPAWN_SHIELD_DURATION_MS = 3000;
   const MS_PER_FRAME = 1000 / 60;
+
+  const BASE_BIOME = {
+    id: 'volcano',
+    label: 'Volcano Valley',
+    icon: '🌋',
+    gruntName: 'dino',
+    bossName: 'dino',
+    enemyVariant: 'dino',
+    bossVariant: 'dino',
+    resourceName: 'Wood',
+    resourceIcon: '🪵',
+    hazardName: 'Volcano',
+    hazardVerb: 'erupts',
+    hazardNoun: 'volcano',
+    minedItem: 'wood',
+    blurb: 'Classic lava slopes and piney trees.',
+    features: [
+      'Crisp teal skies and pine silhouettes wrap around warm lava embers.',
+      'Glowing coins and spruce-green ramps guide the eye toward the summit.',
+      'Resource trees match the slopey rock strata so nothing feels out of place.',
+    ],
+    bossGoal: 'A forest-colored dino that blends into the peaks; its amber eyes and molten breath tie back to the erupting rim.',
+    characters: {
+      p1: { head: '#2fd06c', body: '#2f3b52' },
+      p2: { head: '#3fb5ff', body: '#233149' },
+    },
+    palette: {
+      skyTop: '#6ec6ff', skyBottom: '#bfeaff', hillColor: '#9ed39b',
+      turfTop: '#90e084', turfMid: '#66ba5d', turfBottom: '#447d3d', edge: '#2f4f2d',
+      frontTop: '#4b3a25', frontMid: '#3a2718', frontBottom: '#1f140b', strata: '#0002', blade: '#9ef79a',
+      silhouetteType: 'trees', silhouetteColor: '#2f6130',
+      goalFlag: '#ffd166',
+      hazardBodyLight: '#6d3e2c', hazardBodyMid: '#543121', hazardBodyDark: '#2d1c14', hazardSide: '#4a2b1e', hazardLipLight: '#8f5539', hazardLipDark: '#2c1a12', hazardCavityTop: '#361f15', hazardCavityBottom: '#120805', hazardSmoke: '#f3ede4', hazardGlow: '#ff842c', hazardRimGlow: '#ffd65e',
+      lavaRimTop: '#6fa95c', lavaRimBottom: '#35592d', lavaWallDark: '#1c2b16', lavaWallMid: '#3f5a29', lavaCavityTop: '#331b11', lavaCavityBottom: '#0f0603', lavaFillLight: '#ffb56b', lavaFillMid: '#ff6b3a', lavaFillDark: '#d62020', lavaStroke: '#ffd166', lavaGlow: '#ff6b3a55',
+      resourceTrunk: '#7c4f2a', resourceCanopy: '#3a7d3a', resourceAccent: '#3a7d3a',
+      wallPrimary: '#9399a3', wallStroke: '#747b85',
+      coinPrimary: '#ffd166', coinEdge: '#c9a44f',
+      bulletPrimary: '#ff9e64', bulletHighlight: '#ffd8b2',
+      enemyPrimary: '#7f3232', enemySecondary: '#c54c4c', enemyAccent: '#532626', enemyHead: '#ffb27d', enemyEyeDark: '#2b1a1a', enemyEyeLight: '#f6f1ce',
+      bossBody: '#32713b', bossBelly: '#4ca254', bossTail: '#28652f', bossHead: '#3c8f48', bossEyeDark: '#1c2b16', bossEyeLight: '#f6f1ce', bossTooth: '#fef9d6', bossLeg: '#215929', hpFill: '#9ef79a'
+    }
+  };
+
+  const BIOMES = {
+    volcano: {
+      ...BASE_BIOME,
+      label: 'Volcano Valley',
+      icon: '🌋',
+      blurb: 'Emerald slopes cut by glowing lava seams and pine crowns.',
+      features: [
+        'Lava channels glow against mossy rock, tying together the hazard and ground.',
+        'Tree resources mirror the pine silhouettes on the distant hills.',
+        'Gold coins and banners pop against the teal sky for a clean goal line.',
+      ],
+      bossGoal: 'A magma-charged dino perched near the caldera whose green armor echoes the hills beneath it.',
+    },
+    ice: {
+      id: 'ice',
+      label: 'Ice',
+      icon: '❄️',
+      gruntName: 'polar bear',
+      bossName: 'polar bear',
+      enemyVariant: 'polar-bear',
+      bossVariant: 'polar-bear',
+      resourceName: 'Ice',
+      resourceIcon: '🧊',
+      hazardName: 'Frost Geyser',
+      hazardVerb: 'erupts',
+      hazardNoun: 'geyser',
+      minedItem: 'ice',
+      blurb: 'Crystalline tundra with freezing vents and frosty loot.',
+      features: [
+        'Pastel skies fade into frosted hills, keeping the whole scene airy.',
+        'Ice bricks and trees share the same glacial gradients for a tidy palette.',
+        'Hazard vents glow cyan so you can read danger against the snow.',
+      ],
+      bossGoal: 'A glacier-backed polar bear with frosted armor plates and claws carved from the same ice you mine.',
+      characters: {
+        p1: { head: '#b8f1ff', body: '#3a5d7f' },
+        p2: { head: '#c3e6ff', body: '#2e4b6a' },
+      },
+      palette: {
+        skyTop: '#8fd3ff', skyBottom: '#e5f6ff', hillColor: '#c7e7ff',
+        turfTop: '#dff4ff', turfMid: '#b6d9f2', turfBottom: '#7ea4c4', edge: '#88a8c8',
+        frontTop: '#5b7b9a', frontMid: '#3e5872', frontBottom: '#1c2f46', blade: '#eff8ff',
+        silhouetteType: 'ice', silhouetteColor: '#b5d9f5',
+        hazardBodyLight: '#78a6c8', hazardBodyMid: '#5c84a3', hazardBodyDark: '#2f4e69', hazardSide: '#2f4e69', hazardLipLight: '#c1e2ff', hazardLipDark: '#24405b', hazardCavityTop: '#28435d', hazardCavityBottom: '#0f1e2d', hazardSmoke: '#f5fbff', hazardGlow: '#a8dbff', hazardRimGlow: '#dff3ff',
+        lavaRimTop: '#cbe7ff', lavaRimBottom: '#7aa7c8', lavaWallDark: '#1f3649', lavaWallMid: '#3f617f', lavaCavityTop: '#1a2e40', lavaCavityBottom: '#0c1724', lavaFillLight: '#b7e8ff', lavaFillMid: '#6ad1ff', lavaFillDark: '#2f9dd9', lavaStroke: '#dff7ff', lavaGlow: '#8ecff9',
+        resourceTrunk: '#9ac9f5', resourceCanopy: '#d7f0ff', resourceAccent: '#bcdfff',
+        wallPrimary: '#b3cde5', wallStroke: '#90abc7',
+        bulletPrimary: '#7bd3ff', bulletHighlight: '#e4f7ff',
+        enemyPrimary: '#4f708a', enemySecondary: '#6f96b6', enemyAccent: '#a8cbea', enemyHead: '#d7eaff', enemyEyeDark: '#1c2733', enemyEyeLight: '#f1fbff',
+        bossBody: '#4f7b92', bossBelly: '#6ba3bb', bossTail: '#365a74', bossHead: '#375971', bossEyeDark: '#102032', bossEyeLight: '#e6f6ff', bossTooth: '#e8f5ff', bossLeg: '#2e4d64', hpFill: '#a9e2ff'
+      }
+    },
+    city: {
+      id: 'city',
+      label: 'City',
+      icon: '🏙️',
+      gruntName: 'car',
+      bossName: 'monkey',
+      enemyVariant: 'car',
+      bossVariant: 'monkey',
+      resourceName: 'Concrete',
+      resourceIcon: '🧱',
+      hazardName: 'Steam Stack',
+      hazardVerb: 'bursts',
+      hazardNoun: 'stack',
+      minedItem: 'concrete',
+      blurb: 'Industrial skyline, street lights, and hot vents from the undercity.',
+      features: [
+        'Cool steel blues and sodium lamps set a clean dusk-in-the-city gradient.',
+        'Concrete resources echo the blocky silhouettes in the distance.',
+        'Vents glow amber like traffic lights so hazards feel urban, not random.',
+      ],
+      bossGoal: 'A steel-plated monkey mech with subway-yellow eyes, framed by smokestacks to feel like the city built it.',
+      characters: {
+        p1: { head: '#ffd166', body: '#3a3e4a' },
+        p2: { head: '#a6c1ff', body: '#2c3341' },
+      },
+      palette: {
+        skyTop: '#7f9abf', skyBottom: '#c5d4e8', hillColor: '#9fb4c9',
+        turfTop: '#b0b7c4', turfMid: '#8f97a4', turfBottom: '#6c727d', edge: '#59606d',
+        frontTop: '#4a4f59', frontMid: '#363a42', frontBottom: '#1f2228', blade: '#d5deea',
+        silhouetteType: 'city', silhouetteColor: '#556072',
+        hazardBodyLight: '#7b7f8a', hazardBodyMid: '#5b5f69', hazardBodyDark: '#30323a', hazardSide: '#2b2e35', hazardLipLight: '#d9dce3', hazardLipDark: '#1f232b', hazardCavityTop: '#2d3139', hazardCavityBottom: '#0f1218', hazardSmoke: '#e6f0ff', hazardGlow: '#ffcc7a', hazardRimGlow: '#ffe0a6',
+        lavaRimTop: '#a2a9b8', lavaRimBottom: '#5a5f6b', lavaWallDark: '#1f242d', lavaWallMid: '#3b424f', lavaCavityTop: '#242a35', lavaCavityBottom: '#0b0e14', lavaFillLight: '#ffd98a', lavaFillMid: '#ff9f46', lavaFillDark: '#d8572b', lavaStroke: '#ffe9b8', lavaGlow: '#ffb97a66',
+        resourceTrunk: '#7f8791', resourceCanopy: '#b8c0cc', resourceAccent: '#9099a8',
+        wallPrimary: '#9aa3b3', wallStroke: '#7a8291',
+        bulletPrimary: '#ffd98a', bulletHighlight: '#fff0c4',
+        enemyPrimary: '#5c4e6b', enemySecondary: '#8a6ad3', enemyAccent: '#403452', enemyHead: '#c8b7dd', enemyEyeDark: '#1d1826', enemyEyeLight: '#f1e6ff',
+        bossBody: '#4b5568', bossBelly: '#6a7891', bossTail: '#323848', bossHead: '#5b6b83', bossEyeDark: '#0f1117', bossEyeLight: '#f8f2ff', bossTooth: '#f5f5ff', bossLeg: '#323845', hpFill: '#ffd98a'
+      }
+    },
+    sand: {
+      id: 'sand',
+      label: 'Sand',
+      icon: '🏜️',
+      gruntName: 'camel',
+      bossName: 'camel',
+      enemyVariant: 'camel',
+      bossVariant: 'camel',
+      resourceName: 'Sandcastle',
+      resourceIcon: '🏰',
+      hazardName: 'Glass Dune',
+      hazardVerb: 'erupts',
+      hazardNoun: 'dune',
+      minedItem: 'sandcastle',
+      blurb: 'Sun-baked dunes, sandstone arches, and shimmering heat vents.',
+      features: [
+        'Layered oranges and golds match the sandstone arches and ramps.',
+        'Coin shine pairs with the sun-bleached highlights on every ledge.',
+        'Glass dunes bloom with warm light so hazards feel like desert mirages.',
+      ],
+      bossGoal: 'A dune-swept camel with amber plating and turquoise eyes that echo oasis tiles near the goal.',
+      characters: {
+        p1: { head: '#ffd38c', body: '#704c2e' },
+        p2: { head: '#ffe9b0', body: '#8a5b32' },
+      },
+      palette: {
+        skyTop: '#f3c27c', skyBottom: '#ffe7c1', hillColor: '#e2b76a',
+        turfTop: '#f5d19a', turfMid: '#e0b86e', turfBottom: '#c38b3a', edge: '#a26f28',
+        frontTop: '#c37c3a', frontMid: '#a4632c', frontBottom: '#5d3616', blade: '#fff4d3',
+        silhouetteType: 'dunes', silhouetteColor: '#d5a75b',
+        hazardBodyLight: '#d78d46', hazardBodyMid: '#ae6c2f', hazardBodyDark: '#6d3f19', hazardSide: '#7a4b21', hazardLipLight: '#f3d3a3', hazardLipDark: '#5a3519', hazardCavityTop: '#6a3818', hazardCavityBottom: '#2d1607', hazardSmoke: '#ffe8c2', hazardGlow: '#ffb86b', hazardRimGlow: '#ffdba6',
+        lavaRimTop: '#f6d7a1', lavaRimBottom: '#c48b41', lavaWallDark: '#4e2e12', lavaWallMid: '#825024', lavaCavityTop: '#4f2a12', lavaCavityBottom: '#221107', lavaFillLight: '#ffd480', lavaFillMid: '#ff9f3f', lavaFillDark: '#d45a2c', lavaStroke: '#ffe0a6', lavaGlow: '#ffba7a55',
+        resourceTrunk: '#c8923a', resourceCanopy: '#f3d9a5', resourceAccent: '#e6bd72',
+        wallPrimary: '#d6b57a', wallStroke: '#9c7a3f',
+        bulletPrimary: '#ffc176', bulletHighlight: '#ffe8bf',
+        enemyPrimary: '#7c4f2a', enemySecondary: '#d78d46', enemyAccent: '#4b2c16', enemyHead: '#f4d1a5', enemyEyeDark: '#2a1a10', enemyEyeLight: '#fff4d6',
+        bossBody: '#a06734', bossBelly: '#d18b4b', bossTail: '#7b4c25', bossHead: '#c37a3c', bossEyeDark: '#2a180d', bossEyeLight: '#ffe7c0', bossTooth: '#ffe9c6', bossLeg: '#7b4c25', hpFill: '#ffd98a'
+      }
+    },
+    water: {
+      id: 'water',
+      label: 'Water',
+      icon: '🌊',
+      gruntName: 'fish',
+      bossName: 'fish',
+      enemyVariant: 'fish',
+      bossVariant: 'fish',
+      resourceName: 'Fish Cake',
+      resourceIcon: '🍣',
+      hazardName: 'Geothermal Vent',
+      hazardVerb: 'erupts',
+      hazardNoun: 'vent',
+      minedItem: 'fish cake',
+      blurb: 'Underwater ruins, kelp silhouettes, and vents of steaming bubbles.',
+      features: [
+        'Blue-green gradients drift from surface light to deep teal shadows.',
+        'Coral pillars and kelp silhouettes line up with the resource trees.',
+        'Bubble vents glow aqua so the hazard reads like part of the reef.',
+      ],
+      bossGoal: 'A reef-armored fish with coral fins and tidepool eyes waiting in the ruins beyond the goal arch.',
+      characters: {
+        p1: { head: '#9bf0ff', body: '#1f5e6c' },
+        p2: { head: '#d9fff4', body: '#2c7a86' },
+      },
+      palette: {
+        skyTop: '#6fd2e8', skyBottom: '#c1f3ff', hillColor: '#7bd0d9',
+        turfTop: '#9be0d7', turfMid: '#55b8b5', turfBottom: '#2d6f78', edge: '#1f515a',
+        frontTop: '#3a6b73', frontMid: '#264d53', frontBottom: '#132b2e', blade: '#d6fbf6',
+        silhouetteType: 'kelp', silhouetteColor: '#3b8c80',
+        hazardBodyLight: '#3a92a0', hazardBodyMid: '#2c6c77', hazardBodyDark: '#123b45', hazardSide: '#1d4f59', hazardLipLight: '#8ae2e3', hazardLipDark: '#0f323a', hazardCavityTop: '#103642', hazardCavityBottom: '#04171d', hazardSmoke: '#e6fcff', hazardGlow: '#8be7ff', hazardRimGlow: '#c5f7ff',
+        lavaRimTop: '#8fdfe3', lavaRimBottom: '#2f6c7c', lavaWallDark: '#0e2a33', lavaWallMid: '#1b4a56', lavaCavityTop: '#0d2831', lavaCavityBottom: '#031419', lavaFillLight: '#5de1ff', lavaFillMid: '#22b2d1', lavaFillDark: '#107a9c', lavaStroke: '#c8f6ff', lavaGlow: '#5de1ff55',
+        resourceTrunk: '#2c7a86', resourceCanopy: '#8bf2de', resourceAccent: '#c6fff0',
+        wallPrimary: '#5f9fb0', wallStroke: '#3c6d7a',
+        bulletPrimary: '#8bf1ff', bulletHighlight: '#e9ffff',
+        enemyPrimary: '#2d6f78', enemySecondary: '#55b8b5', enemyAccent: '#18444c', enemyHead: '#b8f4f8', enemyEyeDark: '#0c262c', enemyEyeLight: '#e6ffff',
+        bossBody: '#2f7c8c', bossBelly: '#4cc0c1', bossTail: '#1f5965', bossHead: '#2a7080', bossEyeDark: '#0a1d25', bossEyeLight: '#d6ffff', bossTooth: '#eaffff', bossLeg: '#1f5965', hpFill: '#8bf2de'
+      }
+    },
+    space: {
+      id: 'space',
+      label: 'Space',
+      icon: '🪐',
+      bossName: 'alien',
+      bossVariant: 'alien',
+      resourceName: 'Meteor',
+      resourceIcon: '☄️',
+      hazardName: 'Impact Crater',
+      hazardVerb: 'pulses',
+      hazardNoun: 'crater',
+      minedItem: 'meteor',
+      blurb: 'Star-speckled sky, lunar rock, and a crater that occasionally rumbles.',
+      features: [
+        'Nebula purples fade into dusty rock so the ground feels otherworldly.',
+        'Meteor resources sparkle with the same starlight as the horizon.',
+        'Craters glow magenta when active, matching the cosmic hazard flare.',
+      ],
+      bossGoal: 'A low-gravity alien with comet stripes and pale starlit eyes guarding the lunar outpost ahead.',
+      characters: {
+        p1: { head: '#e6d3ff', body: '#3a2a5b' },
+        p2: { head: '#c4b0ff', body: '#4c2f6e' },
+      },
+      palette: {
+        skyTop: '#1e1236', skyBottom: '#4c2a5f', hillColor: '#2f1d45',
+        turfTop: '#5a3b7a', turfMid: '#4a2f66', turfBottom: '#331f48', edge: '#261637',
+        frontTop: '#2f1b44', frontMid: '#221433', frontBottom: '#140a21', blade: '#ccb9f8',
+        silhouetteType: 'craters', silhouetteColor: '#3d2855',
+        hazardBodyLight: '#60418a', hazardBodyMid: '#4c326f', hazardBodyDark: '#2c1d43', hazardSide: '#35234f', hazardLipLight: '#9576c0', hazardLipDark: '#241638', hazardCavityTop: '#241738', hazardCavityBottom: '#0d0818', hazardSmoke: '#e9d9ff', hazardGlow: '#b287ff', hazardRimGlow: '#e3c6ff',
+        lavaRimTop: '#7b5aa6', lavaRimBottom: '#3d275b', lavaWallDark: '#1a0f2c', lavaWallMid: '#2c1b3f', lavaCavityTop: '#190f29', lavaCavityBottom: '#0b0616', lavaFillLight: '#b15cff', lavaFillMid: '#7535d6', lavaFillDark: '#3b187f', lavaStroke: '#f1ddff', lavaGlow: '#b15cff55',
+        resourceTrunk: '#5c3f7a', resourceCanopy: '#c2a4ff', resourceAccent: '#8b6dd6',
+        wallPrimary: '#7b5aa6', wallStroke: '#563b7a',
+        bulletPrimary: '#cfb1ff', bulletHighlight: '#f4e8ff',
+        enemyPrimary: '#4a2f6e', enemySecondary: '#7b5aa6', enemyAccent: '#2a1a3f', enemyHead: '#d9c3ff', enemyEyeDark: '#140c1f', enemyEyeLight: '#f3eaff',
+        bossBody: '#5b3c82', bossBelly: '#8c66c5', bossTail: '#3b245a', bossHead: '#7448a8', bossEyeDark: '#0e0717', bossEyeLight: '#f3eaff', bossTooth: '#f4e8ff', bossLeg: '#3b245a', hpFill: '#cfb1ff'
+      }
+    },
+  };
+
+  const DEFAULT_BIOME_ID = 'volcano';
 
   const VOLCANO_STEPS = 12;
   const VOLCANO_STEP_HEIGHT = 12;
@@ -481,35 +964,438 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
   // game state
   let platformMode = null;
   let gameMode = null;
+  let activeBiomeId = null;
+  let activeBiome = null;
+  let pendingBiomeReset = false;
   let keys = {};
+  let remoteKeys = {};
+  let remoteSessionCode = '';
+  let remoteSocket = null;
+  let remoteConnected = false;
+  let remoteShareCollapsed = false;
+  let remoteShareAutoCollapsed = false;
+  const inputSources = {
+    keyboard: new Set(),
+    virtual: new Set(),
+    remote: new Set(),
+  };
+  let remoteMode = false;
+  let remoteReconnectTimer = null;
+  const remoteStatusDisplays = Array.from(document.querySelectorAll('.remote-status-display'));
   let debugShowHit = false;
   let finished = false;
   let runStartTime = 0;
   let elapsedTime = 0;
   let finishDuration = 0;
   const virtualButtons = [];
+  const CHAT_LIFETIME_MS = 4500;
+  const chatState = {
+    p1: { text: '', expiresAt: 0 },
+    p2: { text: '', expiresAt: 0 },
+  };
+
+  const REMOTE_ACTION_HINT = 'Buttons map to Player 2: ← → ↑ / . [ ]';
 
   function updateModeHud(showSecondPlayer) {
     p2Pills.forEach(el => el.classList.toggle('hidden', !showSecondPlayer));
     if (helpP2) helpP2.classList.toggle('hidden', !showSecondPlayer);
+    if (chatUi) chatUi.classList.toggle('hidden', !showSecondPlayer);
+    if (chatLanes.p2?.lane) chatLanes.p2.lane.classList.toggle('hidden', !showSecondPlayer);
+    if (!showSecondPlayer) clearChatInputs();
   }
 
   updateModeHud(false);
 
-  const VIRTUAL_KEY_ALIASES = {
-    space: ' ',
-    Space: ' ',
-  };
+  if (helpToggle) {
+    helpToggle.addEventListener('click', () => {
+      setHelpCollapsed(!helpPanel?.classList.contains('minimized'));
+    });
+  }
 
-  function resolveVirtualKey(raw) {
-    if (!raw) return raw;
-    return VIRTUAL_KEY_ALIASES.hasOwnProperty(raw) ? VIRTUAL_KEY_ALIASES[raw] : raw;
+  if (remoteToggle) {
+    remoteToggle.addEventListener('click', () => {
+      setRemoteShareCollapsed(!remoteShareCollapsed, true);
+    });
+  }
+
+  function bindChatUi() {
+    chatForms.forEach(form => {
+      const target = form.dataset.target || 'p1';
+      const input = form.querySelector('.chat-input');
+      const launch = form.querySelector('.chat-launch');
+      if (launch && input) {
+        launch.addEventListener('click', () => {
+          input.focus();
+          input.select();
+        });
+      }
+      form.addEventListener('submit', (e) => {
+        e.preventDefault();
+        if (!input) return;
+        const text = (input.value || '').trim();
+        if (!text) return;
+        setPlayerChat(target, text);
+        if (remoteMode && target === 'p2') {
+          sendRemoteChat(text, 'Host');
+        }
+        input.value = '';
+      });
+    });
+  }
+
+  bindChatUi();
+
+  const biomeEntries = Object.values(BIOMES);
+
+  function mergeBiomeConfig(config) {
+    const palette = { ...BASE_BIOME.palette, ...(config && config.palette ? config.palette : {}) };
+    const characters = { ...BASE_BIOME.characters, ...(config && config.characters ? config.characters : {}) };
+    return { ...BASE_BIOME, ...(config || {}), palette, characters };
+  }
+
+  function ensureActiveBiome(id = activeBiomeId) {
+    const resolved = mergeBiomeConfig(BIOMES[id] || BIOMES[DEFAULT_BIOME_ID] || BASE_BIOME);
+    activeBiomeId = resolved.id;
+    activeBiome = resolved;
+    return resolved;
+  }
+
+  function palette() {
+    return ensureActiveBiome().palette;
+  }
+
+  function updateBiomeTip() {
+    const b = ensureActiveBiome();
+    const interval = Math.round(VOLCANO_ERUPTION_INTERVAL / 60);
+    const bossLabel = b.bossName ? `${b.bossName} boss` : 'boss';
+    if (biomeTip) biomeTip.textContent = `Tip: the ${b.hazardNoun.toLowerCase()} ${b.hazardVerb} every ${interval} seconds and the ${bossLabel} at the goal needs ten laser hits — it must chomp you three times before you lose a life.`;
+  }
+
+  function updateResourceLabels() {
+    const b = ensureActiveBiome();
+    if (resourceLabels.p1) resourceLabels.p1.textContent = b.resourceName;
+    if (resourceLabels.p2) resourceLabels.p2.textContent = b.resourceName;
+  }
+
+  function clearChatInputs() {
+    activeChatPlayer = null;
+    Object.values(chatLanes).forEach(({ input }) => {
+      if (input) {
+        input.value = '';
+        input.blur();
+      }
+    });
+  }
+
+  function resetInputState() {
+    keys = {};
+    Object.values(inputSources).forEach(source => source.clear());
+    clearVirtualInputs();
+  }
+
+  function applyChatMessage(playerLabel, text) {
+    const player = players.find(p => p.label === playerLabel);
+    if (!player) return;
+    player.chatText = text;
+    player.chatUntil = performance.now() + CHAT_VISIBLE_MS;
+  }
+
+  function closeChatInput() {
+    activeChatPlayer = null;
+    Object.values(chatLanes).forEach(({ input }) => input?.blur());
+  }
+
+  function submitChat(playerKey) {
+    const lane = chatLanes[playerKey];
+    if (!lane || !lane.input) return;
+    if (gameMode !== 2) { closeChatInput(); return; }
+    const text = lane.input.value.trim();
+    if (text) {
+      applyChatMessage(playerKey.toUpperCase(), text);
+    }
+    lane.input.value = '';
+    closeChatInput();
+  }
+
+  function focusChat(playerKey) {
+    const lane = chatLanes[playerKey];
+    if (!lane || !lane.input) return;
+    if (gameMode !== 2) return;
+    activeChatPlayer = playerKey;
+    lane.input.focus();
+    lane.input.select();
+  }
+
+  function setupChatLane(playerKey) {
+    const lane = chatLanes[playerKey];
+    if (!lane) return;
+    const { button, input } = lane;
+    if (button) button.addEventListener('click', () => focusChat(playerKey));
+    if (input) {
+      input.addEventListener('focus', () => { activeChatPlayer = playerKey; });
+      input.addEventListener('blur', () => {
+        if (activeChatPlayer === playerKey) activeChatPlayer = null;
+      });
+      input.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          e.stopPropagation();
+          submitChat(playerKey);
+        } else if (e.key === 'Escape') {
+          e.preventDefault();
+          e.stopPropagation();
+          closeChatInput();
+        } else {
+          e.stopPropagation();
+        }
+      });
+    }
+  }
+
+  function describeBiome(b) {
+    const hazard = b.hazardName.toLowerCase();
+    const base = b.blurb || `${b.icon} ${b.label}`;
+    return `${b.icon} ${b.label} · ${base} You mine ${b.resourceName} and face the ${hazard}.`;
+  }
+
+  function renderBiomeDetails(b) {
+    if (!b) return;
+    if (biomeTitle) biomeTitle.textContent = `${b.icon} ${b.label}`;
+    if (biomeBlurb) biomeBlurb.textContent = b.blurb || describeBiome(b);
+    if (biomeFeatures) {
+      biomeFeatures.innerHTML = '';
+      if (b.features && b.features.length) {
+        biomeFeatures.classList.remove('hidden');
+        b.features.forEach(text => {
+          const li = document.createElement('li');
+          li.textContent = text;
+          biomeFeatures.appendChild(li);
+        });
+      } else {
+        biomeFeatures.classList.add('hidden');
+      }
+    }
+    if (biomeBoss) {
+      const hasBoss = Boolean(b.bossGoal);
+      biomeBoss.textContent = hasBoss ? `End boss: ${b.bossGoal}` : '';
+      biomeBoss.classList.toggle('hidden', !hasBoss);
+    }
+  }
+
+  function chooseBiome(id) {
+    ensureActiveBiome(id);
+    updateBiomeTip();
+    updateResourceLabels();
+    if (activeBiome) renderBiomeDetails(activeBiome);
+    if (biomeSelect) {
+      biomeSelect.classList.add('hidden');
+      biomeSelect.style.display = 'none';
+    }
+    pendingBiomeReset = false;
+    resetLevel();
+  }
+
+  function showBiomeSelect() {
+    pendingBiomeReset = true;
+    if (!biomeSelect) { resetLevel(); return; }
+    resetInputState();
+    clearVirtualInputs();
+    biomeSelect.classList.remove('hidden');
+    biomeSelect.style.display = 'flex';
+    updateBiomeTip();
+    if (biomeBlurb) {
+      const next = ensureActiveBiome();
+      renderBiomeDetails(next);
+    }
+  }
+
+  function buildBiomeButtons() {
+    if (!biomeButtonsWrap) return;
+    biomeButtonsWrap.innerHTML = '';
+    biomeEntries.forEach(b => {
+      const btn = document.createElement('button');
+      btn.className = 'biome-btn';
+      btn.type = 'button';
+      btn.dataset.biome = b.id;
+      btn.innerHTML = `
+        <strong>${b.icon} ${b.label}</strong>
+        <small>${b.hazardName} · mines ${b.resourceName}</small>
+        <span class="biome-pill"><span class="icon">${b.resourceIcon}</span>${b.resourceName}</span>
+      `;
+      btn.addEventListener('mouseenter', () => renderBiomeDetails(mergeBiomeConfig(b)));
+      btn.addEventListener('click', () => chooseBiome(b.id));
+      biomeButtonsWrap.appendChild(btn);
+    });
+  }
+
+  buildBiomeButtons();
+  updateResourceLabels();
+  updateBiomeTip();
+  renderBiomeDetails(ensureActiveBiome());
+  setupChatLane('p1');
+  setupChatLane('p2');
+
+  function isKeyActiveForPlayer(player, key) {
+    const resolved = resolveVirtualKey(key);
+    if (!resolved) return false;
+    if (player?.label === 'P2' && remoteKeys[resolved]) return true;
+    return !!keys[resolved];
+  }
+
+  function generateRemoteCode() {
+    return Math.random().toString(36).slice(2, 6).toUpperCase();
+  }
+
+  function controllerLink(code) {
+    let basePath = location.pathname.replace(/index\.html$/, '');
+    if (!basePath.endsWith('/')) basePath += '/';
+    return `${location.origin}${basePath}controller.html?code=${encodeURIComponent(code)}`;
+  }
+
+  function clearRemoteMessages() {
+    if (remoteMessagesEl) remoteMessagesEl.innerHTML = '';
+  }
+
+  function addRemoteMessage(text, from = 'Friend') {
+    if (!remoteMessagesEl || !text) return;
+    const row = document.createElement('div');
+    row.className = 'remote-message';
+    row.textContent = `${from}: ${text}`;
+    remoteMessagesEl.appendChild(row);
+    remoteMessagesEl.scrollTop = remoteMessagesEl.scrollHeight;
+  }
+
+  function setRemoteStatus(label, connected = false) {
+    if (!remoteStatusDisplays.length) return;
+    remoteStatusDisplays.forEach(el => {
+      el.textContent = label;
+      el.classList.toggle('offline', !connected);
+    });
+    if (connected && !remoteShareAutoCollapsed) {
+      setRemoteShareCollapsed(true);
+      remoteShareAutoCollapsed = true;
+    }
+  }
+
+  function setHelpCollapsed(collapsed) {
+    if (!helpPanel || !helpToggle) return;
+    helpPanel.classList.toggle('minimized', collapsed);
+    helpToggle.textContent = collapsed ? 'Show' : 'Hide';
+  }
+
+  function setRemoteShareCollapsed(collapsed, manual = false) {
+    if (!remoteCard || !remoteToggle) return;
+    remoteShareCollapsed = collapsed;
+    if (manual) remoteShareAutoCollapsed = true;
+    remoteCard.classList.toggle('minimized', collapsed);
+    remoteToggle.textContent = collapsed ? 'Show QR' : 'Hide QR';
+  }
+
+  function updateRemoteShareUi() {
+    if (!remoteCard) return;
+    const active = gameMode === 2;
+    remoteCard.classList.toggle('hidden', !active);
+    if (!active) return;
+    if (!remoteSessionCode) remoteSessionCode = generateRemoteCode();
+    const link = controllerLink(remoteSessionCode);
+    if (remoteCodeEl) remoteCodeEl.textContent = remoteSessionCode;
+    if (remoteLinkEl) {
+      remoteLinkEl.href = link;
+      remoteLinkEl.textContent = link;
+    }
+    if (remoteQrEl) remoteQrEl.src = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(link)}`;
+    setRemoteStatus(remoteConnected ? 'Connected' : 'Not connected', remoteConnected);
+  }
+
+  function closeRemoteSocket() {
+    if (remoteSocket) {
+      try { remoteSocket.close(); } catch (_) { /* ignore */ }
+    }
+    remoteSocket = null;
+    remoteConnected = false;
+  }
+
+  function handleRemotePayload(payload) {
+    if (!payload || payload.code !== remoteSessionCode) return;
+    if (payload.type === 'chat' && payload.text) {
+      addRemoteMessage(payload.text, payload.from || 'Friend');
+      setPlayerChat('p2', payload.text);
+      return;
+    }
+    const action = payload.action;
+    if (!action) return;
+    const resolved = resolveVirtualKey(action);
+    if (!resolved) return;
+    remoteKeys[resolved] = !!payload.pressed;
+    if (payload.pressed) handleKeyDown(resolved);
+    else handleKeyUp(resolved);
+  }
+
+  function sendRemoteChat(text, from = 'You') {
+    if (!text) return;
+    addRemoteMessage(text, from);
+    setPlayerChat('p1', text);
+    if (remoteSocket && remoteSocket.readyState === WebSocket.OPEN) {
+      remoteSocket.send(JSON.stringify({ code: remoteSessionCode, type: 'chat', text, from }));
+    }
+  }
+
+  function connectRemoteSocket() {
+    if (!remoteSessionCode) remoteSessionCode = generateRemoteCode();
+    closeRemoteSocket();
+    if (!remoteStatusDisplays.length) return;
+    setRemoteStatus('Connecting...', false);
+    try {
+      remoteSocket = new WebSocket(remoteSocketUrl(remoteSessionCode));
+    } catch (err) {
+      setRemoteStatus('WebSocket error', false);
+      return;
+    }
+    remoteSocket.onopen = () => {
+      remoteConnected = true;
+      setRemoteStatus('Connected', true);
+    };
+    remoteSocket.onclose = () => {
+      remoteConnected = false;
+      setRemoteStatus('Disconnected', false);
+    };
+    remoteSocket.onerror = () => {
+      remoteConnected = false;
+      setRemoteStatus('WebSocket error', false);
+    };
+    remoteSocket.onmessage = (event) => {
+      let data = null;
+      try {
+        data = JSON.parse(event.data);
+      } catch (_) {
+        return;
+      }
+      handleRemotePayload(data);
+    };
+  }
+
+  function startRemoteSession(forceNewCode = false) {
+    if (forceNewCode || !remoteSessionCode) remoteSessionCode = generateRemoteCode();
+    remoteKeys = {};
+    clearRemoteMessages();
+    addRemoteMessage(REMOTE_ACTION_HINT, 'Tip');
+    remoteShareAutoCollapsed = false;
+    setRemoteShareCollapsed(false);
+    updateRemoteShareUi();
+    connectRemoteSocket();
+  }
+
+  function stopRemoteSession() {
+    remoteKeys = {};
+    closeRemoteSocket();
+    updateRemoteShareUi();
   }
 
   function clearVirtualInputs() {
     virtualButtons.forEach(({btn, key}) => {
       btn.classList.remove('active');
-      keys[key] = false;
+      inputSources.virtual.delete(key);
+      recomputeKey(key);
     });
   }
 
@@ -544,14 +1430,17 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
         if (levelIndex < LEVELS.length - 1) levelIndex += 1;
         else levelIndex = 0;
       }
-      resetLevel();
+      showBiomeSelect();
       return;
     }
     if (key === 'h' || key === 'H') { debugShowHit = !debugShowHit; }
     if (finished) return;
     for (const player of players) {
       if (player.finished) continue;
-      if (player.controls.attack && player.controls.attack.includes(key)) playerAttack(player);
+      if (player.controls.attack && player.controls.attack.includes(key)) {
+        if (hasUsableGun(player)) fireGun(player);
+        else playerAttack(player);
+      }
       if (player.controls.wall && player.controls.wall.includes(key)) placeWall(player);
       if (player.controls.lava && player.controls.lava.includes(key)) placeLava(player);
     }
@@ -576,14 +1465,14 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
           if (btn.setPointerCapture) btn.setPointerCapture(e.pointerId);
         }
         btn.classList.add('active');
-        handleKeyDown(resolvedKey);
+        handleKeyDown(resolvedKey, 'virtual');
       };
       const release = (e) => {
         if (e && btn.releasePointerCapture && btn.hasPointerCapture && btn.hasPointerCapture(e.pointerId)) {
           btn.releasePointerCapture(e.pointerId);
         }
         btn.classList.remove('active');
-        handleKeyUp(resolvedKey);
+        handleKeyUp(resolvedKey, 'virtual');
       };
       btn.addEventListener('pointerdown', press);
       btn.addEventListener('pointerup', release);
@@ -597,6 +1486,14 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
   }
 
   function showModeSelect() {
+    if (!platformMode) {
+      const prefersCoarsePointer = window.matchMedia && window.matchMedia('(pointer: coarse)').matches;
+      platformMode = prefersCoarsePointer ? 'mobile' : 'desktop';
+      if (platformMode === 'mobile') {
+        enableTouchControls();
+      }
+      platformSelect.style.display = 'none';
+    }
     modeSelect.classList.remove('hidden');
     modeSelect.style.display = 'flex';
   }
@@ -618,20 +1515,45 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
   });
 
   function setGameMode(mode) {
-    gameMode = mode === 2 ? 2 : 1;
+    remoteMode = mode === 'remote';
+    if (!remoteMode) teardownRemoteSocket();
+    gameMode = remoteMode ? 2 : (mode === 2 ? 2 : 1);
     levelIndex = 0;
     playerProgress = createDefaultPlayerProgress();
     updateModeHud(gameMode === 2);
     modeSelect.style.display = 'none';
-    resetLevel();
+    if (remoteMode) {
+      setRemoteStatus(`Remote P2 armed. Open ${window.location.pathname}?controller=1 on another device to play.`);
+      connectRemoteSocket();
+    } else {
+      setRemoteStatus('Remote disabled. Choose Remote Co-Op to enable phone controls.');
+    }
+    showBiomeSelect();
   }
 
   modeButtons.forEach(btn => {
     btn.addEventListener('click', () => {
-      const mode = parseInt(btn.dataset.mode, 10);
-      setGameMode(Number.isNaN(mode) ? 1 : mode);
+      const raw = btn.dataset.mode;
+      const mode = raw === 'remote' ? 'remote' : parseInt(raw, 10);
+      setGameMode(Number.isNaN(mode) ? (raw === 'remote' ? 'remote' : 1) : mode);
     });
   });
+
+  if (remoteRefreshBtn) {
+    remoteRefreshBtn.addEventListener('click', () => {
+      if (gameMode !== 2) setGameMode(2);
+      startRemoteSession(true);
+    });
+  }
+
+  if (remoteChatForm) {
+    remoteChatForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const text = remoteChatInput ? remoteChatInput.value.trim() : '';
+      if (text) sendRemoteChat(text, 'You');
+      if (remoteChatInput) remoteChatInput.value = '';
+    });
+  }
 
   // ===== entities =====
   class Player {
@@ -648,6 +1570,8 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
       this.lives = 3;
       this.deaths = 0;
       this.finished = false;
+      this.chatText = '';
+      this.chatUntil = 0;
       this.label = options.label || 'P';
       this.bodyColor = options.bodyColor || '#2f3b52';
       this.headColor = options.headColor || '#2fd06c';
@@ -665,7 +1589,7 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
     controlDown(action) {
       const binds = this.controls[action];
       if (!binds) return false;
-      return binds.some(k => !!keys[k]);
+      return binds.some(k => isKeyActiveForPlayer(this, k));
     }
   }
 
@@ -690,12 +1614,14 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
   }
 
   class Tree {
-    constructor(x) {
+    constructor(x, biome = null) {
       this.x = x;
-      this.w = 30;
-      this.h = 100;
+      const style = biome?.resourceNode || {};
+      this.variant = biome?.id || 'default';
+      this.w = style.w || 30;
+      this.h = style.h || 100;
       this.baseY = GROUND_Y - this.h;
-      this.hp = 3; // number of "chunks"
+      this.hp = style.hp || 3; // number of "chunks"
       this.progress = 0; // chopping progress per segment
       this.dead = false;
     }
@@ -718,6 +1644,8 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
       this.h = options.height ?? LAVA_HEIGHT;
       this.rim = options.rim ?? LAVA_RIM;
       this.theme = options.theme ?? 'grass';
+      this.palette = options.palette || null;
+      this.variant = options.variant || null;
       const surface = options.surfaceY ?? (GROUND_Y + this.depth - this.h);
       this.y = surface;
       this.baseY = surface;
@@ -726,7 +1654,7 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
     aabb() { return {x:this.x, y:this.y, w:this.w, h:this.h}; }
   }
 
-  function createVolcano(baseX) {
+  function createVolcano(baseX, biome = activeBiome) {
     const margin = TILE * 2;
     const slopeWidth = VOLCANO_STEPS * TILE;
     const clampedBase = clamp(baseX, 240, Math.max(240, levelLength - VOLCANO_WIDTH - 240));
@@ -742,7 +1670,9 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
       depth: VOLCANO_CRATER_DEPTH,
       height: VOLCANO_LAVA_HEIGHT,
       rim: VOLCANO_LAVA_RIM,
-      theme: 'volcano'
+      theme: biome?.id || 'volcano',
+      palette: biome?.palette,
+      variant: 'hazard'
     });
     lava.baseY = lava.y;
     const volcanoObj = {
@@ -756,6 +1686,7 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
       lipLeft,
       lipRight,
       lava,
+      biome,
       safeMin: clampedBase - margin,
       safeMax: clampedBase + VOLCANO_WIDTH + margin,
       eruptionTimer: VOLCANO_ERUPTION_INTERVAL,
@@ -797,7 +1728,7 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
   }
 
   class Enemy {
-    constructor(x) {
+    constructor(x, biome = ensureActiveBiome()) {
       this.w = 28;
       this.h = 40;
       this.baseX = clamp(x, 80, levelLength - 80);
@@ -809,6 +1740,8 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
       this.dead = false;
       this.hp = ENEMY_HITS_TO_DEFEAT;
       this.hitFlash = 0;
+      this.variant = biome?.enemyVariant || 'dino';
+      this.biome = biome;
       this.x = this.baseX;
       this.y = groundHeightAt(this.centerX()) - this.h;
     }
@@ -938,7 +1871,7 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
   }
 
   class Bullet {
-    constructor(x, y, vx, { owner = null, faction = 'enemy' } = {}) {
+    constructor(x, y, vx, { owner = null, faction = 'enemy', range = Infinity } = {}) {
       this.x = x;
       this.y = y;
       this.vx = vx;
@@ -948,6 +1881,7 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
       this.dead = false;
       this.owner = owner;
       this.faction = faction;
+      this.rangeRemaining = range ?? Infinity;
     }
     aabb() {
       return { x: this.x - this.w/2, y: this.y - this.h/2, w: this.w, h: this.h };
@@ -986,14 +1920,15 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
 
   function updateVolcanoHud() {
     if (!uiLavaStatus) return;
+    const hazardLabel = ensureActiveBiome().hazardName || 'Hazard';
     if (!volcano) {
-      uiLavaStatus.textContent = 'calm';
+      uiLavaStatus.textContent = hazardLabel;
       uiLavaStatus.classList.remove('warn', 'bad');
       uiLavaStatus.classList.add('good');
       return;
     }
     if (volcano.isErupting) {
-      uiLavaStatus.textContent = 'eruption!';
+      uiLavaStatus.textContent = `${hazardLabel}!`;
       uiLavaStatus.classList.add('bad');
       uiLavaStatus.classList.remove('good', 'warn');
       return;
@@ -1052,7 +1987,12 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
 
   function resetLevel() {
     if (!gameMode) return;
+    if (pendingBiomeReset || !activeBiome) { showBiomeSelect(); return; }
+    ensureActiveBiome();
+    updateResourceLabels();
+    updateBiomeTip();
     hideDeathScreen(true);
+    clearChatState();
     configureLevelDimensions();
     bossRewardsGranted = false;
     bossUpgradeSummary = '';
@@ -1071,7 +2011,8 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
     coins = [];
     enemies = [];
     bullets = [];
-    volcano = createVolcano(tileX(levelLength * 0.55));
+    clearChatInputs();
+    volcano = createVolcano(tileX(levelLength * 0.55), activeBiome);
     updateVolcanoHud();
     players = [];
     const p1 = new Player(100, GROUND_Y - 34, {
@@ -1095,8 +2036,8 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
     if (gameMode === 2) {
       const p2 = new Player(160, GROUND_Y - 34, {
         label: 'P2',
-        headColor: '#3fb5ff',
-        bodyColor: '#233149',
+        headColor: chars.p2?.head || '#3fb5ff',
+        bodyColor: chars.p2?.body || '#233149',
         controls: {
           left: ['ArrowLeft'],
           right: ['ArrowRight'],
@@ -1126,7 +2067,7 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
         attempts++;
       } while (volcano && x > volcano.safeMin && x < volcano.safeMax && attempts < 8);
       if (volcano && x > volcano.safeMin && x < volcano.safeMax) continue;
-      trees.push(new Tree(x));
+      trees.push(new Tree(x, activeBiome));
     }
     // sprinkle a few natural hazards
     for (let i=0; i<6; i++) {
@@ -1137,7 +2078,7 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
         attempts++;
       } while (volcano && x > volcano.safeMin - TILE && x < volcano.safeMax + TILE && attempts < 12);
       if (volcano && x > volcano.safeMin - TILE && x < volcano.safeMax + TILE) continue;
-      lavas.push(new Lava(tileX(x)));
+      lavas.push(new Lava(tileX(x), { theme: activeBiome.id, palette: activeBiome.palette }));
     }
     if (volcano) {
       lavas.push(volcano.lava);
@@ -1160,7 +2101,7 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
           ex = volcano.safeMax + 120 + i * 40;
           ex = clamp(ex, 160, levelLength - 200);
         }
-        enemies.push(new Enemy(ex));
+        enemies.push(new Enemy(ex, activeBiome));
       }
     }
 
@@ -1177,24 +2118,48 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
     runStartTime = performance.now();
     elapsedTime = 0;
     finishDuration = 0;
-    keys = {};
+    resetInputState();
     clearVirtualInputs();
     updateUI();
     uiTimer.textContent = formatTime(0);
   }
 
   // ===== controls =====
+  function isTypingTarget(el) {
+    if (!el) return false;
+    const tag = el.tagName;
+    return tag === 'INPUT' || tag === 'TEXTAREA' || el.isContentEditable;
+  }
+
   window.addEventListener('keydown', (e) => {
     if (!platformMode) return;
+    if (isTypingTarget(e.target)) return;
     if (!gameMode) {
       if (e.key === '1') setGameMode(1);
       if (e.key === '2') setGameMode(2);
+      if (e.key === '3') setGameMode('remote');
+      return;
+    }
+    const chatTarget = Object.values(chatLanes).some(({ input }) => input && input === e.target);
+    const chatHidden = !chatUi || chatUi.classList.contains('hidden');
+    if (chatHidden === false) {
+      const wantsP1 = CHAT_HOTKEYS.p1.includes(e.key);
+      const wantsP2 = CHAT_HOTKEYS.p2.includes(e.key);
+      if (wantsP1 || (wantsP2 && gameMode === 2)) {
+        e.preventDefault();
+        focusChat(wantsP1 ? 'p1' : 'p2');
+        return;
+      }
+    }
+    if (activeChatPlayer || chatTarget) {
+      if (e.key === 'Escape') closeChatInput();
       return;
     }
     handleKeyDown(e.key);
   });
   window.addEventListener('keyup', (e) => {
     if (!platformMode || !gameMode) return;
+    if (isTypingTarget(e.target)) return;
     handleKeyUp(e.key);
   });
 
@@ -1240,36 +2205,40 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
     const tx = tileX(ahead);
     const ty = LAVA_SURFACE_Y;
     if (!spaceFreeForLava(tx, ty)) return;
-    lavas.push(new Lava(tx));
+    lavas.push(new Lava(tx, { theme: activeBiome?.id, palette: activeBiome?.palette }));
     player.wood -= 1;
     updateUI();
   }
 
+  function hasUsableGun(player) {
+    return !!(player && player.gun && (player.gun.ammo === Infinity || player.gun.ammo > 0));
+  }
+
+  function fireGun(player) {
+    if (!player || !player.gun) return false;
+    if (player.gunCooldown > 0) return false;
+    const gun = player.gun;
+    if (gun.ammo !== Infinity && gun.ammo <= 0) return false;
+
+    const projectileSpeed = gun.projectileSpeed ?? 14;
+    const projectileRange = gun.projectileRange ?? TILE * 8;
+    bullets.push(new Bullet(
+      player.centerX() + player.facing * (player.w / 2 + 8),
+      player.y + player.h * 0.45,
+      player.facing * projectileSpeed,
+      { owner: player, faction: 'player', range: projectileRange }
+    ));
+
+    player.gunCooldown = gun.fireRate ?? 12;
+    if (Number.isFinite(gun.ammo)) {
+      gun.ammo = Math.max(0, gun.ammo - 1);
+    }
+    updateUI();
+    return true;
+  }
+
   function playerAttack(player) {
     if (player.attackCooldown > 0) return;
-
-    const projectileDistance = TILE * 3;
-    let nearestDist = null;
-    for (const enemy of enemies) {
-      if (enemy.dead) continue;
-      const dx = enemy.centerX() - player.centerX();
-      const facingMatch = Math.abs(dx) < 1 || sign(dx) === player.facing;
-      if (!facingMatch) continue;
-      const dist = Math.abs(dx);
-      if (nearestDist === null || dist < nearestDist) {
-        nearestDist = dist;
-      }
-    }
-
-    if (nearestDist !== null && nearestDist >= projectileDistance) {
-      bullets.push(new Bullet(
-        player.centerX() + player.facing * (player.w / 2 + 8),
-        player.y + player.h * 0.45,
-        player.facing * 14,
-        { owner: player, faction: 'player' }
-      ));
-    }
-
     let hitEnemy = false;
     for (const enemy of enemies) {
       if (enemy.dead) continue;
@@ -1316,7 +2285,7 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
     player.dinoBites = 0;
     if (player.lives <= 0) {
       updateUI();
-      resetLevel();
+      showBiomeSelect();
       return true;
     }
     if (player.coins > 0) player.coins -= 1;
@@ -1440,6 +2409,7 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
         player.spawnShieldMs = 0;
       }
       if (player.attackCooldown > 0) player.attackCooldown = Math.max(0, player.attackCooldown - dt);
+      if (player.gunCooldown > 0) player.gunCooldown = Math.max(0, player.gunCooldown - dt);
       for (const l of lavas) {
         if (aabbOverlap(player.aabb(), l.aabb()) && player.invuln <= 0) {
           if (handlePlayerDeath(player)) return;
@@ -1581,7 +2551,8 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
       if (!bossAlive && players.every(p => p.finished)) {
         finished = true;
         finishDuration = elapsedTime;
-        const summary = players.map(p => `${p.label}: Coins <b>${p.coins}</b> · Wood <b>${p.wood}</b> · Deaths <b>${p.deaths}</b>`).join('<br>');
+        const resourceLabel = ensureActiveBiome().resourceName || 'Resource';
+        const summary = players.map(p => `${p.label}: Coins <b>${p.coins}</b> · ${resourceLabel} <b>${p.wood}</b> · Deaths <b>${p.deaths}</b>`).join('<br>');
         const config = LEVELS[levelIndex] || LEVELS[0];
         const isFinalLevel = levelIndex >= LEVELS.length - 1;
         const nextConfig = LEVELS[levelIndex + 1];
@@ -1606,6 +2577,26 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
     }
   }
 
+  function describeGun(player) {
+    if (!player || !player.gun) return 'None';
+    const type = player.gun.gunType || 'Unknown';
+    const ammoValue = player.gun.ammo;
+    const ammo = ammoValue === Infinity
+      ? '∞'
+      : Math.max(0, Math.floor(Number.isFinite(ammoValue) ? ammoValue : 0));
+    return `${type} (${ammo})`;
+  }
+
+  function updateGunHud(el, player) {
+    if (!el) return;
+    el.textContent = describeGun(player);
+    const hasGun = !!(player && player.gun);
+    const hasAmmo = hasGun && (player.gun.ammo === Infinity || player.gun.ammo > 0);
+    el.classList.toggle('good', hasAmmo);
+    el.classList.toggle('warn', !hasGun);
+    el.classList.toggle('bad', hasGun && !hasAmmo);
+  }
+
   function updateUI() {
     const [p1, p2] = players;
     if (uiLevel) {
@@ -1618,19 +2609,23 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
       ui.p1.coins.textContent = p1.coins;
       ui.p1.wood.textContent = p1.wood;
       ui.p1.lives.textContent = `${p1.lives} (${p1.dinoBites}/${BOSS_BITES_TO_RESPAWN})`;
+      updateGunHud(ui.p1.gun, p1);
     } else {
       ui.p1.coins.textContent = '0';
       ui.p1.wood.textContent = '0';
       ui.p1.lives.textContent = `0 (0/${BOSS_BITES_TO_RESPAWN})`;
+      updateGunHud(ui.p1.gun, null);
     }
     if (p2) {
       ui.p2.coins.textContent = p2.coins;
       ui.p2.wood.textContent = p2.wood;
       ui.p2.lives.textContent = `${p2.lives} (${p2.dinoBites}/${BOSS_BITES_TO_RESPAWN})`;
+      updateGunHud(ui.p2.gun, p2);
     } else {
       ui.p2.coins.textContent = '0';
       ui.p2.wood.textContent = '0';
       ui.p2.lives.textContent = `0 (0/${BOSS_BITES_TO_RESPAWN})`;
+      updateGunHud(ui.p2.gun, null);
     }
     updateBossStatusUI();
     updateUpgradeAnnouncements();
@@ -1683,18 +2678,67 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
   }
 
   // ===== drawing =====
+  const LIGHT_DIR = { x: -0.8, y: -0.6 };
+  function normalizeDir(dir) {
+    const mag = Math.hypot(dir.x, dir.y) || 1;
+    return { x: dir.x / mag, y: dir.y / mag };
+  }
+  const LIGHT_NORM = normalizeDir(LIGHT_DIR);
+  function shadeColor(color, amount) {
+    if (typeof color !== 'string' || color[0] !== '#') return color;
+    const hex = color.length === 4
+      ? `#${color[1]}${color[1]}${color[2]}${color[2]}${color[3]}${color[3]}`
+      : color;
+    if (hex.length !== 7) return color;
+    const num = parseInt(hex.slice(1), 16);
+    const r = (num >> 16) & 255;
+    const g = (num >> 8) & 255;
+    const b = num & 255;
+    const adjust = (c) => {
+      if (amount >= 0) {
+        return Math.round(c + (255 - c) * amount);
+      }
+      return Math.round(c * (1 + amount));
+    };
+    const nr = adjust(r);
+    const ng = adjust(g);
+    const nb = adjust(b);
+    return `#${((1 << 24) + (nr << 16) + (ng << 8) + nb).toString(16).slice(1)}`;
+  }
+  function makeLightGradient(x, y, w, h, base, lightAmt = 0.22, darkAmt = -0.22) {
+    const cx = x + w / 2;
+    const cy = y + h / 2;
+    const span = Math.max(w, h) * 0.9;
+    const sx = cx - LIGHT_NORM.x * span;
+    const sy = cy - LIGHT_NORM.y * span;
+    const ex = cx + LIGHT_NORM.x * span;
+    const ey = cy + LIGHT_NORM.y * span;
+    const grad = ctx.createLinearGradient(sx, sy, ex, ey);
+    grad.addColorStop(0, shadeColor(base, lightAmt));
+    grad.addColorStop(1, shadeColor(base, darkAmt));
+    return grad;
+  }
+  function lightSideX(x, w, inset = 4) {
+    return LIGHT_DIR.x < 0 ? x + inset : x + w - inset;
+  }
+  function lightSideY(y, h, inset = 4) {
+    return LIGHT_DIR.y < 0 ? y + inset : y + h - inset;
+  }
   function drawGround() {
+    const pal = palette();
     // sky
     const grd = ctx.createLinearGradient(0,0,0,H);
-    grd.addColorStop(0,'#6ec6ff');
-    grd.addColorStop(1,'#bfeaff');
+    grd.addColorStop(0, pal.skyTop || '#6ec6ff');
+    grd.addColorStop(1, pal.skyBottom || '#bfeaff');
     ctx.fillStyle = grd;
     ctx.fillRect(0,0,W,H);
 
     // far hills
+    const fogColor = pal.skyBottom || '#bfeaff';
     ctx.save();
     ctx.translate(-camX*0.3,0);
-    ctx.fillStyle = '#9ed39b';
+    ctx.fillStyle = mixHex(pal.hillColor || '#9ed39b', fogColor, 0.35);
+    ctx.globalAlpha = 0.85;
     const hillSpacing = 500;
     const hillCount = Math.ceil((levelLength + W) / hillSpacing);
     for (let i=0;i<hillCount;i++){
@@ -1715,31 +2759,52 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
     ctx.translate(-camX,0);
     const turfTop = GROUND_Y - GROUND_SURFACE;
     const turfGrad = ctx.createLinearGradient(0, turfTop, 0, GROUND_Y + 4);
-    turfGrad.addColorStop(0, '#90e084');
-    turfGrad.addColorStop(0.45, '#66ba5d');
-    turfGrad.addColorStop(1, '#447d3d');
+    turfGrad.addColorStop(0, pal.turfTop || '#90e084');
+    turfGrad.addColorStop(0.45, pal.turfMid || '#66ba5d');
+    turfGrad.addColorStop(1, pal.turfBottom || '#447d3d');
     ctx.fillStyle = turfGrad;
     ctx.fillRect(0, turfTop, levelLength, GROUND_SURFACE + 4);
-    ctx.fillStyle = '#2f4f2d';
+    const highlightTop = LIGHT_DIR.y < 0;
+    ctx.save();
+    ctx.globalAlpha = 0.35;
+    ctx.fillStyle = '#fff';
+    if (highlightTop) {
+      ctx.fillRect(0, turfTop, levelLength, 1);
+    } else {
+      ctx.fillRect(0, turfTop + GROUND_SURFACE + 3, levelLength, 1);
+    }
+    ctx.globalAlpha = 0.25;
+    ctx.fillStyle = '#000';
+    if (highlightTop) {
+      ctx.fillRect(0, GROUND_Y + 2, levelLength, 1);
+    } else {
+      ctx.fillRect(0, turfTop, levelLength, 1);
+    }
+    ctx.restore();
+    ctx.fillStyle = pal.edge || '#2f4f2d';
     ctx.fillRect(0, GROUND_Y - 2, levelLength, 2);
     ctx.fillStyle = '#0003';
     ctx.fillRect(0, GROUND_Y, levelLength, 2);
 
     const frontGrad = ctx.createLinearGradient(0, GROUND_Y, 0, H);
-    frontGrad.addColorStop(0, '#4b3a25');
-    frontGrad.addColorStop(0.5, '#3a2718');
-    frontGrad.addColorStop(1, '#1f140b');
+    frontGrad.addColorStop(0, pal.frontTop || '#4b3a25');
+    frontGrad.addColorStop(0.5, pal.frontMid || '#3a2718');
+    frontGrad.addColorStop(1, pal.frontBottom || '#1f140b');
     ctx.fillStyle = frontGrad;
     ctx.fillRect(0, GROUND_Y, levelLength, H-GROUND_Y);
+    ctx.globalAlpha = 0.25;
+    ctx.fillStyle = makeLightGradient(0, GROUND_Y, levelLength, H - GROUND_Y, pal.frontMid || '#3a2718', 0.16, -0.22);
+    ctx.fillRect(0, GROUND_Y, levelLength, H-GROUND_Y);
+    ctx.globalAlpha = 1;
 
     // subtle stratified dirt lines
-    ctx.fillStyle = '#0002';
+    ctx.fillStyle = pal.strata || '#0002';
     for (let y = GROUND_Y + 18; y < H; y += 26) {
       ctx.fillRect(0, y, levelLength, 4);
     }
 
     // grass blades
-    ctx.strokeStyle = '#9ef79a';
+    ctx.strokeStyle = pal.blade || '#9ef79a';
     ctx.lineWidth = 1;
     for (let x=0; x<levelLength; x+=8) {
       const gx = x + Math.sin((x+performance.now()*0.002)*0.1)*1.2;
@@ -1751,13 +2816,114 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
     // goal flag
     ctx.fillStyle = '#333';
     ctx.fillRect(goalX, GROUND_Y-60, 4, 60);
-    ctx.fillStyle = '#ffd166';
+    ctx.fillStyle = pal.goalFlag || '#ffd166';
     ctx.beginPath();
     ctx.moveTo(goalX+4, GROUND_Y-56);
     ctx.lineTo(goalX+54, GROUND_Y-46);
     ctx.lineTo(goalX+4, GROUND_Y-36);
     ctx.closePath();
     ctx.fill();
+    ctx.restore();
+  }
+
+  function drawBackdrop() {
+    const pal = palette();
+    ctx.save(); ctx.translate(-camX*0.6,0);
+    const fogColor = pal.skyBottom || '#bfeaff';
+    const silhouetteBase = pal.silhouetteColor || '#2f6130';
+    const silhouetteColor = mixHex(silhouetteBase, fogColor, 0.5);
+    ctx.fillStyle = silhouetteColor;
+    const silhouetteType = pal.silhouetteType || 'trees';
+
+    if (silhouetteType === 'craters') {
+      const planetSpacing = 320;
+      const planetCount = Math.ceil((levelLength + W) / planetSpacing);
+      for (let i=0; i<planetCount; i++) {
+        const px = i * planetSpacing + 160;
+        const py = 110 + (i % 3) * 24;
+        const r = 18 + (i % 3) * 6;
+        const grad = ctx.createRadialGradient(px - 6, py - 6, 6, px, py, r);
+        grad.addColorStop(0, pal.skyBottom || '#c5d4e8');
+        grad.addColorStop(1, pal.skyTop || '#1e1236');
+        ctx.fillStyle = grad;
+        ctx.beginPath();
+        ctx.arc(px, py, r, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = `${(pal.blade || '#ccb9f8')}88`;
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.arc(px, py, r + 6, 0, Math.PI * 2);
+        ctx.stroke();
+      }
+      ctx.fillStyle = silhouetteColor;
+    }
+    const silhouetteSpacing = 220;
+    const silhouetteCount = Math.ceil((levelLength + W) / silhouetteSpacing);
+    for (let i=0;i<silhouetteCount;i++){
+      const x = i*silhouetteSpacing + 100;
+      const type = silhouetteType;
+      if (type === 'city') {
+        const base = GROUND_Y;
+        const widths = [50, 36, 28];
+        widths.forEach((w, idx) => {
+          const h = 60 + (idx * 18) + (i % 2 === 0 ? 12 : 0);
+          ctx.fillRect(x + idx * 26, base - h, w, h);
+        });
+      } else if (type === 'ice') {
+        ctx.beginPath();
+        ctx.moveTo(x, GROUND_Y);
+        ctx.lineTo(x + 24, GROUND_Y - 80);
+        ctx.lineTo(x + 48, GROUND_Y);
+        ctx.closePath();
+        ctx.fill();
+        ctx.fillRect(x + 18, GROUND_Y - 50, 12, 50);
+      } else if (type === 'dunes') {
+        ctx.beginPath();
+        ctx.moveTo(x - 40, GROUND_Y);
+        ctx.quadraticCurveTo(x + 20, GROUND_Y - 40, x + 80, GROUND_Y);
+        ctx.lineTo(x + 80, GROUND_Y + 30);
+        ctx.lineTo(x - 40, GROUND_Y + 30);
+        ctx.closePath();
+        ctx.fill();
+      } else if (type === 'kelp') {
+        const stemH = 90;
+        ctx.beginPath();
+        ctx.moveTo(x, GROUND_Y);
+        ctx.quadraticCurveTo(x + 12, GROUND_Y - stemH * 0.4, x - 6, GROUND_Y - stemH);
+        ctx.quadraticCurveTo(x + 10, GROUND_Y - stemH * 0.6, x + 4, GROUND_Y - stemH * 0.2);
+        ctx.lineTo(x + 8, GROUND_Y);
+        ctx.closePath();
+        ctx.fill();
+      } else if (type === 'craters') {
+        ctx.beginPath();
+        ctx.ellipse(x + 24, GROUND_Y - 12, 46, 22, 0, 0, Math.PI*2);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.ellipse(x + 18, GROUND_Y - 22, 18, 10, 0, 0, Math.PI*2);
+        ctx.fill();
+        ctx.globalAlpha = 0.6;
+        ctx.fillRect(x + 8, GROUND_Y - 140, 3, 3);
+        ctx.fillRect(x + 42, GROUND_Y - 120, 2, 2);
+        ctx.fillRect(x - 12, GROUND_Y - 100, 2, 2);
+        ctx.globalAlpha = 1;
+      } else {
+        ctx.fillRect(x+14, GROUND_Y-70, 12, 70);
+        ctx.beginPath();
+        ctx.roundRect(x, GROUND_Y-110, 40, 30, 10); ctx.fill();
+        ctx.beginPath();
+        ctx.roundRect(x-6, GROUND_Y-90, 52, 34, 12); ctx.fill();
+      }
+    }
+    ctx.restore();
+    ctx.save();
+    const fogTop = mixHex(fogColor, '#000000', 0.15);
+    const fogNear = mixHex(fogColor, '#ffffff', 0.2);
+    const fogGrad = ctx.createLinearGradient(0, 0, 0, GROUND_Y);
+    fogGrad.addColorStop(0, hexToRgba(fogTop, 0.1));
+    fogGrad.addColorStop(0.65, hexToRgba(fogNear, 0.16));
+    fogGrad.addColorStop(1, hexToRgba(fogNear, 0.2));
+    ctx.fillStyle = fogGrad;
+    ctx.fillRect(0, 0, W, GROUND_Y);
     ctx.restore();
   }
 
@@ -1769,11 +2935,12 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
     const baseY = GROUND_Y;
     const rimY = v.rimY;
     const smokeSeed = performance.now() * 0.0015;
+    const pal = (v.biome && v.biome.palette) ? v.biome.palette : palette();
 
     const bodyGrad = ctx.createLinearGradient(0, rimY, 0, baseY + 80);
-    bodyGrad.addColorStop(0, '#6d3e2c');
-    bodyGrad.addColorStop(0.5, '#543121');
-    bodyGrad.addColorStop(1, '#2d1c14');
+    bodyGrad.addColorStop(0, pal.hazardBodyLight || '#6d3e2c');
+    bodyGrad.addColorStop(0.5, pal.hazardBodyMid || '#543121');
+    bodyGrad.addColorStop(1, pal.hazardBodyDark || '#2d1c14');
     ctx.fillStyle = bodyGrad;
     ctx.beginPath();
     ctx.moveTo(v.x, baseY);
@@ -1783,7 +2950,7 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
     ctx.closePath();
     ctx.fill();
 
-    ctx.fillStyle = '#4a2b1e';
+    ctx.fillStyle = pal.hazardSide || '#4a2b1e';
     ctx.beginPath();
     ctx.moveTo(v.x, baseY);
     ctx.lineTo(v.lipLeft, rimY);
@@ -1799,27 +2966,29 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
 
     const cavityBottom = baseY + v.lava.depth + 40;
     const cavityGrad = ctx.createLinearGradient(0, rimY, 0, cavityBottom);
-    cavityGrad.addColorStop(0, '#361f15');
-    cavityGrad.addColorStop(1, '#120805');
+    cavityGrad.addColorStop(0, pal.hazardCavityTop || '#361f15');
+    cavityGrad.addColorStop(1, pal.hazardCavityBottom || '#120805');
     ctx.fillStyle = cavityGrad;
     ctx.fillRect(v.craterX, rimY, v.craterWidth, cavityBottom - rimY);
 
-    ctx.fillStyle = '#8f5539';
+    ctx.fillStyle = pal.hazardLipLight || '#8f5539';
     ctx.fillRect(v.lipLeft - 6, rimY - 6, (v.lipRight - v.lipLeft) + 12, 6);
-    ctx.fillStyle = '#2c1a12';
+    ctx.fillStyle = pal.hazardLipDark || '#2c1a12';
     ctx.fillRect(v.lipLeft - 4, rimY - 2, (v.lipRight - v.lipLeft) + 8, 4);
 
     if (v.isErupting || v.explosionPulse > 0.01) {
       const intensity = v.isErupting ? 1 : v.explosionPulse;
-      ctx.fillStyle = `rgba(255, 132, 76, ${0.3 * intensity})`;
+      const glowTone = pal.hazardGlow || '#ff842c';
+      const rimTone = pal.hazardRimGlow || '#ffd65e';
+      ctx.fillStyle = `${glowTone}${Math.round(0.3 * intensity * 255).toString(16).padStart(2,'0')}`;
       ctx.beginPath();
       ctx.ellipse(v.craterX + v.craterWidth/2, rimY - 40, 120, 60, 0, 0, Math.PI*2);
       ctx.fill();
-      ctx.fillStyle = `rgba(255, 214, 94, ${0.4 * intensity})`;
+      ctx.fillStyle = `${rimTone}${Math.round(0.4 * intensity * 255).toString(16).padStart(2,'0')}`;
       ctx.fillRect(v.craterX, rimY - 6, v.craterWidth, 6);
     }
 
-    ctx.strokeStyle = '#3b2419';
+    ctx.strokeStyle = pal.hazardSide || '#3b2419';
     ctx.lineWidth = 2;
     for (let i=1; i<=VOLCANO_STEPS; i++) {
       const t = i / VOLCANO_STEPS;
@@ -1839,7 +3008,7 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
       ctx.globalAlpha = alpha;
       const sx = v.craterX + v.craterWidth/2 + Math.sin(smokeSeed + i*0.6) * 20;
       const sy = rimY - 24 - i * 20 - Math.cos(smokeSeed*1.3 + i) * 6;
-      ctx.fillStyle = '#f3ede4';
+      ctx.fillStyle = pal.hazardSmoke || '#f3ede4';
       ctx.beginPath();
       ctx.ellipse(sx, sy, 28 - i*3, 14 - i*2, 0, 0, Math.PI*2);
       ctx.fill();
@@ -1858,17 +3027,87 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
     if (tr.dead) return;
     ctx.save();
     ctx.translate(-camX,0);
-    // trunk
-    ctx.fillStyle = '#7c4f2a';
-    ctx.fillRect(tr.x + 10, tr.baseY + 30, 10, tr.h - 30);
-    // canopy
-    ctx.fillStyle = '#3a7d3a';
-    ctx.beginPath();
-    ctx.roundRect(tr.x, tr.baseY, tr.w, 40, 10);
-    ctx.fill();
-    ctx.beginPath();
-    ctx.roundRect(tr.x-6, tr.baseY+18, tr.w+12, 34, 12);
-    ctx.fill();
+    const pal = palette();
+    const trunk = pal.resourceTrunk || '#7c4f2a';
+    const canopy = pal.resourceCanopy || '#3a7d3a';
+    const accent = pal.resourceAccent || canopy;
+    const type = tr.variant || 'default';
+    const groundY = tr.baseY + tr.h;
+    drawShadow(tr.x - 6, groundY + 2, tr.w + 12, Math.max(8, tr.w * 0.35), 0.28, -10);
+
+    if (type === 'ice') {
+      ctx.fillStyle = canopyFill;
+      ctx.beginPath();
+      ctx.moveTo(tr.x + tr.w/2, tr.baseY - 30);
+      ctx.lineTo(tr.x + tr.w - 4, tr.baseY + 40);
+      ctx.lineTo(tr.x + 4, tr.baseY + 40);
+      ctx.closePath();
+      ctx.fill();
+      ctx.fillStyle = accentFill;
+      ctx.beginPath();
+      ctx.moveTo(tr.x + tr.w/2, tr.baseY - 10);
+      ctx.lineTo(tr.x + tr.w - 10, tr.baseY + 32);
+      ctx.lineTo(tr.x + 10, tr.baseY + 32);
+      ctx.closePath();
+      ctx.fill();
+      ctx.fillStyle = trunkFill;
+      ctx.fillRect(tr.x + tr.w/2 - 6, tr.baseY + 32, 12, tr.h - 32);
+    } else if (type === 'city') {
+      ctx.fillStyle = trunkFill;
+      ctx.fillRect(tr.x, tr.baseY + tr.h - 40, tr.w, 40);
+      ctx.fillStyle = canopyFill;
+      ctx.fillRect(tr.x + 4, tr.baseY + 10, tr.w - 8, tr.h - 30);
+      ctx.fillStyle = accentFill;
+      for (let i=0; i<3; i++) {
+        ctx.fillRect(tr.x + 6 + accentShift, tr.baseY + 18 + i*20, tr.w - 12, 6);
+      }
+    } else if (type === 'sand') {
+      ctx.fillStyle = canopyFill;
+      ctx.fillRect(tr.x, tr.baseY + 20, tr.w, tr.h - 20);
+      ctx.fillStyle = accentFill;
+      for (let i=0; i<3; i++) {
+        const barX = lightSideX(tr.x + 6 + i * 8, 6, 0);
+        ctx.fillRect(barX, tr.baseY, 6, 20);
+      }
+      ctx.beginPath();
+      ctx.moveTo(tr.x, tr.baseY + 20);
+      ctx.lineTo(tr.x + tr.w/2, tr.baseY - 6);
+      ctx.lineTo(tr.x + tr.w, tr.baseY + 20);
+      ctx.closePath();
+      ctx.fill();
+    } else if (type === 'water') {
+      ctx.fillStyle = canopyFill;
+      ctx.beginPath();
+      ctx.roundRect(tr.x, tr.baseY + 20, tr.w, tr.h - 20, 8);
+      ctx.fill();
+      ctx.fillStyle = accentFill;
+      ctx.beginPath();
+      ctx.roundRect(tr.x + 6 + accentShift, tr.baseY + 8, tr.w - 12, 22, 10);
+      ctx.fill();
+      ctx.fillStyle = trunkFill;
+      ctx.fillRect(tr.x + tr.w/2 - 8, tr.baseY + tr.h - 28, 16, 28);
+    } else if (type === 'space') {
+      ctx.fillStyle = canopyFill;
+      ctx.beginPath();
+      ctx.roundRect(tr.x, tr.baseY + 16, tr.w, tr.h - 16, 12);
+      ctx.fill();
+      ctx.fillStyle = accentFill;
+      ctx.beginPath();
+      ctx.ellipse(tr.x + tr.w/2, tr.baseY + 26, tr.w/2, 12, 0, 0, Math.PI*2);
+      ctx.fill();
+      ctx.fillStyle = trunkFill;
+      ctx.fillRect(tr.x + tr.w/2 - 10, tr.baseY + tr.h - 30, 20, 30);
+    } else {
+      ctx.fillStyle = trunkFill;
+      ctx.fillRect(tr.x + 10, tr.baseY + 30, 10, tr.h - 30);
+      ctx.fillStyle = canopyFill;
+      ctx.beginPath();
+      ctx.roundRect(tr.x, tr.baseY, tr.w, 40, 10);
+      ctx.fill();
+      ctx.beginPath();
+      ctx.roundRect(tr.x-6, tr.baseY+18, tr.w+12, 34, 12);
+      ctx.fill();
+    }
 
     // chop progress bar if nearby / active
     const near = players.some(p => Math.abs((tr.x + tr.w/2) - p.centerX()) < 38 && Math.abs((tr.baseY + tr.h) - p.bottom()) < 50);
@@ -1893,11 +3132,22 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
 
   function drawWall(w) {
     ctx.save(); ctx.translate(-camX,0);
-    // block
-    ctx.fillStyle = '#9399a3';
+    const pal = palette();
+    const shadowY = w.y + w.h + 2;
+    drawShadow(w.x - 4, shadowY, w.w + 8, Math.max(6, w.w * 0.18), 0.22, -8);
+    ctx.fillStyle = pal.wallPrimary || '#9399a3';
     ctx.fillRect(w.x, w.y, w.w, w.h);
+    const highlightTop = LIGHT_DIR.y < 0;
+    ctx.save();
+    ctx.globalAlpha = 0.35;
+    ctx.fillStyle = '#fff';
+    ctx.fillRect(w.x, highlightTop ? w.y : w.y + w.h - 1, w.w, 1);
+    ctx.globalAlpha = 0.25;
+    ctx.fillStyle = '#000';
+    ctx.fillRect(w.x, highlightTop ? w.y + w.h - 1 : w.y, w.w, 1);
+    ctx.restore();
     // fake brick lines
-    ctx.strokeStyle = '#747b85';
+    ctx.strokeStyle = shadeColor(pal.wallStroke || '#747b85', -0.1);
     ctx.lineWidth = 1;
     for (let y=0; y<w.h; y+=10) {
       ctx.beginPath(); ctx.moveTo(w.x, w.y+y); ctx.lineTo(w.x+w.w, w.y+y); ctx.stroke();
@@ -1914,43 +3164,58 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
     const pitTop = GROUND_Y;
     const pitBottom = pitTop + l.depth;
     const lavaTop = l.y;
+    const pal = l.palette || palette();
 
-    if (l.theme !== 'volcano') {
+    if (l.variant === 'hazard') {
+      const hazardWall = pal.lavaWallDark || '#2a1811';
+      ctx.fillStyle = makeLightGradient(l.x - 10, pitTop, l.w + 20, l.depth + 40, hazardWall, 0.16, -0.28);
+      ctx.fillRect(l.x - 10, pitTop, l.w + 20, l.depth + 40);
+      const hazardRim = pal.lavaWallMid || '#4d2c1c';
+      ctx.fillStyle = makeLightGradient(l.x - 6, pitTop - 8, l.w + 12, 8, hazardRim, 0.18, -0.2);
+      ctx.fillRect(l.x - 6, pitTop - 8, l.w + 12, 8);
+    } else {
       const rimTop = GROUND_Y - l.rim;
       const rimGrad = ctx.createLinearGradient(0, rimTop, 0, pitTop);
-      rimGrad.addColorStop(0, '#6fa95c');
-      rimGrad.addColorStop(1, '#35592d');
+      rimGrad.addColorStop(0, pal.lavaRimTop || '#6fa95c');
+      rimGrad.addColorStop(1, pal.lavaRimBottom || '#35592d');
       ctx.fillStyle = rimGrad;
       ctx.fillRect(l.x - 8, rimTop, l.w + 16, l.rim);
+      ctx.globalAlpha = 0.3;
+      ctx.fillStyle = makeLightGradient(l.x - 8, rimTop, l.w + 16, l.rim, pal.lavaRimTop || '#6fa95c', 0.2, -0.22);
+      ctx.fillRect(l.x - 8, rimTop, l.w + 16, l.rim);
+      ctx.globalAlpha = 1;
 
       const wallGrad = ctx.createLinearGradient(l.x - 8, pitTop, l.x + l.w + 8, pitTop);
-      wallGrad.addColorStop(0, '#1c2b16');
-      wallGrad.addColorStop(0.12, '#3f5a29');
-      wallGrad.addColorStop(0.88, '#3f5a29');
-      wallGrad.addColorStop(1, '#1c2b16');
+      wallGrad.addColorStop(0, pal.lavaWallDark || '#1c2b16');
+      wallGrad.addColorStop(0.12, pal.lavaWallMid || '#3f5a29');
+      wallGrad.addColorStop(0.88, pal.lavaWallMid || '#3f5a29');
+      wallGrad.addColorStop(1, pal.lavaWallDark || '#1c2b16');
       ctx.fillStyle = wallGrad;
       ctx.fillRect(l.x - 8, pitTop, l.w + 16, l.depth);
+      ctx.globalAlpha = 0.25;
+      ctx.fillStyle = makeLightGradient(l.x - 8, pitTop, l.w + 16, l.depth, pal.lavaWallMid || '#3f5a29', 0.2, -0.26);
+      ctx.fillRect(l.x - 8, pitTop, l.w + 16, l.depth);
+      ctx.globalAlpha = 1;
 
       const cavityGrad = ctx.createLinearGradient(0, pitTop, 0, pitBottom);
-      cavityGrad.addColorStop(0, '#331b11');
-      cavityGrad.addColorStop(1, '#0f0603');
+      cavityGrad.addColorStop(0, pal.lavaCavityTop || '#331b11');
+      cavityGrad.addColorStop(1, pal.lavaCavityBottom || '#0f0603');
       ctx.fillStyle = cavityGrad;
       ctx.fillRect(l.x, pitTop, l.w, l.depth);
-    } else {
-      ctx.fillStyle = '#2a1811';
-      ctx.fillRect(l.x - 10, pitTop, l.w + 20, l.depth + 40);
-      ctx.fillStyle = '#4d2c1c';
-      ctx.fillRect(l.x - 6, pitTop - 8, l.w + 12, 8);
     }
 
     const lavaGrad = ctx.createLinearGradient(0, lavaTop, 0, pitBottom);
-    lavaGrad.addColorStop(0, '#ffb56b');
-    lavaGrad.addColorStop(0.45, '#ff6b3a');
-    lavaGrad.addColorStop(1, '#d62020');
+    lavaGrad.addColorStop(0, pal.lavaFillLight || '#ffb56b');
+    lavaGrad.addColorStop(0.45, pal.lavaFillMid || '#ff6b3a');
+    lavaGrad.addColorStop(1, pal.lavaFillDark || '#d62020');
     ctx.fillStyle = lavaGrad;
     ctx.fillRect(l.x, lavaTop, l.w, pitBottom - lavaTop);
+    ctx.globalAlpha = 0.28;
+    ctx.fillStyle = makeLightGradient(l.x, lavaTop, l.w, pitBottom - lavaTop, pal.lavaFillMid || '#ff6b3a', 0.26, -0.3);
+    ctx.fillRect(l.x, lavaTop, l.w, pitBottom - lavaTop);
+    ctx.globalAlpha = 1;
 
-    ctx.strokeStyle = '#ffd166';
+    ctx.strokeStyle = pal.lavaStroke || '#ffd166';
     ctx.lineWidth = 2;
     const t = performance.now()*0.003 + l.phase;
     ctx.beginPath();
@@ -1961,8 +3226,8 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
     ctx.stroke();
 
     const glow = ctx.createRadialGradient(l.x + l.w/2, lavaTop + (pitBottom - lavaTop)/2, 0, l.x + l.w/2, lavaTop + (pitBottom - lavaTop)/2, l.w * 1.2);
-    glow.addColorStop(0, '#ff6b3a55');
-    glow.addColorStop(1, '#ff6b3a00');
+    glow.addColorStop(0, pal.lavaGlow || '#ff6b3a55');
+    glow.addColorStop(1, '#00000000');
     ctx.fillStyle = glow;
     ctx.globalCompositeOperation = 'lighter';
     ctx.fillRect(l.x - 24, lavaTop - 16, l.w + 48, pitBottom - lavaTop + 32);
@@ -1978,25 +3243,40 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
   function drawCoin(c) {
     if (c.collected) return;
     ctx.save(); ctx.translate(-camX,0);
+    const pal = palette();
     const bob = Math.sin(c.t*4) * 3;
+    const groundY = groundHeightAt(c.x);
+    const lift = clamp((groundY - (c.y + bob)) / 30, 0, 1);
+    drawShadow(c.x - c.r * 1.1, groundY + 1, c.r * 2.2, c.r * 0.7, 0.3 * (1 - lift * 0.7), -5);
     ctx.beginPath();
     ctx.arc(c.x, c.y + bob, c.r, 0, Math.PI*2);
-    ctx.fillStyle = '#ffd166';
+    ctx.fillStyle = coinFill;
     ctx.fill();
-    ctx.strokeStyle = '#c9a44f';
+    ctx.strokeStyle = makeLightGradient(c.x - c.r, c.y + bob - c.r, c.r * 2, c.r * 2, pal.coinEdge || '#c9a44f', 0.12, -0.3);
     ctx.lineWidth = 2;
     ctx.stroke();
     // inner shine
     ctx.fillStyle = '#fff8';
     ctx.beginPath();
-    ctx.arc(c.x-4, c.y + bob - 4, 4, 0, Math.PI*2);
+    ctx.arc(c.x + LIGHT_DIR.x * 4, c.y + bob + LIGHT_DIR.y * 4, 4, 0, Math.PI*2);
     ctx.fill();
+    const shadowAngle = Math.atan2(-LIGHT_DIR.y, -LIGHT_DIR.x);
+    ctx.save();
+    ctx.globalAlpha = 0.35;
+    ctx.strokeStyle = '#000';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(c.x, c.y + bob, c.r - 2, shadowAngle - Math.PI * 0.4, shadowAngle + Math.PI * 0.4);
+    ctx.stroke();
+    ctx.restore();
     ctx.restore();
   }
 
   function drawBoss(enemy) {
     if (enemy.dead) return;
     ctx.save(); ctx.translate(-camX,0);
+    const pal = palette();
+    const variant = enemy.variant || 'dino';
     const groundUnder = groundHeightAt(enemy.centerX());
     ctx.fillStyle = '#0005';
     ctx.beginPath();
@@ -2005,49 +3285,193 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
 
     const bodyHeight = enemy.h * 0.7;
     const bodyY = enemy.y + enemy.h - bodyHeight;
-    ctx.fillStyle = '#32713b';
-    ctx.beginPath();
-    ctx.roundRect(enemy.x, bodyY, enemy.w, bodyHeight, 24);
-    ctx.fill();
+    const accentShift = LIGHT_DIR.x < 0 ? -2 : 2;
 
-    ctx.fillStyle = '#4ca254';
-    ctx.beginPath();
-    ctx.roundRect(enemy.x + 16, bodyY + 12, enemy.w - 32, bodyHeight - 20, 18);
-    ctx.fill();
+    if (variant === 'camel') {
+      const bodyBase = pal.bossBody || '#32713b';
+      ctx.fillStyle = makeLightGradient(enemy.x, bodyY, enemy.w, bodyHeight, bodyBase, 0.2, -0.24);
+      ctx.beginPath();
+      ctx.roundRect(enemy.x, bodyY, enemy.w, bodyHeight, 22);
+      ctx.fill();
+      const bellyBase = pal.bossBelly || '#4ca254';
+      ctx.fillStyle = makeLightGradient(enemy.x + 12 + accentShift, bodyY + 10, enemy.w - 24, bodyHeight - 18, bellyBase, 0.2, -0.22);
+      ctx.beginPath();
+      ctx.roundRect(enemy.x + 12 + accentShift, bodyY + 10, enemy.w - 24, bodyHeight - 18, 16);
+      ctx.fill();
+      const headBase = pal.bossHead || '#3c8f48';
+      const headX = enemy.facing > 0 ? enemy.x + enemy.w - 20 : enemy.x + 4;
+      ctx.fillStyle = makeLightGradient(headX, enemy.y - 4, 18, 16, headBase, 0.22, -0.2);
+      ctx.beginPath();
+      ctx.roundRect(headX, enemy.y - 4, 18, 16, 6);
+      ctx.fill();
+      ctx.fillStyle = pal.bossEyeDark || '#1c2b16';
+      ctx.fillRect(headX + (enemy.facing > 0 ? 8 : 4), enemy.y + 2, 6, 4);
+      const tailBase = pal.bossTail || '#28652f';
+      ctx.fillStyle = makeLightGradient(enemy.x - 10, bodyY + bodyHeight * 0.6, 18, 10, tailBase, 0.18, -0.22);
+      ctx.beginPath();
+      ctx.roundRect(enemy.x + (enemy.facing > 0 ? -10 : enemy.w - 8), bodyY + bodyHeight * 0.6, 18, 10, 6);
+      ctx.fill();
+    } else if (variant === 'monkey') {
+      const bodyBase = pal.bossBody || '#32713b';
+      ctx.fillStyle = makeLightGradient(enemy.x + 8, bodyY + 6, enemy.w - 16, bodyHeight - 8, bodyBase, 0.2, -0.24);
+      ctx.beginPath();
+      ctx.roundRect(enemy.x + 8, bodyY + 6, enemy.w - 16, bodyHeight - 8, 20);
+      ctx.fill();
+      const bellyBase = pal.bossBelly || '#4ca254';
+      ctx.fillStyle = makeLightGradient(enemy.x + 18 + accentShift, bodyY + 16, enemy.w - 36, bodyHeight - 28, bellyBase, 0.2, -0.22);
+      ctx.beginPath();
+      ctx.roundRect(enemy.x + 18 + accentShift, bodyY + 16, enemy.w - 36, bodyHeight - 28, 14);
+      ctx.fill();
+      const headBase = pal.bossHead || '#3c8f48';
+      const headX = enemy.facing > 0 ? enemy.x + enemy.w - 42 : enemy.x + 6;
+      ctx.fillStyle = makeLightGradient(headX, enemy.y - 2, 36, 32, headBase, 0.22, -0.2);
+      ctx.beginPath();
+      ctx.roundRect(headX, enemy.y - 2, 36, 32, 14);
+      ctx.fill();
+      ctx.fillStyle = pal.bossEyeDark || '#1c2b16';
+      ctx.fillRect(headX + 10, enemy.y + 12, 6, 6);
+      ctx.fillRect(headX + 20, enemy.y + 12, 6, 6);
+      ctx.fillStyle = pal.bossEyeLight || '#f6f1ce';
+      ctx.fillRect(headX + 12, enemy.y + 12, 3, 3);
+      ctx.fillRect(headX + 22, enemy.y + 12, 3, 3);
+      const tailBase = pal.bossTail || '#28652f';
+      ctx.beginPath();
+      ctx.arc(enemy.x + (enemy.facing > 0 ? enemy.w : 0), bodyY + bodyHeight * 0.6, 14, 0, Math.PI, enemy.facing > 0);
+      ctx.strokeStyle = makeLightGradient(enemy.x - 14, bodyY + bodyHeight * 0.6 - 14, 28, 28, tailBase, 0.18, -0.22);
+      ctx.lineWidth = 8;
+      ctx.stroke();
+    } else if (variant === 'polar-bear') {
+      const bodyBase = pal.bossBody || '#32713b';
+      ctx.fillStyle = makeLightGradient(enemy.x, bodyY, enemy.w, bodyHeight, bodyBase, 0.2, -0.24);
+      ctx.beginPath();
+      ctx.roundRect(enemy.x, bodyY, enemy.w, bodyHeight, 18);
+      ctx.fill();
+      const bellyBase = pal.bossBelly || '#4ca254';
+      ctx.fillStyle = makeLightGradient(enemy.x + 14 + accentShift, bodyY + 10, enemy.w - 28, bodyHeight - 18, bellyBase, 0.2, -0.22);
+      ctx.beginPath();
+      ctx.roundRect(enemy.x + 14 + accentShift, bodyY + 10, enemy.w - 28, bodyHeight - 18, 14);
+      ctx.fill();
+      const headBase = pal.bossHead || '#3c8f48';
+      const headX = enemy.facing > 0 ? enemy.x + enemy.w - 34 : enemy.x + 6;
+      ctx.fillStyle = makeLightGradient(headX, enemy.y + 2, 30, 26, headBase, 0.22, -0.2);
+      ctx.beginPath();
+      ctx.roundRect(headX, enemy.y + 2, 30, 26, 10);
+      ctx.fill();
+      ctx.fillStyle = pal.bossEyeDark || '#1c2b16';
+      ctx.fillRect(headX + 8, enemy.y + 12, 6, 4);
+      ctx.fillStyle = pal.bossEyeLight || '#f6f1ce';
+      ctx.fillRect(headX + 9, enemy.y + 12, 3, 2);
+      const tailBase = pal.bossTail || '#28652f';
+      ctx.fillStyle = makeLightGradient(enemy.x + enemy.w - 18, bodyY + bodyHeight - 18, 10, 14, tailBase, 0.18, -0.22);
+      ctx.fillRect(enemy.x + enemy.w - 18, bodyY + bodyHeight - 18, 10, 14);
+    } else if (variant === 'fish') {
+      const bodyBase = pal.bossBody || '#32713b';
+      ctx.fillStyle = makeLightGradient(enemy.x, enemy.y, enemy.w, enemy.h, bodyBase, 0.2, -0.24);
+      ctx.beginPath();
+      ctx.ellipse(enemy.x + enemy.w / 2, enemy.y + enemy.h / 2, enemy.w / 2, enemy.h / 2.4, 0, 0, Math.PI*2);
+      ctx.fill();
+      const bellyBase = pal.bossBelly || '#4ca254';
+      ctx.fillStyle = makeLightGradient(enemy.x, enemy.y, enemy.w, enemy.h, bellyBase, 0.2, -0.22);
+      ctx.beginPath();
+      ctx.ellipse(enemy.x + enemy.w / 2, enemy.y + enemy.h / 2 + 4, enemy.w / 2.6, enemy.h / 3, 0, 0, Math.PI*2);
+      ctx.fill();
+      const tailBase = pal.bossTail || '#28652f';
+      ctx.fillStyle = makeLightGradient(enemy.x - 20, enemy.y + enemy.h / 2 - 18, 20, 36, tailBase, 0.18, -0.22);
+      ctx.beginPath();
+      ctx.moveTo(enemy.x, enemy.y + enemy.h / 2);
+      ctx.lineTo(enemy.x - 20, enemy.y + enemy.h / 2 - 18);
+      ctx.lineTo(enemy.x - 20, enemy.y + enemy.h / 2 + 18);
+      ctx.closePath();
+      ctx.fill();
+      const headBase = pal.bossHead || '#3c8f48';
+      ctx.fillStyle = makeLightGradient(enemy.x + enemy.w - 34, enemy.y + enemy.h / 2 - 16, 32, 32, headBase, 0.22, -0.2);
+      ctx.beginPath();
+      ctx.arc(enemy.x + enemy.w - 18, enemy.y + enemy.h / 2, 16, 0, Math.PI*2);
+      ctx.fill();
+      ctx.fillStyle = pal.bossEyeDark || '#1c2b16';
+      ctx.fillRect(enemy.x + enemy.w - 22, enemy.y + enemy.h / 2 - 3, 6, 4);
+      ctx.fillStyle = pal.bossEyeLight || '#f6f1ce';
+      ctx.fillRect(enemy.x + enemy.w - 20, enemy.y + enemy.h / 2 - 2, 3, 2);
+    } else if (variant === 'alien') {
+      const bodyBase = pal.bossBody || '#32713b';
+      ctx.fillStyle = makeLightGradient(enemy.x + 8, bodyY + 4, enemy.w - 16, bodyHeight - 12, bodyBase, 0.2, -0.24);
+      ctx.beginPath();
+      ctx.roundRect(enemy.x + 8, bodyY + 4, enemy.w - 16, bodyHeight - 12, 18);
+      ctx.fill();
+      const bellyBase = pal.bossBelly || '#4ca254';
+      ctx.fillStyle = makeLightGradient(enemy.x + 18 + accentShift, bodyY + 14, enemy.w - 36, bodyHeight - 32, bellyBase, 0.2, -0.22);
+      ctx.beginPath();
+      ctx.roundRect(enemy.x + 18 + accentShift, bodyY + 14, enemy.w - 36, bodyHeight - 32, 12);
+      ctx.fill();
+      const headBase = pal.bossHead || '#3c8f48';
+      const headX = enemy.x + enemy.w / 2 - 18;
+      ctx.fillStyle = makeLightGradient(headX, enemy.y - 6, 36, 32, headBase, 0.22, -0.2);
+      ctx.beginPath();
+      ctx.roundRect(headX, enemy.y - 6, 36, 32, 16);
+      ctx.fill();
+      ctx.fillStyle = pal.bossEyeDark || '#1c2b16';
+      ctx.fillRect(headX + 10, enemy.y + 8, 6, 8);
+      ctx.fillRect(headX + 20, enemy.y + 8, 6, 8);
+      ctx.fillStyle = pal.bossEyeLight || '#f6f1ce';
+      ctx.fillRect(headX + 12, enemy.y + 10, 3, 4);
+      ctx.fillRect(headX + 22, enemy.y + 10, 3, 4);
+      ctx.strokeStyle = pal.bossEyeLight || '#f6f1ce';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.moveTo(headX + 18, enemy.y - 6);
+      ctx.lineTo(headX + 18, enemy.y - 14);
+      ctx.stroke();
+    } else {
+      const bodyBase = pal.bossBody || '#32713b';
+      ctx.fillStyle = makeLightGradient(enemy.x, bodyY, enemy.w, bodyHeight, bodyBase, 0.2, -0.24);
+      ctx.beginPath();
+      ctx.roundRect(enemy.x, bodyY, enemy.w, bodyHeight, 24);
+      ctx.fill();
 
-    ctx.fillStyle = '#28652f';
-    const tailDir = enemy.facing > 0 ? -1 : 1;
-    ctx.beginPath();
-    ctx.ellipse(enemy.x + (tailDir > 0 ? enemy.w + 30 : -30), bodyY + bodyHeight * 0.65, 40, 14, 0, 0, Math.PI*2);
-    ctx.fill();
+      const bellyBase = pal.bossBelly || '#4ca254';
+      ctx.fillStyle = makeLightGradient(enemy.x + 16 + accentShift, bodyY + 12, enemy.w - 32, bodyHeight - 20, bellyBase, 0.2, -0.22);
+      ctx.beginPath();
+      ctx.roundRect(enemy.x + 16 + accentShift, bodyY + 12, enemy.w - 32, bodyHeight - 20, 18);
+      ctx.fill();
 
-    const headWidth = 46;
-    const headHeight = 32;
-    const headX = enemy.facing > 0 ? enemy.x + enemy.w - headWidth : enemy.x;
-    ctx.fillStyle = '#3c8f48';
-    ctx.beginPath();
-    ctx.roundRect(headX, enemy.y + 6, headWidth, headHeight, 16);
-    ctx.fill();
-    ctx.fillStyle = '#1c2b16';
-    const eyeX = enemy.facing > 0 ? headX + headWidth - 16 : headX + 8;
-    ctx.fillRect(eyeX, enemy.y + 14, 10, 6);
-    ctx.fillStyle = '#f6f1ce';
-    ctx.fillRect(eyeX + (enemy.facing > 0 ? 2 : -2), enemy.y + 14, 6, 4);
+      const tailBase = pal.bossTail || '#28652f';
+      const tailDir = enemy.facing > 0 ? -1 : 1;
+      ctx.fillStyle = makeLightGradient(enemy.x - 40, bodyY + bodyHeight * 0.65 - 14, 80, 28, tailBase, 0.18, -0.22);
+      ctx.beginPath();
+      ctx.ellipse(enemy.x + (tailDir > 0 ? enemy.w + 30 : -30), bodyY + bodyHeight * 0.65, 40, 14, 0, 0, Math.PI*2);
+      ctx.fill();
 
-    ctx.fillStyle = '#fef9d6';
-    for (let i=0; i<4; i++) {
-      const toothX = headX + 6 + i * 8;
-      ctx.fillRect(toothX, enemy.y + headHeight + 4, 4, 6);
+      const headWidth = 46;
+      const headHeight = 32;
+      const headX = enemy.facing > 0 ? enemy.x + enemy.w - headWidth : enemy.x;
+      const headBase = pal.bossHead || '#3c8f48';
+      ctx.fillStyle = makeLightGradient(headX, enemy.y + 6, headWidth, headHeight, headBase, 0.22, -0.2);
+      ctx.beginPath();
+      ctx.roundRect(headX, enemy.y + 6, headWidth, headHeight, 16);
+      ctx.fill();
+      ctx.fillStyle = pal.bossEyeDark || '#1c2b16';
+      const eyeX = enemy.facing > 0 ? headX + headWidth - 16 : headX + 8;
+      ctx.fillRect(eyeX, enemy.y + 14, 10, 6);
+      ctx.fillStyle = pal.bossEyeLight || '#f6f1ce';
+      ctx.fillRect(eyeX + (enemy.facing > 0 ? 2 : -2), enemy.y + 14, 6, 4);
+
+      ctx.fillStyle = pal.bossTooth || '#fef9d6';
+      for (let i=0; i<4; i++) {
+        const toothX = headX + 6 + i * 8;
+        ctx.fillRect(toothX, enemy.y + headHeight + 4, 4, 6);
+      }
+
+      const legBase = pal.bossLeg || '#215929';
+      ctx.fillStyle = makeLightGradient(enemy.x + 14, bodyY + bodyHeight - 14, 14, 24, legBase, 0.18, -0.22);
+      ctx.fillRect(enemy.x + 14, bodyY + bodyHeight - 14, 14, 24);
+      ctx.fillStyle = makeLightGradient(enemy.x + enemy.w - 28, bodyY + bodyHeight - 14, 14, 24, legBase, 0.18, -0.22);
+      ctx.fillRect(enemy.x + enemy.w - 28, bodyY + bodyHeight - 14, 14, 24);
     }
-
-    ctx.fillStyle = '#215929';
-    ctx.fillRect(enemy.x + 14, bodyY + bodyHeight - 14, 14, 24);
-    ctx.fillRect(enemy.x + enemy.w - 28, bodyY + bodyHeight - 14, 14, 24);
 
     const hpRatio = clamp(enemy.hp / (enemy.maxHp || BOSS_HITS_TO_DEFEAT), 0, 1);
     ctx.fillStyle = '#0009';
     ctx.fillRect(enemy.x - 16, enemy.y - 24, enemy.w + 32, 10);
-    ctx.fillStyle = '#9ef79a';
+    ctx.fillStyle = pal.hpFill || '#9ef79a';
     ctx.fillRect(enemy.x - 16, enemy.y - 24, (enemy.w + 32) * hpRatio, 10);
 
     if (enemy.hitFlash > 0) {
@@ -2064,6 +3488,23 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
     }
   }
 
+  function drawShadow(x, y, w, h, intensity, skew) {
+    const camCenter = camX + W / 2;
+    const shadowCenter = x + w / 2;
+    const dist = Math.abs(shadowCenter - camCenter);
+    const cameraFade = clamp(1 - dist / (W * 0.9), 0.15, 1);
+    const scaleFade = clamp(h / 14, 0.35, 1);
+    const opacity = clamp(intensity * cameraFade * scaleFade, 0, 0.5);
+    if (opacity <= 0) return;
+    ctx.save();
+    ctx.globalAlpha = opacity;
+    ctx.fillStyle = '#000000';
+    ctx.beginPath();
+    ctx.ellipse(shadowCenter + skew, y, w / 2, h / 2, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  }
+
   function drawEnemy(enemy) {
     if (enemy.dead) return;
     if (enemy.isBoss) {
@@ -2071,42 +3512,126 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
       return;
     }
     ctx.save(); ctx.translate(-camX,0);
+    const pal = palette();
+    const variant = enemy.variant || 'dino';
     const groundUnder = groundHeightAt(enemy.centerX());
-    ctx.fillStyle = '#0003';
-    ctx.beginPath();
-    ctx.ellipse(enemy.centerX(), groundUnder - 2, 12, 4, 0, 0, Math.PI*2);
-    ctx.fill();
+    drawShadow(enemy.centerX() - 14, groundUnder + 1, 28, 8, 0.32, -6);
 
-    ctx.fillStyle = '#532626';
-    ctx.fillRect(enemy.x + 2, enemy.y + 14, enemy.w - 4, enemy.h - 14);
-    ctx.fillStyle = '#7f3232';
-    ctx.fillRect(enemy.x, enemy.y + 6, enemy.w, enemy.h - 16);
-    ctx.fillStyle = '#c54c4c';
-    ctx.fillRect(enemy.x + 4, enemy.y + 8, enemy.w - 8, enemy.h - 20);
+    if (variant === 'camel') {
+      const bodyY = enemy.y + 12;
+      const bodyBase = pal.enemyPrimary || '#7f3232';
+      ctx.fillStyle = makeLightGradient(enemy.x, bodyY, enemy.w, enemy.h - 18, bodyBase, 0.2, -0.24);
+      ctx.beginPath();
+      ctx.roundRect(enemy.x, bodyY, enemy.w, enemy.h - 18, 10);
+      ctx.fill();
+      const bellyBase = pal.enemySecondary || '#c54c4c';
+      ctx.fillStyle = makeLightGradient(enemy.x + 6 + accentShift, bodyY - 8, enemy.w - 12, enemy.h - 20, bellyBase, 0.2, -0.2);
+      ctx.beginPath();
+      ctx.roundRect(enemy.x + 6 + accentShift, bodyY - 8, enemy.w - 12, enemy.h - 20, 12);
+      ctx.fill();
+      const accentBase = pal.enemyAccent || '#532626';
+      ctx.fillStyle = makeLightGradient(enemy.x + enemy.w - 12, enemy.y + 6, 10, 16, accentBase, 0.16, -0.24);
+      ctx.beginPath();
+      ctx.roundRect(enemy.x + enemy.w - 12, enemy.y + 6, 10, 16, 6);
+      ctx.fill();
+      const headBase = pal.enemyHead || '#ffb27d';
+      const headX = enemy.facing > 0 ? enemy.x + enemy.w - 18 : enemy.x + 6;
+      ctx.fillStyle = makeLightGradient(headX, enemy.y, 16, 12, headBase, 0.22, -0.18);
+      ctx.beginPath();
+      ctx.roundRect(headX, enemy.y, 16, 12, 6);
+      ctx.fill();
+      ctx.fillStyle = pal.enemyEyeDark || '#2b1a1a';
+      ctx.fillRect(headX + (enemy.facing > 0 ? 10 : 2), enemy.y + 4, 4, 3);
+    } else if (variant === 'car') {
+      const bodyBase = pal.enemySecondary || '#c54c4c';
+      ctx.fillStyle = makeLightGradient(enemy.x, enemy.y + 18, enemy.w, enemy.h - 26, bodyBase, 0.2, -0.24);
+      ctx.fillRect(enemy.x, enemy.y + 18, enemy.w, enemy.h - 26);
+      const roofBase = pal.enemyPrimary || '#7f3232';
+      ctx.fillStyle = makeLightGradient(enemy.x + 4, enemy.y + 12, enemy.w - 8, 14, roofBase, 0.2, -0.2);
+      ctx.fillRect(enemy.x + 4, enemy.y + 12, enemy.w - 8, 14);
+      const accentBase = pal.enemyAccent || '#532626';
+      ctx.fillStyle = makeLightGradient(enemy.x + 8 + accentShift, enemy.y + 8, enemy.w - 16, 8, accentBase, 0.16, -0.24);
+      ctx.fillRect(enemy.x + 8 + accentShift, enemy.y + 8, enemy.w - 16, 8);
+      ctx.fillStyle = '#111';
+      ctx.beginPath();
+      ctx.arc(enemy.x + 8, enemy.y + enemy.h - 6, 6, 0, Math.PI*2);
+      ctx.arc(enemy.x + enemy.w - 8, enemy.y + enemy.h - 6, 6, 0, Math.PI*2);
+      ctx.fill();
+    } else if (variant === 'polar-bear') {
+      const bodyBase = pal.enemyPrimary || '#7f3232';
+      ctx.fillStyle = makeLightGradient(enemy.x, enemy.y + 8, enemy.w, enemy.h - 12, bodyBase, 0.2, -0.24);
+      ctx.beginPath();
+      ctx.roundRect(enemy.x, enemy.y + 8, enemy.w, enemy.h - 12, 8);
+      ctx.fill();
+      const headBase = pal.enemyHead || '#ffb27d';
+      ctx.fillStyle = makeLightGradient(enemy.x + 6, enemy.y, enemy.w - 12, 14, headBase, 0.22, -0.18);
+      ctx.beginPath();
+      ctx.roundRect(enemy.x + 6, enemy.y, enemy.w - 12, 14, 6);
+      ctx.fill();
+      ctx.fillStyle = pal.enemyEyeDark || '#2b1a1a';
+      ctx.fillRect(enemy.x + 10, enemy.y + 4, 6, 4);
+      ctx.fillStyle = pal.enemyEyeLight || '#f6f1ce';
+      ctx.fillRect(enemy.x + 10, enemy.y + 4, 3, 2);
+      const accentBase = pal.enemyAccent || '#532626';
+      ctx.fillStyle = makeLightGradient(enemy.x + 4 + accentShift, enemy.y + enemy.h - 12, enemy.w - 8, 10, accentBase, 0.16, -0.24);
+      ctx.fillRect(enemy.x + 4 + accentShift, enemy.y + enemy.h - 12, enemy.w - 8, 10);
+    } else if (variant === 'fish') {
+      const bodyBase = pal.enemySecondary || '#c54c4c';
+      ctx.fillStyle = makeLightGradient(enemy.x, enemy.y, enemy.w, enemy.h, bodyBase, 0.2, -0.24);
+      ctx.beginPath();
+      ctx.ellipse(enemy.x + enemy.w / 2, enemy.y + enemy.h / 2, enemy.w / 2, enemy.h / 2.4, 0, 0, Math.PI*2);
+      ctx.fill();
+      const tailBase = pal.enemyPrimary || '#7f3232';
+      ctx.fillStyle = makeLightGradient(enemy.x - 10, enemy.y + enemy.h / 2 - 10, 10, 20, tailBase, 0.2, -0.24);
+      ctx.beginPath();
+      ctx.moveTo(enemy.x, enemy.y + enemy.h / 2);
+      ctx.lineTo(enemy.x - 10, enemy.y + enemy.h / 2 - 10);
+      ctx.lineTo(enemy.x - 10, enemy.y + enemy.h / 2 + 10);
+      ctx.closePath();
+      ctx.fill();
+      const headBase = pal.enemyHead || '#ffb27d';
+      ctx.fillStyle = makeLightGradient(enemy.x + enemy.w - 18, enemy.y + enemy.h / 2 - 8, 16, 16, headBase, 0.22, -0.18);
+      ctx.beginPath();
+      ctx.arc(enemy.x + enemy.w - 10, enemy.y + enemy.h / 2, 8, 0, Math.PI*2);
+      ctx.fill();
+      ctx.fillStyle = pal.enemyEyeDark || '#2b1a1a';
+      ctx.fillRect(enemy.x + enemy.w - 12, enemy.y + enemy.h / 2 - 2, 3, 3);
+    } else {
+      const accentBase = pal.enemyAccent || '#532626';
+      ctx.fillStyle = makeLightGradient(enemy.x + 2 + accentShift, enemy.y + 14, enemy.w - 4, enemy.h - 14, accentBase, 0.16, -0.24);
+      ctx.fillRect(enemy.x + 2 + accentShift, enemy.y + 14, enemy.w - 4, enemy.h - 14);
+      const bodyBase = pal.enemyPrimary || '#7f3232';
+      ctx.fillStyle = makeLightGradient(enemy.x, enemy.y + 6, enemy.w, enemy.h - 16, bodyBase, 0.2, -0.24);
+      ctx.fillRect(enemy.x, enemy.y + 6, enemy.w, enemy.h - 16);
+      const bellyBase = pal.enemySecondary || '#c54c4c';
+      ctx.fillStyle = makeLightGradient(enemy.x + 4 + accentShift, enemy.y + 8, enemy.w - 8, enemy.h - 20, bellyBase, 0.2, -0.2);
+      ctx.fillRect(enemy.x + 4 + accentShift, enemy.y + 8, enemy.w - 8, enemy.h - 20);
+
+      const headSize = 16;
+      const headX = enemy.x + (enemy.w - headSize) / 2;
+      const headY = enemy.y - headSize + 6;
+      const headBase = pal.enemyHead || '#ffb27d';
+      ctx.fillStyle = makeLightGradient(headX, headY, headSize, headSize, headBase, 0.22, -0.18);
+      ctx.fillRect(headX, headY, headSize, headSize);
+      ctx.fillStyle = pal.enemyEyeDark || '#2b1a1a';
+      ctx.fillRect(headX + 4, headY + 8, 8, 3);
+      ctx.fillRect(headX + (enemy.facing > 0 ? 8 : 2), headY + 4, 3, 3);
+      ctx.fillRect(headX + (enemy.facing > 0 ? 4 : 10), headY + 4, 3, 3);
+
+      const gunLength = 16;
+      const gunHeight = 6;
+      const gunX = enemy.facing > 0 ? enemy.x + enemy.w - 6 : enemy.x - gunLength + 6;
+      ctx.fillStyle = '#1e1f24';
+      ctx.fillRect(gunX, enemy.y + 14, gunLength, gunHeight);
+      ctx.fillStyle = '#5a5d68';
+      ctx.fillRect(gunX + (enemy.facing > 0 ? gunLength - 4 : 0), enemy.y + 14, 4, gunHeight);
+    }
 
     if (enemy.hitFlash > 0) {
       const flash = clamp(enemy.hitFlash / 12, 0, 1);
       ctx.fillStyle = `rgba(255, 236, 189, ${0.35 * flash})`;
       ctx.fillRect(enemy.x - 2, enemy.y - 6, enemy.w + 4, enemy.h + 16);
     }
-
-    const headSize = 16;
-    const headX = enemy.x + (enemy.w - headSize) / 2;
-    const headY = enemy.y - headSize + 6;
-    ctx.fillStyle = '#ffb27d';
-    ctx.fillRect(headX, headY, headSize, headSize);
-    ctx.fillStyle = '#2b1a1a';
-    ctx.fillRect(headX + 4, headY + 8, 8, 3);
-    ctx.fillRect(headX + (enemy.facing > 0 ? 8 : 2), headY + 4, 3, 3);
-    ctx.fillRect(headX + (enemy.facing > 0 ? 4 : 10), headY + 4, 3, 3);
-
-    const gunLength = 16;
-    const gunHeight = 6;
-    const gunX = enemy.facing > 0 ? enemy.x + enemy.w - 6 : enemy.x - gunLength + 6;
-    ctx.fillStyle = '#1e1f24';
-    ctx.fillRect(gunX, enemy.y + 14, gunLength, gunHeight);
-    ctx.fillStyle = '#5a5d68';
-    ctx.fillRect(gunX + (enemy.facing > 0 ? gunLength - 4 : 0), enemy.y + 14, 4, gunHeight);
 
     if (debugShowHit) {
       const a = enemy.aabb();
@@ -2120,15 +3645,19 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
   function drawBullet(bullet) {
     if (bullet.dead) return;
     ctx.save(); ctx.translate(-camX,0);
+    const pal = palette();
     const rect = bullet.aabb();
-    ctx.fillStyle = '#ff9e64';
+    ctx.fillStyle = pal.bulletPrimary || '#ff9e64';
     ctx.fillRect(rect.x, rect.y, rect.w, rect.h);
-    ctx.fillStyle = '#ffd8b2';
-    if (bullet.vx > 0) {
-      ctx.fillRect(rect.x + rect.w - 4, rect.y, 4, rect.h);
-    } else {
-      ctx.fillRect(rect.x, rect.y, 4, rect.h);
-    }
+    const highlightOnLeft = LIGHT_DIR.x < 0;
+    ctx.fillStyle = pal.bulletHighlight || '#ffd8b2';
+    ctx.save();
+    ctx.globalAlpha = 0.7;
+    ctx.fillRect(highlightOnLeft ? rect.x : rect.x + rect.w - 3, rect.y, 3, rect.h);
+    ctx.globalAlpha = 0.35;
+    ctx.fillStyle = '#000';
+    ctx.fillRect(highlightOnLeft ? rect.x + rect.w - 2 : rect.x + 1, rect.y + 1, 1, rect.h - 2);
+    ctx.restore();
     if (debugShowHit) {
       ctx.strokeStyle = '#ffffff55';
       ctx.strokeRect(rect.x, rect.y, rect.w, rect.h);
@@ -2140,10 +3669,7 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
     ctx.save(); ctx.translate(-camX,0);
 
     const groundUnder = volcano ? Math.min(GROUND_Y, volcano.groundAt(player.centerX())) : GROUND_Y;
-    ctx.fillStyle = '#0003';
-    ctx.beginPath();
-    ctx.ellipse(player.centerX(), groundUnder - 2, 12, 4, 0, 0, Math.PI*2);
-    ctx.fill();
+    drawShadow(player.centerX() - 14, groundUnder + 1, 28, 8, 0.34, -6);
 
     const speedRatio = clamp(Math.abs(player.vx) / MAX_RUN, 0, 1);
     const swing = Math.sin(performance.now() * 0.012 + player.centerX() * 0.045) * 4.5 * speedRatio;
@@ -2155,26 +3681,29 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
     const armTop = player.y + 10;
 
     // rear limb pass
-    ctx.fillStyle = '#1a2331';
+    ctx.fillStyle = makeLightGradient(player.x + 4 - swing * 0.35, legTop, legWidth, legHeight, '#1a2331', 0.1, -0.2);
     ctx.fillRect(player.x + 4 - swing * 0.35, legTop, legWidth, legHeight);
-    ctx.fillStyle = '#23344d';
+    ctx.fillStyle = makeLightGradient(player.x - 4 - swing * 0.25, armTop, armWidth, armHeight, '#23344d', 0.1, -0.2);
     ctx.fillRect(player.x - 4 - swing * 0.25, armTop, armWidth, armHeight);
 
     // torso
-    ctx.fillStyle = player.bodyColor;
+    ctx.fillStyle = makeLightGradient(player.x, player.y, player.w, player.h, player.bodyColor, 0.22, -0.24);
     ctx.fillRect(player.x, player.y, player.w, player.h);
     ctx.fillStyle = '#ffffff12';
-    ctx.fillRect(player.x + 4, player.y + 6, player.w - 8, 10);
+    const highlightW = Math.max(6, player.w * 0.45);
+    const highlightX = LIGHT_DIR.x < 0 ? player.x + 4 : player.x + player.w - 4 - highlightW;
+    const highlightY = LIGHT_DIR.y < 0 ? player.y + 6 : player.y + player.h - 16;
+    ctx.fillRect(highlightX, highlightY, highlightW, 10);
 
     // front limbs
-    ctx.fillStyle = '#314567';
+    ctx.fillStyle = makeLightGradient(player.x + player.w - armWidth + 2 + swing * 0.25, armTop + 1, armWidth, armHeight, '#314567', 0.14, -0.22);
     ctx.fillRect(player.x + player.w - armWidth + 2 + swing * 0.25, armTop + 1, armWidth, armHeight);
-    ctx.fillStyle = '#233047';
+    ctx.fillStyle = makeLightGradient(player.x + player.w - legWidth - 4 + swing * 0.35, legTop, legWidth, legHeight, '#233047', 0.14, -0.22);
     ctx.fillRect(player.x + player.w - legWidth - 4 + swing * 0.35, legTop, legWidth, legHeight);
 
     // head
     const head = {x: player.x + (player.w-16)/2, y: player.y - 16, s:16};
-    ctx.fillStyle = player.headColor;
+    ctx.fillStyle = makeLightGradient(head.x, head.y, head.s, head.s, player.headColor, 0.24, -0.2);
     ctx.fillRect(head.x, head.y, head.s, head.s);
     ctx.fillStyle = '#1b1b1b';
     ctx.fillRect(head.x+4 + (player.facing>0?2:0), head.y+5, 3, 3);
@@ -2189,6 +3718,37 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
     if (player.invuln > 0) {
       ctx.fillStyle = '#ffffff55';
       ctx.fillRect(player.x-2, player.y-18, player.w+4, player.h+20);
+    }
+
+    const chat = chatState[player.label.toLowerCase()];
+    if (chat && chat.text) {
+      const now = performance.now();
+      if (chat.expiresAt > now) {
+        const remaining = chat.expiresAt - now;
+        const opacity = clamp(remaining / CHAT_LIFETIME_MS, 0, 1);
+        const padding = 7;
+        ctx.font = '600 12px system-ui';
+        const text = chat.text;
+        const textWidth = ctx.measureText(text).width;
+        const boxW = textWidth + padding * 2;
+        const boxH = 22;
+        const boxX = player.centerX() - boxW / 2;
+        const boxY = head.y - boxH - 6;
+        ctx.fillStyle = `rgba(31, 35, 42, ${0.8 * opacity})`;
+        ctx.strokeStyle = `rgba(58, 63, 71, ${0.9 * opacity})`;
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.roundRect(boxX, boxY, boxW, boxH, 8);
+        ctx.fill();
+        ctx.stroke();
+        ctx.fillStyle = `rgba(234, 234, 234, ${opacity})`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(text, player.centerX(), boxY + boxH / 2);
+      } else {
+        chat.text = '';
+        chat.expiresAt = 0;
+      }
     }
 
     ctx.fillStyle = '#ffffffdd';
@@ -2210,20 +3770,7 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
     ctx.clearRect(0,0,W,H);
     drawGround();
 
-    // parallax trees (background silhouettes)
-    ctx.save(); ctx.translate(-camX*0.6,0);
-    ctx.fillStyle = '#2f6130';
-    const silhouetteSpacing = 220;
-    const silhouetteCount = Math.ceil((levelLength + W) / silhouetteSpacing);
-    for (let i=0;i<silhouetteCount;i++){
-      const x = i*silhouetteSpacing + 100;
-      ctx.fillRect(x+14, GROUND_Y-70, 12, 70);
-      ctx.beginPath();
-      ctx.roundRect(x, GROUND_Y-110, 40, 30, 10); ctx.fill();
-      ctx.beginPath();
-      ctx.roundRect(x-6, GROUND_Y-90, 52, 34, 12); ctx.fill();
-    }
-    ctx.restore();
+    drawBackdrop();
 
     // midground: volcano, trees, walls, lava, coins, player
     drawVolcano(volcano);
@@ -2261,6 +3808,7 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
 
   // boot
   uiTimer.textContent = formatTime(0);
+  hideDeathScreen(true);
   requestAnimationFrame(loop);
 })();
 </script>

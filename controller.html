@@ -1,0 +1,243 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Coin Run – Controller</title>
+<style>
+  html, body { margin:0; padding:0; background:#0f1117; color:#eaeaea; font-family:system-ui, -apple-system, Segoe UI, Roboto, sans-serif; }
+  .wrap { max-width:680px; margin:0 auto; padding:18px 16px 40px; }
+  .card { background:#1a1e26; border:1px solid #2d3440; border-radius:16px; padding:16px; box-shadow:0 10px 30px #0009; }
+  h1 { margin:0 0 6px 0; font-size:24px; }
+  p { margin:6px 0; opacity:0.85; line-height:1.4; }
+  .hidden { display:none !important; }
+  .mode-row { display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin:8px 0 4px; }
+  .mode-row strong { font-size:14px; letter-spacing:0.2px; }
+  .mode-btn { background:#252b37; border:1px solid #394251; padding:8px 12px; border-radius:10px; color:#eaeaea; font-weight:700; cursor:pointer; }
+  .mode-btn.active { background:#3a4354; box-shadow:0 0 0 3px #ffffff12; }
+  form { display:flex; gap:10px; flex-wrap:wrap; margin:8px 0; }
+  input[type="text"] { flex:1; min-width:140px; padding:10px 12px; border-radius:10px; border:1px solid #2d3440; background:#0b0d12; color:#fff; }
+  button { background:#2f3540; border:1px solid #4a5160; color:#fff; font-weight:700; padding:10px 14px; border-radius:12px; cursor:pointer; }
+  button:active { transform:translateY(1px); }
+  .status { font-weight:700; margin:6px 0; }
+  .status.ok { color:#9ef79a; }
+  .status.warn { color:#ff9e64; }
+  .grid { display:grid; grid-template-columns:repeat(auto-fit, minmax(120px, 1fr)); gap:10px; margin-top:12px; }
+  .grid.hidden { display:none; }
+  .btn { width:100%; padding:14px 12px; text-align:center; border-radius:12px; border:1px solid #394251; background:#252b37; color:#fff; font-size:16px; font-weight:700; user-select:none; touch-action:none; }
+  .btn small { display:block; font-size:12px; opacity:0.8; font-weight:600; }
+  .btn:active, .btn.active { background:#3a4354; box-shadow:0 0 0 3px #ffffff12; }
+  .mode-hint { margin:6px 0 0; font-size:13px; opacity:0.8; }
+  .chat { margin-top:14px; border:1px solid #2d3440; border-radius:12px; padding:10px; background:#12151c; }
+  .chat-log { max-height:180px; overflow:auto; padding-right:4px; font-size:14px; }
+  .chat-row { margin:2px 0; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="card">
+    <h1>Remote Controller</h1>
+    <p>Enter the code your host sees after choosing Two Players. Pick mobile for on-screen buttons or desktop to drive the same controls from your keyboard.</p>
+    <div class="mode-row" role="group" aria-label="Select your device">
+      <strong>You're joining on:</strong>
+      <button type="button" class="mode-btn active" data-mode="mobile">📱 Mobile / Touch</button>
+      <button type="button" class="mode-btn" data-mode="desktop">🖥️ Desktop / Keyboard</button>
+    </div>
+    <form id="join-form">
+      <input id="code-input" type="text" maxlength="8" autocomplete="off" placeholder="Session code" />
+      <button type="submit">Connect</button>
+    </form>
+    <div id="status" class="status warn">Not connected</div>
+    <p id="keyboard-hint" class="mode-hint hidden">Desktop mode: press ← → ↑ / . [ ] on your keyboard. Buttons stay ready for clicks if you prefer.</p>
+    <div class="grid" id="controls">
+      <button class="btn" data-action="ArrowLeft">⬅️ Left<small>Move</small></button>
+      <button class="btn" data-action="ArrowRight">➡️ Right<small>Move</small></button>
+      <button class="btn" data-action="ArrowUp">⬆️ Up<small>Jump</small></button>
+      <button class="btn" data-action="/">⛏️ Slash<small>Mine</small></button>
+      <button class="btn" data-action=".">🔫 Dot<small>Attack</small></button>
+      <button class="btn" data-action="[">🧱 [<small>Wall</small></button>
+      <button class="btn" data-action="]">🔥 ]<small>Lava</small></button>
+    </div>
+    <div class="chat">
+      <strong>Chat</strong>
+      <div id="chat-log" class="chat-log"></div>
+      <form id="chat-form">
+        <input id="chat-input" type="text" autocomplete="off" placeholder="Say hi" />
+        <button type="submit">Send</button>
+      </form>
+    </div>
+  </div>
+</div>
+<script>
+(() => {
+  const REMOTE_WS_BASE = 'wss://free.blr2.piesocket.com/v3';
+  const REMOTE_WS_KEY = 'demouid';
+  const REMOTE_CHANNEL_PREFIX = 'coin-run-';
+
+  const joinForm = document.getElementById('join-form');
+  const codeInput = document.getElementById('code-input');
+  const statusEl = document.getElementById('status');
+  const buttons = Array.from(document.querySelectorAll('.btn'));
+  const chatForm = document.getElementById('chat-form');
+  const chatInput = document.getElementById('chat-input');
+  const chatLog = document.getElementById('chat-log');
+  const modeButtons = Array.from(document.querySelectorAll('.mode-btn'));
+  const controlsGrid = document.getElementById('controls');
+  const keyboardHint = document.getElementById('keyboard-hint');
+
+  const CONTROL_ACTIONS = ['ArrowLeft', 'ArrowRight', 'ArrowUp', '/', '.', '[', ']'];
+
+  let socket = null;
+  let sessionCode = '';
+  let connected = false;
+  let controlMode = 'mobile';
+
+  function remoteSocketUrl(code) {
+    const channel = `${REMOTE_CHANNEL_PREFIX}${code}`;
+    return `${REMOTE_WS_BASE}/${encodeURIComponent(channel)}?api_key=${encodeURIComponent(REMOTE_WS_KEY)}&notify_self=1`;
+  }
+
+  function setStatus(label, ok = false) {
+    if (!statusEl) return;
+    statusEl.textContent = label;
+    statusEl.classList.toggle('ok', ok);
+    statusEl.classList.toggle('warn', !ok);
+  }
+
+  function appendChat(text, from = 'Host') {
+    if (!chatLog || !text) return;
+    const row = document.createElement('div');
+    row.className = 'chat-row';
+    row.textContent = `${from}: ${text}`;
+    chatLog.appendChild(row);
+    chatLog.scrollTop = chatLog.scrollHeight;
+  }
+
+  function closeSocket() {
+    if (socket) {
+      try { socket.close(); } catch (_) { /* ignore */ }
+    }
+    socket = null;
+    connected = false;
+    setStatus('Disconnected', false);
+  }
+
+  function sendPayload(payload) {
+    if (!socket || socket.readyState !== WebSocket.OPEN || !sessionCode) return;
+    socket.send(JSON.stringify({ ...payload, code: sessionCode }));
+  }
+
+  function connect() {
+    const code = (codeInput?.value || '').trim().toUpperCase();
+    if (!code) {
+      setStatus('Enter a code first', false);
+      return;
+    }
+    sessionCode = code;
+    closeSocket();
+    setStatus('Connecting...', false);
+    try {
+      socket = new WebSocket(remoteSocketUrl(sessionCode));
+    } catch (err) {
+      setStatus('WebSocket error', false);
+      return;
+    }
+    socket.onopen = () => {
+      connected = true;
+      setStatus('Connected to host', true);
+      appendChat('Joined host session', 'You');
+    };
+    socket.onclose = () => {
+      connected = false;
+      setStatus('Disconnected', false);
+    };
+    socket.onerror = () => {
+      connected = false;
+      setStatus('WebSocket error', false);
+    };
+    socket.onmessage = (event) => {
+      let data = null;
+      try {
+        data = JSON.parse(event.data);
+      } catch (_) {
+        return;
+      }
+      if (!data || data.code !== sessionCode) return;
+      if (data.type === 'chat' && data.text) appendChat(data.text, data.from || 'Host');
+    };
+  }
+
+  function wireButton(btn) {
+    const action = btn.dataset.action;
+    if (!action) return;
+    const press = (e) => {
+      if (e) { e.preventDefault(); if (btn.setPointerCapture) btn.setPointerCapture(e.pointerId); }
+      btn.classList.add('active');
+      sendPayload({ action, pressed: true });
+    };
+    const release = (e) => {
+      if (e && btn.releasePointerCapture && btn.hasPointerCapture && btn.hasPointerCapture(e.pointerId)) btn.releasePointerCapture(e.pointerId);
+      btn.classList.remove('active');
+      sendPayload({ action, pressed: false });
+    };
+    btn.addEventListener('pointerdown', press);
+    btn.addEventListener('pointerup', release);
+    btn.addEventListener('pointercancel', release);
+    btn.addEventListener('pointerleave', (e) => { if (e.buttons === 0) release(e); });
+    btn.addEventListener('contextmenu', e => e.preventDefault());
+  }
+
+  const params = new URLSearchParams(location.search);
+  const prefill = params.get('code');
+  if (prefill && codeInput) codeInput.value = prefill.toUpperCase();
+
+  buttons.forEach(wireButton);
+
+  function updateControlMode(mode) {
+    controlMode = mode === 'desktop' ? 'desktop' : 'mobile';
+    modeButtons.forEach(btn => btn.classList.toggle('active', btn.dataset.mode === controlMode));
+    if (controlsGrid) controlsGrid.classList.toggle('hidden', controlMode === 'desktop');
+    if (keyboardHint) keyboardHint.classList.toggle('hidden', controlMode !== 'desktop');
+  }
+
+  modeButtons.forEach(btn => {
+    btn.addEventListener('click', () => updateControlMode(btn.dataset.mode || 'mobile'));
+  });
+
+  function handleKeyEvent(event, pressed) {
+    if (controlMode !== 'desktop') return;
+    if (event.repeat) return;
+    const action = event.key;
+    if (!CONTROL_ACTIONS.includes(action)) return;
+    event.preventDefault();
+    sendPayload({ action, pressed });
+  }
+
+  window.addEventListener('keydown', (e) => handleKeyEvent(e, true));
+  window.addEventListener('keyup', (e) => handleKeyEvent(e, false));
+
+  if (joinForm) {
+    joinForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+      connect();
+    });
+  }
+
+  updateControlMode('mobile');
+
+  if (chatForm) {
+    chatForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const text = (chatInput?.value || '').trim();
+      if (!text) return;
+      appendChat(text, 'You');
+      sendPayload({ type: 'chat', text, from: 'Controller' });
+      if (chatInput) chatInput.value = '';
+    });
+  }
+
+  setStatus('Not connected', false);
+})();
+</script>
+</body>
+</html>
