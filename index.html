@@ -1216,7 +1216,8 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
   }
 
   function controllerLink(code) {
-    const basePath = location.pathname.replace(/index\.html$/, '');
+    let basePath = location.pathname.replace(/index\.html$/, '');
+    if (!basePath.endsWith('/')) basePath += '/';
     return `${location.origin}${basePath}controller.html?code=${encodeURIComponent(code)}`;
   }
 
