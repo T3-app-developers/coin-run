@@ -8,6 +8,10 @@
   html, body { margin:0; padding:0; background:#21252b; color:#eaeaea; font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif; }
   #ui { position:fixed; inset:0 0 auto 0; display:flex; gap:16px; align-items:center; padding:10px 14px; font-weight:600; backdrop-filter: blur(4px);  }
   .pill { background:#2b2f36; border:1px solid #3a3f47; padding:6px 10px; border-radius:999px; box-shadow: inset 0 0 0 1px #00000040; }
+  .pill.boss-pill { display:flex; align-items:center; gap:10px; min-width:200px; }
+  .boss-health { flex:1; position:relative; height:12px; border-radius:999px; border:1px solid #4c525e; background:#16181d; overflow:hidden; }
+  .boss-health-fill { position:absolute; inset:0; background:linear-gradient(90deg, #ff6b6b, #ffd166); box-shadow:0 0 6px #ff6b6b77; transition:width 0.15s ease; }
+  #upgrade-pill { min-width:220px; }
   .good { color:#9ef79a; }
   .warn { color:#ff9e64; }
   .bad { color:#ff6b6b; }
@@ -127,65 +131,22 @@
   <div class="pill">Timer: <span id="timer" class="good">0:00.0</span></div>
   <div class="pill">Hazard: <span id="lava" class="bad">20s</span></div>
   <div class="pill">Goal ▶</div>
-  <div id="chat-ui" class="chat-ui hidden">
-    <form class="chat-form" data-target="p1">
-      <button type="button" class="chat-launch" data-target="p1">Chat to P1</button>
-      <input class="chat-input" type="text" name="chat-p1" autocomplete="off" placeholder="Message player 1" maxlength="80" />
-      <button type="submit" class="chat-send">Send</button>
-    </form>
-    <form class="chat-form" data-target="p2">
-      <button type="button" class="chat-launch" data-target="p2">Chat to P2</button>
-      <input class="chat-input" type="text" name="chat-p2" autocomplete="off" placeholder="Message player 2" maxlength="80" />
-      <button type="submit" class="chat-send">Send</button>
-    </form>
+  <div class="pill boss-pill hidden" id="boss-indicator">
+    <span id="boss-label">Boss</span>
+    <div class="boss-health" aria-hidden="true">
+      <div class="boss-health-fill" id="boss-health-fill" style="width:0;"></div>
+    </div>
+    <span id="boss-health-text" class="bad">--</span>
   </div>
+  <div class="pill hidden" id="upgrade-pill">Upgrades: <span id="upgrade-text">None</span></div>
 </div>
 
 <div id="help">
-  <div class="help-header">
-    <span class="help-title">Controls</span>
-    <button type="button" id="help-toggle" class="panel-toggle">Hide</button>
-  </div>
-  <div class="help-body">
-    <b>Player 1</b> – Move: <b>A/D</b> · Jump: <b>W</b>/<b>Space</b> · Mine: <b>E</b> (hold) · Attack: <b>X</b> (laser: 3 hits for grunts, 10 for the boss) · Wall: <b>1</b> · Lava: <b>2</b><br>
-    <span id="help-p2"><b>Player 2</b> – Move: <b>←/→</b> · Jump: <b>↑</b> · Mine: <b>/</b> (hold) · Attack: <b>.</b> (laser: 3 hits for grunts, 10 for the boss) · Wall: <b>[</b> · Lava: <b>]</b><br></span>
-    <span id="biome-tip" style="display:block; margin-top:8px; opacity:0.75;">Tip: pick a biome to customize your run.</span>
-    <span id="remote-hint">Remote P2: pick <b>Remote Co-Op</b> below, then open the <code>controller.html</code> link from the share card to send inputs and chat.</span>
-    <span id="remote-status-inline" class="remote-status-display"></span>
-    Restart: <b>R</b> &nbsp;|&nbsp; Toggle Hitboxes: <b>H</b>
-  </div>
-</div>
-
-<div id="remote-share" class="hidden">
-  <div class="remote-header">
-    <h3>Share controller link</h3>
-    <button type="button" id="remote-toggle" class="panel-toggle">Hide QR</button>
-  </div>
-  <div class="remote-body">
-    <p style="margin:6px 0 8px 0; opacity:0.82;">Send this <code>controller.html</code> link to your friend so they can drive Player 2 from their phone while your keyboard stays as a fallback. Their controller page now asks if they're on mobile or desktop so touch remotes work smoothly on phones.</p>
-    <div class="remote-row" style="margin-bottom:6px;">
-      <code id="remote-code">----</code>
-      <button type="button" id="remote-refresh">New code</button>
-    </div>
-    <div class="remote-row" style="margin-bottom:8px;">
-      <a id="remote-link" href="#" target="_blank" rel="noreferrer">controller link</a>
-      <span class="remote-status offline remote-status-display" id="remote-status">Not connected</span>
-    </div>
-    <div class="remote-row" style="align-items:flex-start; gap:12px;">
-      <img id="remote-qr" alt="QR code for the controller link" loading="lazy" />
-      <div style="flex:1; min-width:140px;">
-        <div style="font-size:13px; opacity:0.9; margin-bottom:4px;">Buttons map to Player 2: ← → ↑ / . [ ]</div>
-        <div class="remote-chat">
-          <h4>Chat</h4>
-          <div id="remote-messages" class="remote-messages"></div>
-          <form id="remote-chat-form">
-            <input id="remote-chat-input" type="text" autocomplete="off" placeholder="Send a quick message" />
-            <button type="submit">Send</button>
-          </form>
-        </div>
-      </div>
-    </div>
-  </div>
+  <b>Controls</b><br>
+  <b>Player 1</b> – Move: <b>A/D</b> · Jump: <b>W</b>/<b>Space</b> · Mine: <b>E</b> (hold) · Attack: <b>X</b> (laser: 3 hits for grunts, 10 for the boss) · Wall: <b>1</b> · Lava: <b>2</b><br>
+  <span id="help-p2"><b>Player 2</b> – Move: <b>←/→</b> · Jump: <b>↑</b> · Mine: <b>/</b> (hold) · Attack: <b>.</b> (laser: 3 hits for grunts, 10 for the boss) · Wall: <b>[</b> · Lava: <b>]</b><br></span>
+  <span style="display:block; margin-top:8px; opacity:0.75;">Tip: the volcano erupts every 20 seconds and you can only finish a stage after the boss health bar is empty &mdash; taking it down awards a jump boost and a 3s spawn shield for the next level.</span>
+  Restart: <b>R</b> &nbsp;|&nbsp; Toggle Hitboxes: <b>H</b>
 </div>
 
 <div id="overlay">
@@ -474,6 +435,12 @@
   };
   const deathScreen = document.getElementById('death-screen');
   const wahAudio = document.getElementById('wah-audio');
+  const bossIndicator = document.getElementById('boss-indicator');
+  const bossLabel = document.getElementById('boss-label');
+  const bossHealthFill = document.getElementById('boss-health-fill');
+  const bossHealthText = document.getElementById('boss-health-text');
+  const upgradePill = document.getElementById('upgrade-pill');
+  const upgradeText = document.getElementById('upgrade-text');
   if (wahAudio) wahAudio.volume = 0.55;
 
   let deathHideTimeout = null;
@@ -674,9 +641,33 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
   const GROUND_Y = 440;
   const BASE_LEVEL_LEN = 3000; // baseline used for scaling stages
   const LEVELS = [
-    { name: 'Level 1', lengthMultiplier: 2, enemyCount: 3 },
-    { name: 'Level 2', lengthMultiplier: 3, enemyCount: 5 },
-    { name: 'Level 3', lengthMultiplier: 4, enemyCount: 7 },
+    {
+      name: 'Level 1',
+      lengthMultiplier: 2,
+      enemyCount: 3,
+      boss: { enabled: true, name: 'Hatchling', hp: 8 }
+    },
+    {
+      name: 'Level 2',
+      lengthMultiplier: 3,
+      enemyCount: 5,
+      boss: { enabled: true, name: 'Volcano Rex', hp: 12 }
+    },
+    {
+      name: 'Level 3',
+      lengthMultiplier: 4,
+      enemyCount: 7,
+      boss: {
+        enabled: true,
+        name: 'Volcano Overlord',
+        hp: 16,
+        patterns: [
+          { speed: 1.2, range: 160, duration: 200 },
+          { speed: 1.9, range: 240, duration: 140 },
+          { speed: 0.9, range: 120, duration: 180 },
+        ]
+      }
+    },
   ];
   let levelIndex = 0;
   let levelLength = BASE_LEVEL_LEN * LEVELS[levelIndex].lengthMultiplier;
@@ -694,6 +685,10 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
   const BOSS_HITS_TO_DEFEAT = 10;
   const BOSS_BITES_TO_RESPAWN = 3;
   const BOSS_BITE_COOLDOWN = 45;
+  const DEFAULT_POWER_UPS = { jumpBoost: false, jumpBoostTargetLevel: null, nextLevelInvulnMs: 0, spawnShieldTargetLevel: null };
+  const JUMP_BOOST_MULTIPLIER = 1.2;
+  const SPAWN_SHIELD_DURATION_MS = 3000;
+  const MS_PER_FRAME = 1000 / 60;
 
   const BASE_BIOME = {
     id: 'volcano',
@@ -1404,6 +1399,29 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
     });
   }
 
+  function clonePowerUps(base = DEFAULT_POWER_UPS) {
+    if (!base) return { ...DEFAULT_POWER_UPS };
+    return {
+      jumpBoost: !!base.jumpBoost,
+      jumpBoostTargetLevel: base.jumpBoostTargetLevel ?? null,
+      nextLevelInvulnMs: Math.max(0, base.nextLevelInvulnMs || 0),
+      spawnShieldTargetLevel: base.spawnShieldTargetLevel ?? null,
+    };
+  }
+
+  function createDefaultPlayerProgress() {
+    return Array.from({ length: 2 }, () => ({ powerUps: clonePowerUps() }));
+  }
+
+  function storePlayerProgress(slot, powerUps) {
+    if (!playerProgress[slot]) playerProgress[slot] = { powerUps: clonePowerUps() };
+    playerProgress[slot].powerUps = clonePowerUps(powerUps);
+  }
+
+  function msToFrames(ms) {
+    return Math.round((ms || 0) / MS_PER_FRAME);
+  }
+
   function handleKeyDown(key) {
     if (!key) return;
     keys[key] = true;
@@ -1501,8 +1519,7 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
     if (!remoteMode) teardownRemoteSocket();
     gameMode = remoteMode ? 2 : (mode === 2 ? 2 : 1);
     levelIndex = 0;
-    if (gameMode === 2) startRemoteSession();
-    else stopRemoteSession();
+    playerProgress = createDefaultPlayerProgress();
     updateModeHud(gameMode === 2);
     modeSelect.style.display = 'none';
     if (remoteMode) {
@@ -1561,20 +1578,10 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
       this.controls = options.controls || {};
       this.attackCooldown = 0;
       this.dinoBites = 0;
-      const baseGun = {
-        gunType: 'Laser',
-        fireRate: 12,
-        projectileSpeed: 14,
-        projectileRange: TILE * 8,
-        ammo: Infinity,
-        maxAmmo: Infinity,
-      };
-      if (Object.prototype.hasOwnProperty.call(options, 'gun')) {
-        this.gun = options.gun ? { ...baseGun, ...options.gun } : null;
-      } else {
-        this.gun = { ...baseGun };
-      }
-      this.gunCooldown = 0;
+      this.slotIndex = options.slotIndex ?? 0;
+      this.powerUps = clonePowerUps(options.powerUps);
+      this.jumpBoostMultiplier = 1;
+      this.spawnShieldMs = 0;
     }
     aabb() { return {x:this.x, y:this.y, w:this.w, h:this.h}; }
     centerX() { return this.x + this.w/2; }
@@ -1584,6 +1591,26 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
       if (!binds) return false;
       return binds.some(k => isKeyActiveForPlayer(this, k));
     }
+  }
+
+  function applyPersistedPowerUps(player) {
+    const jumpBoostReady = player.powerUps.jumpBoost
+      && (player.powerUps.jumpBoostTargetLevel === null || player.powerUps.jumpBoostTargetLevel === levelIndex);
+    player.jumpBoostMultiplier = jumpBoostReady ? JUMP_BOOST_MULTIPLIER : 1;
+    if (jumpBoostReady && player.powerUps.jumpBoostTargetLevel === levelIndex) {
+      player.powerUps.jumpBoostTargetLevel = null;
+    }
+    const shieldReady = player.powerUps.nextLevelInvulnMs > 0 && player.powerUps.spawnShieldTargetLevel === levelIndex;
+    if (shieldReady) {
+      const frames = msToFrames(player.powerUps.nextLevelInvulnMs);
+      player.invuln = Math.max(player.invuln, frames);
+      player.spawnShieldMs = player.powerUps.nextLevelInvulnMs;
+      player.powerUps.nextLevelInvulnMs = 0;
+      player.powerUps.spawnShieldTargetLevel = null;
+    } else if (player.spawnShieldMs > 0) {
+      player.spawnShieldMs = 0;
+    }
+    storePlayerProgress(player.slotIndex, player.powerUps);
   }
 
   class Tree {
@@ -1790,20 +1817,35 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
     }
   }
 
-  class DinoBoss extends Enemy {
-    constructor(x, biome = ensureActiveBiome()) {
-      super(x, biome);
+  class Boss extends Enemy {
+    constructor(x, options = {}) {
+      super(x);
       this.isBoss = true;
-      this.w = 88;
-      this.h = 70;
-      this.range = 120;
-      this.speed = 1.1;
-      this.hp = BOSS_HITS_TO_DEFEAT;
+      this.name = options.name || 'Boss';
+      this.w = options.width || 88;
+      this.h = options.height || 70;
+      this.maxHp = options.hp || BOSS_HITS_TO_DEFEAT;
+      this.hp = this.maxHp;
       this.baseX = clamp(x, 160, levelLength - this.w - 80);
+      this.range = options.range ?? 140;
+      this.speed = options.speed ?? 1.1;
+      this.patterns = options.patterns && options.patterns.length ? options.patterns : [
+        { speed: 1.1, range: 140, duration: 220 },
+        { speed: 1.6, range: 220, duration: 160 },
+        { speed: 0.8, range: 110, duration: 180 },
+      ];
+      this.patternIndex = 0;
+      this.patternTimer = 0;
+      this.biteCooldown = 0;
       this.x = this.baseX;
       this.y = groundHeightAt(this.centerX()) - this.h;
-      this.biteCooldown = 0;
-      this.variant = biome?.bossVariant || biome?.enemyVariant || 'dino';
+      this.enterPattern(0);
+    }
+    enterPattern(index) {
+      const phase = this.patterns[index] || {};
+      if (phase.speed !== undefined) this.speed = phase.speed;
+      if (phase.range !== undefined) this.range = phase.range;
+      this.patternTimer = phase.duration || 180;
     }
     takeHit() {
       if (this.dead) return false;
@@ -1815,8 +1857,14 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
       return true;
     }
     update(dt, players) {
+      if (this.dead) return null;
       if (this.biteCooldown > 0) {
         this.biteCooldown = Math.max(0, this.biteCooldown - dt);
+      }
+      this.patternTimer -= dt;
+      if (this.patternTimer <= 0 && this.patterns.length) {
+        this.patternIndex = (this.patternIndex + 1) % this.patterns.length;
+        this.enterPattern(this.patternIndex);
       }
       return super.update(dt, players, false);
     }
@@ -1850,6 +1898,7 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
 
   // ===== world containers =====
   let players = [];
+  let playerProgress = createDefaultPlayerProgress();
   let trees = [];
   let walls = [];
   let lavas = [];
@@ -1857,6 +1906,9 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
   let enemies = [];
   let bullets = [];
   let volcano = null;
+  let currentBoss = null;
+  let bossRewardsGranted = false;
+  let bossUpgradeSummary = '';
 
   // ===== camera =====
   let camX = 0;
@@ -1942,6 +1994,9 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
     hideDeathScreen(true);
     clearChatState();
     configureLevelDimensions();
+    bossRewardsGranted = false;
+    bossUpgradeSummary = '';
+    currentBoss = null;
     finished = false;
     overlay.style.display = 'none';
     overlay.classList.remove('celebrating');
@@ -1949,6 +2004,7 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
     celebrationScreen.classList.add('hidden');
     celebrationScreen.setAttribute('aria-hidden', 'true');
     stopSound(celebrationAudio);
+    const config = LEVELS[levelIndex] || LEVELS[0];
     trees = [];
     walls = [];
     lavas = [];
@@ -1958,25 +2014,27 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
     clearChatInputs();
     volcano = createVolcano(tileX(levelLength * 0.55), activeBiome);
     updateVolcanoHud();
-    const chars = activeBiome.characters || BASE_BIOME.characters;
-    players = [
-      new Player(100, GROUND_Y - 34, {
-        label: 'P1',
-        headColor: chars.p1?.head || '#2fd06c',
-        bodyColor: chars.p1?.body || '#2f3b52',
-        controls: {
-          left: ['a','A'],
-          right: ['d','D'],
-          jump: ['w','W',' '],
-          chop: ['e','E'],
-          attack: ['x','X'],
-          wall: ['1'],
-          lava: ['2'],
-        }
-      })
-    ];
+    players = [];
+    const p1 = new Player(100, GROUND_Y - 34, {
+      label: 'P1',
+      headColor: '#2fd06c',
+      bodyColor: '#2f3b52',
+      controls: {
+        left: ['a','A'],
+        right: ['d','D'],
+        jump: ['w','W',' '],
+        chop: ['e','E'],
+        attack: ['x','X'],
+        wall: ['1'],
+        lava: ['2'],
+      },
+      slotIndex: 0,
+      powerUps: playerProgress[0]?.powerUps
+    });
+    applyPersistedPowerUps(p1);
+    players.push(p1);
     if (gameMode === 2) {
-      players.push(new Player(160, GROUND_Y - 34, {
+      const p2 = new Player(160, GROUND_Y - 34, {
         label: 'P2',
         headColor: chars.p2?.head || '#3fb5ff',
         bodyColor: chars.p2?.body || '#233149',
@@ -1988,8 +2046,12 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
           attack: ['.', '>'],
           wall: ['[', '{'],
           lava: [']', '}'],
-        }
-      }));
+        },
+        slotIndex: 1,
+        powerUps: playerProgress[1]?.powerUps
+      });
+      applyPersistedPowerUps(p2);
+      players.push(p2);
     }
     // scatter trees
     const bands = 22;
@@ -2043,8 +2105,14 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
       }
     }
 
-    const bossSpawnX = clamp(goalX - TILE * 3, 200, levelLength - 240);
-    enemies.push(new DinoBoss(bossSpawnX, activeBiome));
+    const bossConfig = config.boss;
+    if (bossConfig && bossConfig.enabled) {
+      const bossSpawnX = clamp(goalX - TILE * 3, 200, levelLength - 240);
+      currentBoss = new Boss(bossSpawnX, bossConfig);
+      enemies.push(currentBoss);
+    } else {
+      currentBoss = null;
+    }
 
     camX = 0;
     runStartTime = performance.now();
@@ -2231,6 +2299,23 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
     return false;
   }
 
+  function grantBossPowerUps() {
+    if (bossRewardsGranted) return;
+    bossRewardsGranted = true;
+    const nextLevelIndex = (levelIndex + 1) % LEVELS.length;
+    for (const player of players) {
+      player.powerUps = player.powerUps || clonePowerUps();
+      player.powerUps.jumpBoost = true;
+      player.powerUps.jumpBoostTargetLevel = nextLevelIndex;
+      player.powerUps.nextLevelInvulnMs = Math.max(player.powerUps.nextLevelInvulnMs || 0, SPAWN_SHIELD_DURATION_MS);
+      player.powerUps.spawnShieldTargetLevel = nextLevelIndex;
+      storePlayerProgress(player.slotIndex, player.powerUps);
+    }
+    const shieldSeconds = Math.round(SPAWN_SHIELD_DURATION_MS / 1000);
+    bossUpgradeSummary = `Jump boost unlocked · ${shieldSeconds}s invulnerability shield next level`;
+    updateUI();
+  }
+
   // ===== game loop =====
   let last = performance.now();
   function loop(t) {
@@ -2262,7 +2347,7 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
 
         const onGround = player.grounded;
         if (player.controlDown('jump') && onGround) {
-          player.vy = JUMP_VEL;
+          player.vy = JUMP_VEL * (player.jumpBoostMultiplier || 1);
           player.grounded = false;
         }
       }
@@ -2320,6 +2405,9 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
       }
 
       if (player.invuln > 0) player.invuln -= dt;
+      if (player.spawnShieldMs > 0 && player.invuln <= 0) {
+        player.spawnShieldMs = 0;
+      }
       if (player.attackCooldown > 0) player.attackCooldown = Math.max(0, player.attackCooldown - dt);
       if (player.gunCooldown > 0) player.gunCooldown = Math.max(0, player.gunCooldown - dt);
       for (const l of lavas) {
@@ -2390,6 +2478,10 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
     enemies = enemies.filter(e => !e.dead);
     bullets = bullets.filter(b => !b.dead);
 
+    if (currentBoss && currentBoss.dead) {
+      grantBossPowerUps();
+    }
+
     // mine tree (hold)
     if (!finished) {
       for (const tr of trees) {
@@ -2447,7 +2539,7 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
 
     // finish check
     if (!finished && players.length) {
-      const bossAlive = enemies.some(e => e.isBoss);
+      const bossAlive = currentBoss && !currentBoss.dead;
       for (const player of players) {
         if (!player.finished && player.x > goalX && !bossAlive) {
           player.finished = true;
@@ -2469,8 +2561,11 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
           : `Press <b>R</b> to continue to ${nextConfig.name}.`;
         celebrationTitle.textContent = isFinalLevel ? 'All Levels Complete!' : `${config.name} Complete!`;
         celebrationSummary.innerHTML = `Finished in <b>${formatTime(finishDuration)}</b>`;
-        celebrationDetails.innerHTML = summary;
-        celebrationNext.innerHTML = nextLine;
+        const upgradeLine = bossUpgradeSummary ? `<br><span class="good">Upgrades Earned: ${bossUpgradeSummary}</span>` : '';
+        celebrationDetails.innerHTML = `${summary}${upgradeLine}`;
+        celebrationNext.innerHTML = bossUpgradeSummary
+          ? `${nextLine}<br><span class="good">Next level starts with: ${bossUpgradeSummary}.</span>`
+          : nextLine;
         overlay.classList.add('celebrating');
         if (overlayCard) overlayCard.classList.add('hidden');
         celebrationScreen.classList.remove('hidden');
@@ -2532,6 +2627,54 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
       ui.p2.lives.textContent = `0 (0/${BOSS_BITES_TO_RESPAWN})`;
       updateGunHud(ui.p2.gun, null);
     }
+    updateBossStatusUI();
+    updateUpgradeAnnouncements();
+  }
+
+  function updateBossStatusUI() {
+    if (!bossIndicator) return;
+    if (!currentBoss || currentBoss.dead) {
+      bossIndicator.classList.add('hidden');
+      return;
+    }
+    bossIndicator.classList.remove('hidden');
+    if (bossLabel) bossLabel.textContent = currentBoss.name || 'Boss';
+    const maxHp = currentBoss.maxHp || BOSS_HITS_TO_DEFEAT;
+    const ratio = clamp(currentBoss.hp / maxHp, 0, 1);
+    if (bossHealthFill) bossHealthFill.style.width = `${(ratio * 100).toFixed(1)}%`;
+    if (bossHealthText) {
+      bossHealthText.textContent = `${Math.max(0, Math.ceil(currentBoss.hp))}/${maxHp}`;
+      bossHealthText.classList.toggle('good', ratio >= 0.75);
+      bossHealthText.classList.toggle('warn', ratio < 0.75 && ratio > 0.4);
+      bossHealthText.classList.toggle('bad', ratio <= 0.4);
+    }
+  }
+
+  function updateUpgradeAnnouncements() {
+    if (!upgradePill || !upgradeText) return;
+    let message = '';
+    if (bossUpgradeSummary) {
+      message = `Earned: ${bossUpgradeSummary}`;
+    } else {
+      const parts = [];
+      if (players.some(p => (p.jumpBoostMultiplier || 1) > 1)) {
+        parts.push('Jump boost active');
+      }
+      const spawnShieldActive = players.some(p => p.spawnShieldMs > 0 && p.invuln > 0);
+      const spawnShieldReady = playerProgress.some(entry => (entry?.powerUps?.nextLevelInvulnMs || 0) > 0);
+      if (spawnShieldActive) {
+        parts.push('Spawn shield active');
+      } else if (spawnShieldReady) {
+        parts.push('Spawn shield ready');
+      }
+      if (!parts.length) {
+        upgradePill.classList.add('hidden');
+        return;
+      }
+      message = parts.join(' · ');
+    }
+    upgradeText.textContent = message;
+    upgradePill.classList.remove('hidden');
   }
 
   // ===== drawing =====
@@ -3325,7 +3468,7 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
       ctx.fillRect(enemy.x + enemy.w - 28, bodyY + bodyHeight - 14, 14, 24);
     }
 
-    const hpRatio = clamp(enemy.hp / BOSS_HITS_TO_DEFEAT, 0, 1);
+    const hpRatio = clamp(enemy.hp / (enemy.maxHp || BOSS_HITS_TO_DEFEAT), 0, 1);
     ctx.fillStyle = '#0009';
     ctx.fillRect(enemy.x - 16, enemy.y - 24, enemy.w + 32, 10);
     ctx.fillStyle = pal.hpFill || '#9ef79a';
