@@ -1516,10 +1516,10 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
 
   function setGameMode(mode) {
     remoteMode = mode === 'remote';
-    if (!remoteMode) teardownRemoteSocket();
     gameMode = remoteMode ? 2 : (mode === 2 ? 2 : 1);
     levelIndex = 0;
-    playerProgress = createDefaultPlayerProgress();
+    if (remoteMode) startRemoteSession();
+    else stopRemoteSession();
     updateModeHud(gameMode === 2);
     modeSelect.style.display = 'none';
     if (remoteMode) {
