@@ -2504,6 +2504,52 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
   }
 
   // ===== drawing =====
+  const LIGHT_DIR = { x: -0.8, y: -0.6 };
+  function normalizeDir(dir) {
+    const mag = Math.hypot(dir.x, dir.y) || 1;
+    return { x: dir.x / mag, y: dir.y / mag };
+  }
+  const LIGHT_NORM = normalizeDir(LIGHT_DIR);
+  function shadeColor(color, amount) {
+    if (typeof color !== 'string' || color[0] !== '#') return color;
+    const hex = color.length === 4
+      ? `#${color[1]}${color[1]}${color[2]}${color[2]}${color[3]}${color[3]}`
+      : color;
+    if (hex.length !== 7) return color;
+    const num = parseInt(hex.slice(1), 16);
+    const r = (num >> 16) & 255;
+    const g = (num >> 8) & 255;
+    const b = num & 255;
+    const adjust = (c) => {
+      if (amount >= 0) {
+        return Math.round(c + (255 - c) * amount);
+      }
+      return Math.round(c * (1 + amount));
+    };
+    const nr = adjust(r);
+    const ng = adjust(g);
+    const nb = adjust(b);
+    return `#${((1 << 24) + (nr << 16) + (ng << 8) + nb).toString(16).slice(1)}`;
+  }
+  function makeLightGradient(x, y, w, h, base, lightAmt = 0.22, darkAmt = -0.22) {
+    const cx = x + w / 2;
+    const cy = y + h / 2;
+    const span = Math.max(w, h) * 0.9;
+    const sx = cx - LIGHT_NORM.x * span;
+    const sy = cy - LIGHT_NORM.y * span;
+    const ex = cx + LIGHT_NORM.x * span;
+    const ey = cy + LIGHT_NORM.y * span;
+    const grad = ctx.createLinearGradient(sx, sy, ex, ey);
+    grad.addColorStop(0, shadeColor(base, lightAmt));
+    grad.addColorStop(1, shadeColor(base, darkAmt));
+    return grad;
+  }
+  function lightSideX(x, w, inset = 4) {
+    return LIGHT_DIR.x < 0 ? x + inset : x + w - inset;
+  }
+  function lightSideY(y, h, inset = 4) {
+    return LIGHT_DIR.y < 0 ? y + inset : y + h - inset;
+  }
   function drawGround() {
     const pal = palette();
     // sky
@@ -2516,7 +2562,8 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
     // far hills
     ctx.save();
     ctx.translate(-camX*0.3,0);
-    ctx.fillStyle = pal.hillColor || '#9ed39b';
+    const hillBase = pal.hillColor || '#9ed39b';
+    ctx.fillStyle = makeLightGradient(0, 300, levelLength, 200, hillBase, 0.16, -0.18);
     const hillSpacing = 500;
     const hillCount = Math.ceil((levelLength + W) / hillSpacing);
     for (let i=0;i<hillCount;i++){
@@ -2542,6 +2589,10 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
     turfGrad.addColorStop(1, pal.turfBottom || '#447d3d');
     ctx.fillStyle = turfGrad;
     ctx.fillRect(0, turfTop, levelLength, GROUND_SURFACE + 4);
+    ctx.globalAlpha = 0.35;
+    ctx.fillStyle = makeLightGradient(0, turfTop, levelLength, GROUND_SURFACE + 4, pal.turfMid || '#66ba5d', 0.18, -0.2);
+    ctx.fillRect(0, turfTop, levelLength, GROUND_SURFACE + 4);
+    ctx.globalAlpha = 1;
     ctx.fillStyle = pal.edge || '#2f4f2d';
     ctx.fillRect(0, GROUND_Y - 2, levelLength, 2);
     ctx.fillStyle = '#0003';
@@ -2553,6 +2604,10 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
     frontGrad.addColorStop(1, pal.frontBottom || '#1f140b');
     ctx.fillStyle = frontGrad;
     ctx.fillRect(0, GROUND_Y, levelLength, H-GROUND_Y);
+    ctx.globalAlpha = 0.25;
+    ctx.fillStyle = makeLightGradient(0, GROUND_Y, levelLength, H - GROUND_Y, pal.frontMid || '#3a2718', 0.16, -0.22);
+    ctx.fillRect(0, GROUND_Y, levelLength, H-GROUND_Y);
+    ctx.globalAlpha = 1;
 
     // subtle stratified dirt lines
     ctx.fillStyle = pal.strata || '#0002';
@@ -2777,39 +2832,44 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
     const canopy = pal.resourceCanopy || '#3a7d3a';
     const accent = pal.resourceAccent || canopy;
     const type = tr.variant || 'default';
+    const trunkFill = makeLightGradient(tr.x, tr.baseY, tr.w, tr.h, trunk, 0.16, -0.22);
+    const canopyFill = makeLightGradient(tr.x, tr.baseY - tr.h * 0.4, tr.w, tr.h, canopy, 0.2, -0.22);
+    const accentFill = makeLightGradient(tr.x, tr.baseY - tr.h * 0.4, tr.w, tr.h, accent, 0.24, -0.18);
+    const accentShift = LIGHT_DIR.x < 0 ? -2 : 2;
 
     if (type === 'ice') {
-      ctx.fillStyle = canopy;
+      ctx.fillStyle = canopyFill;
       ctx.beginPath();
       ctx.moveTo(tr.x + tr.w/2, tr.baseY - 30);
       ctx.lineTo(tr.x + tr.w - 4, tr.baseY + 40);
       ctx.lineTo(tr.x + 4, tr.baseY + 40);
       ctx.closePath();
       ctx.fill();
-      ctx.fillStyle = accent;
+      ctx.fillStyle = accentFill;
       ctx.beginPath();
       ctx.moveTo(tr.x + tr.w/2, tr.baseY - 10);
       ctx.lineTo(tr.x + tr.w - 10, tr.baseY + 32);
       ctx.lineTo(tr.x + 10, tr.baseY + 32);
       ctx.closePath();
       ctx.fill();
-      ctx.fillStyle = trunk;
+      ctx.fillStyle = trunkFill;
       ctx.fillRect(tr.x + tr.w/2 - 6, tr.baseY + 32, 12, tr.h - 32);
     } else if (type === 'city') {
-      ctx.fillStyle = trunk;
+      ctx.fillStyle = trunkFill;
       ctx.fillRect(tr.x, tr.baseY + tr.h - 40, tr.w, 40);
-      ctx.fillStyle = canopy;
+      ctx.fillStyle = canopyFill;
       ctx.fillRect(tr.x + 4, tr.baseY + 10, tr.w - 8, tr.h - 30);
-      ctx.fillStyle = accent;
+      ctx.fillStyle = accentFill;
       for (let i=0; i<3; i++) {
-        ctx.fillRect(tr.x + 6, tr.baseY + 18 + i*20, tr.w - 12, 6);
+        ctx.fillRect(tr.x + 6 + accentShift, tr.baseY + 18 + i*20, tr.w - 12, 6);
       }
     } else if (type === 'sand') {
-      ctx.fillStyle = canopy;
+      ctx.fillStyle = canopyFill;
       ctx.fillRect(tr.x, tr.baseY + 20, tr.w, tr.h - 20);
-      ctx.fillStyle = accent;
+      ctx.fillStyle = accentFill;
       for (let i=0; i<3; i++) {
-        ctx.fillRect(tr.x + 6 + i*8, tr.baseY, 6, 20);
+        const barX = lightSideX(tr.x + 6 + i * 8, 6, 0);
+        ctx.fillRect(barX, tr.baseY, 6, 20);
       }
       ctx.beginPath();
       ctx.moveTo(tr.x, tr.baseY + 20);
@@ -2818,31 +2878,31 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
       ctx.closePath();
       ctx.fill();
     } else if (type === 'water') {
-      ctx.fillStyle = canopy;
+      ctx.fillStyle = canopyFill;
       ctx.beginPath();
       ctx.roundRect(tr.x, tr.baseY + 20, tr.w, tr.h - 20, 8);
       ctx.fill();
-      ctx.fillStyle = accent;
+      ctx.fillStyle = accentFill;
       ctx.beginPath();
-      ctx.roundRect(tr.x + 6, tr.baseY + 8, tr.w - 12, 22, 10);
+      ctx.roundRect(tr.x + 6 + accentShift, tr.baseY + 8, tr.w - 12, 22, 10);
       ctx.fill();
-      ctx.fillStyle = trunk;
+      ctx.fillStyle = trunkFill;
       ctx.fillRect(tr.x + tr.w/2 - 8, tr.baseY + tr.h - 28, 16, 28);
     } else if (type === 'space') {
-      ctx.fillStyle = canopy;
+      ctx.fillStyle = canopyFill;
       ctx.beginPath();
       ctx.roundRect(tr.x, tr.baseY + 16, tr.w, tr.h - 16, 12);
       ctx.fill();
-      ctx.fillStyle = accent;
+      ctx.fillStyle = accentFill;
       ctx.beginPath();
       ctx.ellipse(tr.x + tr.w/2, tr.baseY + 26, tr.w/2, 12, 0, 0, Math.PI*2);
       ctx.fill();
-      ctx.fillStyle = trunk;
+      ctx.fillStyle = trunkFill;
       ctx.fillRect(tr.x + tr.w/2 - 10, tr.baseY + tr.h - 30, 20, 30);
     } else {
-      ctx.fillStyle = trunk;
+      ctx.fillStyle = trunkFill;
       ctx.fillRect(tr.x + 10, tr.baseY + 30, 10, tr.h - 30);
-      ctx.fillStyle = canopy;
+      ctx.fillStyle = canopyFill;
       ctx.beginPath();
       ctx.roundRect(tr.x, tr.baseY, tr.w, 40, 10);
       ctx.fill();
@@ -2875,10 +2935,11 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
   function drawWall(w) {
     ctx.save(); ctx.translate(-camX,0);
     const pal = palette();
-    ctx.fillStyle = pal.wallPrimary || '#9399a3';
+    const wallBase = pal.wallPrimary || '#9399a3';
+    ctx.fillStyle = makeLightGradient(w.x, w.y, w.w, w.h, wallBase, 0.18, -0.24);
     ctx.fillRect(w.x, w.y, w.w, w.h);
     // fake brick lines
-    ctx.strokeStyle = pal.wallStroke || '#747b85';
+    ctx.strokeStyle = shadeColor(pal.wallStroke || '#747b85', -0.1);
     ctx.lineWidth = 1;
     for (let y=0; y<w.h; y+=10) {
       ctx.beginPath(); ctx.moveTo(w.x, w.y+y); ctx.lineTo(w.x+w.w, w.y+y); ctx.stroke();
@@ -2898,9 +2959,11 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
     const pal = l.palette || palette();
 
     if (l.variant === 'hazard') {
-      ctx.fillStyle = pal.lavaWallDark || '#2a1811';
+      const hazardWall = pal.lavaWallDark || '#2a1811';
+      ctx.fillStyle = makeLightGradient(l.x - 10, pitTop, l.w + 20, l.depth + 40, hazardWall, 0.16, -0.28);
       ctx.fillRect(l.x - 10, pitTop, l.w + 20, l.depth + 40);
-      ctx.fillStyle = pal.lavaWallMid || '#4d2c1c';
+      const hazardRim = pal.lavaWallMid || '#4d2c1c';
+      ctx.fillStyle = makeLightGradient(l.x - 6, pitTop - 8, l.w + 12, 8, hazardRim, 0.18, -0.2);
       ctx.fillRect(l.x - 6, pitTop - 8, l.w + 12, 8);
     } else {
       const rimTop = GROUND_Y - l.rim;
@@ -2909,6 +2972,10 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
       rimGrad.addColorStop(1, pal.lavaRimBottom || '#35592d');
       ctx.fillStyle = rimGrad;
       ctx.fillRect(l.x - 8, rimTop, l.w + 16, l.rim);
+      ctx.globalAlpha = 0.3;
+      ctx.fillStyle = makeLightGradient(l.x - 8, rimTop, l.w + 16, l.rim, pal.lavaRimTop || '#6fa95c', 0.2, -0.22);
+      ctx.fillRect(l.x - 8, rimTop, l.w + 16, l.rim);
+      ctx.globalAlpha = 1;
 
       const wallGrad = ctx.createLinearGradient(l.x - 8, pitTop, l.x + l.w + 8, pitTop);
       wallGrad.addColorStop(0, pal.lavaWallDark || '#1c2b16');
@@ -2917,6 +2984,10 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
       wallGrad.addColorStop(1, pal.lavaWallDark || '#1c2b16');
       ctx.fillStyle = wallGrad;
       ctx.fillRect(l.x - 8, pitTop, l.w + 16, l.depth);
+      ctx.globalAlpha = 0.25;
+      ctx.fillStyle = makeLightGradient(l.x - 8, pitTop, l.w + 16, l.depth, pal.lavaWallMid || '#3f5a29', 0.2, -0.26);
+      ctx.fillRect(l.x - 8, pitTop, l.w + 16, l.depth);
+      ctx.globalAlpha = 1;
 
       const cavityGrad = ctx.createLinearGradient(0, pitTop, 0, pitBottom);
       cavityGrad.addColorStop(0, pal.lavaCavityTop || '#331b11');
@@ -2931,6 +3002,10 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
     lavaGrad.addColorStop(1, pal.lavaFillDark || '#d62020');
     ctx.fillStyle = lavaGrad;
     ctx.fillRect(l.x, lavaTop, l.w, pitBottom - lavaTop);
+    ctx.globalAlpha = 0.28;
+    ctx.fillStyle = makeLightGradient(l.x, lavaTop, l.w, pitBottom - lavaTop, pal.lavaFillMid || '#ff6b3a', 0.26, -0.3);
+    ctx.fillRect(l.x, lavaTop, l.w, pitBottom - lavaTop);
+    ctx.globalAlpha = 1;
 
     ctx.strokeStyle = pal.lavaStroke || '#ffd166';
     ctx.lineWidth = 2;
@@ -2962,17 +3037,18 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
     ctx.save(); ctx.translate(-camX,0);
     const pal = palette();
     const bob = Math.sin(c.t*4) * 3;
+    const coinFill = makeLightGradient(c.x - c.r, c.y + bob - c.r, c.r * 2, c.r * 2, pal.coinPrimary || '#ffd166', 0.28, -0.2);
     ctx.beginPath();
     ctx.arc(c.x, c.y + bob, c.r, 0, Math.PI*2);
-    ctx.fillStyle = pal.coinPrimary || '#ffd166';
+    ctx.fillStyle = coinFill;
     ctx.fill();
-    ctx.strokeStyle = pal.coinEdge || '#c9a44f';
+    ctx.strokeStyle = makeLightGradient(c.x - c.r, c.y + bob - c.r, c.r * 2, c.r * 2, pal.coinEdge || '#c9a44f', 0.12, -0.3);
     ctx.lineWidth = 2;
     ctx.stroke();
     // inner shine
     ctx.fillStyle = '#fff8';
     ctx.beginPath();
-    ctx.arc(c.x-4, c.y + bob - 4, 4, 0, Math.PI*2);
+    ctx.arc(lightSideX(c.x - 4, 8, 0), lightSideY(c.y + bob - 4, 8, 0), 4, 0, Math.PI*2);
     ctx.fill();
     ctx.restore();
   }
@@ -2990,38 +3066,46 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
 
     const bodyHeight = enemy.h * 0.7;
     const bodyY = enemy.y + enemy.h - bodyHeight;
+    const accentShift = LIGHT_DIR.x < 0 ? -2 : 2;
 
     if (variant === 'camel') {
-      ctx.fillStyle = pal.bossBody || '#32713b';
+      const bodyBase = pal.bossBody || '#32713b';
+      ctx.fillStyle = makeLightGradient(enemy.x, bodyY, enemy.w, bodyHeight, bodyBase, 0.2, -0.24);
       ctx.beginPath();
       ctx.roundRect(enemy.x, bodyY, enemy.w, bodyHeight, 22);
       ctx.fill();
-      ctx.fillStyle = pal.bossBelly || '#4ca254';
+      const bellyBase = pal.bossBelly || '#4ca254';
+      ctx.fillStyle = makeLightGradient(enemy.x + 12 + accentShift, bodyY + 10, enemy.w - 24, bodyHeight - 18, bellyBase, 0.2, -0.22);
       ctx.beginPath();
-      ctx.roundRect(enemy.x + 12, bodyY + 10, enemy.w - 24, bodyHeight - 18, 16);
+      ctx.roundRect(enemy.x + 12 + accentShift, bodyY + 10, enemy.w - 24, bodyHeight - 18, 16);
       ctx.fill();
-      ctx.fillStyle = pal.bossHead || '#3c8f48';
+      const headBase = pal.bossHead || '#3c8f48';
       const headX = enemy.facing > 0 ? enemy.x + enemy.w - 20 : enemy.x + 4;
+      ctx.fillStyle = makeLightGradient(headX, enemy.y - 4, 18, 16, headBase, 0.22, -0.2);
       ctx.beginPath();
       ctx.roundRect(headX, enemy.y - 4, 18, 16, 6);
       ctx.fill();
       ctx.fillStyle = pal.bossEyeDark || '#1c2b16';
       ctx.fillRect(headX + (enemy.facing > 0 ? 8 : 4), enemy.y + 2, 6, 4);
-      ctx.fillStyle = pal.bossTail || '#28652f';
+      const tailBase = pal.bossTail || '#28652f';
+      ctx.fillStyle = makeLightGradient(enemy.x - 10, bodyY + bodyHeight * 0.6, 18, 10, tailBase, 0.18, -0.22);
       ctx.beginPath();
       ctx.roundRect(enemy.x + (enemy.facing > 0 ? -10 : enemy.w - 8), bodyY + bodyHeight * 0.6, 18, 10, 6);
       ctx.fill();
     } else if (variant === 'monkey') {
-      ctx.fillStyle = pal.bossBody || '#32713b';
+      const bodyBase = pal.bossBody || '#32713b';
+      ctx.fillStyle = makeLightGradient(enemy.x + 8, bodyY + 6, enemy.w - 16, bodyHeight - 8, bodyBase, 0.2, -0.24);
       ctx.beginPath();
       ctx.roundRect(enemy.x + 8, bodyY + 6, enemy.w - 16, bodyHeight - 8, 20);
       ctx.fill();
-      ctx.fillStyle = pal.bossBelly || '#4ca254';
+      const bellyBase = pal.bossBelly || '#4ca254';
+      ctx.fillStyle = makeLightGradient(enemy.x + 18 + accentShift, bodyY + 16, enemy.w - 36, bodyHeight - 28, bellyBase, 0.2, -0.22);
       ctx.beginPath();
-      ctx.roundRect(enemy.x + 18, bodyY + 16, enemy.w - 36, bodyHeight - 28, 14);
+      ctx.roundRect(enemy.x + 18 + accentShift, bodyY + 16, enemy.w - 36, bodyHeight - 28, 14);
       ctx.fill();
-      ctx.fillStyle = pal.bossHead || '#3c8f48';
+      const headBase = pal.bossHead || '#3c8f48';
       const headX = enemy.facing > 0 ? enemy.x + enemy.w - 42 : enemy.x + 6;
+      ctx.fillStyle = makeLightGradient(headX, enemy.y - 2, 36, 32, headBase, 0.22, -0.2);
       ctx.beginPath();
       ctx.roundRect(headX, enemy.y - 2, 36, 32, 14);
       ctx.fill();
@@ -3031,23 +3115,26 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
       ctx.fillStyle = pal.bossEyeLight || '#f6f1ce';
       ctx.fillRect(headX + 12, enemy.y + 12, 3, 3);
       ctx.fillRect(headX + 22, enemy.y + 12, 3, 3);
-      ctx.fillStyle = pal.bossTail || '#28652f';
+      const tailBase = pal.bossTail || '#28652f';
       ctx.beginPath();
       ctx.arc(enemy.x + (enemy.facing > 0 ? enemy.w : 0), bodyY + bodyHeight * 0.6, 14, 0, Math.PI, enemy.facing > 0);
-      ctx.strokeStyle = pal.bossTail || '#28652f';
+      ctx.strokeStyle = makeLightGradient(enemy.x - 14, bodyY + bodyHeight * 0.6 - 14, 28, 28, tailBase, 0.18, -0.22);
       ctx.lineWidth = 8;
       ctx.stroke();
     } else if (variant === 'polar-bear') {
-      ctx.fillStyle = pal.bossBody || '#32713b';
+      const bodyBase = pal.bossBody || '#32713b';
+      ctx.fillStyle = makeLightGradient(enemy.x, bodyY, enemy.w, bodyHeight, bodyBase, 0.2, -0.24);
       ctx.beginPath();
       ctx.roundRect(enemy.x, bodyY, enemy.w, bodyHeight, 18);
       ctx.fill();
-      ctx.fillStyle = pal.bossBelly || '#4ca254';
+      const bellyBase = pal.bossBelly || '#4ca254';
+      ctx.fillStyle = makeLightGradient(enemy.x + 14 + accentShift, bodyY + 10, enemy.w - 28, bodyHeight - 18, bellyBase, 0.2, -0.22);
       ctx.beginPath();
-      ctx.roundRect(enemy.x + 14, bodyY + 10, enemy.w - 28, bodyHeight - 18, 14);
+      ctx.roundRect(enemy.x + 14 + accentShift, bodyY + 10, enemy.w - 28, bodyHeight - 18, 14);
       ctx.fill();
-      ctx.fillStyle = pal.bossHead || '#3c8f48';
+      const headBase = pal.bossHead || '#3c8f48';
       const headX = enemy.facing > 0 ? enemy.x + enemy.w - 34 : enemy.x + 6;
+      ctx.fillStyle = makeLightGradient(headX, enemy.y + 2, 30, 26, headBase, 0.22, -0.2);
       ctx.beginPath();
       ctx.roundRect(headX, enemy.y + 2, 30, 26, 10);
       ctx.fill();
@@ -3055,25 +3142,30 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
       ctx.fillRect(headX + 8, enemy.y + 12, 6, 4);
       ctx.fillStyle = pal.bossEyeLight || '#f6f1ce';
       ctx.fillRect(headX + 9, enemy.y + 12, 3, 2);
-      ctx.fillStyle = pal.bossTail || '#28652f';
+      const tailBase = pal.bossTail || '#28652f';
+      ctx.fillStyle = makeLightGradient(enemy.x + enemy.w - 18, bodyY + bodyHeight - 18, 10, 14, tailBase, 0.18, -0.22);
       ctx.fillRect(enemy.x + enemy.w - 18, bodyY + bodyHeight - 18, 10, 14);
     } else if (variant === 'fish') {
-      ctx.fillStyle = pal.bossBody || '#32713b';
+      const bodyBase = pal.bossBody || '#32713b';
+      ctx.fillStyle = makeLightGradient(enemy.x, enemy.y, enemy.w, enemy.h, bodyBase, 0.2, -0.24);
       ctx.beginPath();
       ctx.ellipse(enemy.x + enemy.w / 2, enemy.y + enemy.h / 2, enemy.w / 2, enemy.h / 2.4, 0, 0, Math.PI*2);
       ctx.fill();
-      ctx.fillStyle = pal.bossBelly || '#4ca254';
+      const bellyBase = pal.bossBelly || '#4ca254';
+      ctx.fillStyle = makeLightGradient(enemy.x, enemy.y, enemy.w, enemy.h, bellyBase, 0.2, -0.22);
       ctx.beginPath();
       ctx.ellipse(enemy.x + enemy.w / 2, enemy.y + enemy.h / 2 + 4, enemy.w / 2.6, enemy.h / 3, 0, 0, Math.PI*2);
       ctx.fill();
-      ctx.fillStyle = pal.bossTail || '#28652f';
+      const tailBase = pal.bossTail || '#28652f';
+      ctx.fillStyle = makeLightGradient(enemy.x - 20, enemy.y + enemy.h / 2 - 18, 20, 36, tailBase, 0.18, -0.22);
       ctx.beginPath();
       ctx.moveTo(enemy.x, enemy.y + enemy.h / 2);
       ctx.lineTo(enemy.x - 20, enemy.y + enemy.h / 2 - 18);
       ctx.lineTo(enemy.x - 20, enemy.y + enemy.h / 2 + 18);
       ctx.closePath();
       ctx.fill();
-      ctx.fillStyle = pal.bossHead || '#3c8f48';
+      const headBase = pal.bossHead || '#3c8f48';
+      ctx.fillStyle = makeLightGradient(enemy.x + enemy.w - 34, enemy.y + enemy.h / 2 - 16, 32, 32, headBase, 0.22, -0.2);
       ctx.beginPath();
       ctx.arc(enemy.x + enemy.w - 18, enemy.y + enemy.h / 2, 16, 0, Math.PI*2);
       ctx.fill();
@@ -3082,16 +3174,19 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
       ctx.fillStyle = pal.bossEyeLight || '#f6f1ce';
       ctx.fillRect(enemy.x + enemy.w - 20, enemy.y + enemy.h / 2 - 2, 3, 2);
     } else if (variant === 'alien') {
-      ctx.fillStyle = pal.bossBody || '#32713b';
+      const bodyBase = pal.bossBody || '#32713b';
+      ctx.fillStyle = makeLightGradient(enemy.x + 8, bodyY + 4, enemy.w - 16, bodyHeight - 12, bodyBase, 0.2, -0.24);
       ctx.beginPath();
       ctx.roundRect(enemy.x + 8, bodyY + 4, enemy.w - 16, bodyHeight - 12, 18);
       ctx.fill();
-      ctx.fillStyle = pal.bossBelly || '#4ca254';
+      const bellyBase = pal.bossBelly || '#4ca254';
+      ctx.fillStyle = makeLightGradient(enemy.x + 18 + accentShift, bodyY + 14, enemy.w - 36, bodyHeight - 32, bellyBase, 0.2, -0.22);
       ctx.beginPath();
-      ctx.roundRect(enemy.x + 18, bodyY + 14, enemy.w - 36, bodyHeight - 32, 12);
+      ctx.roundRect(enemy.x + 18 + accentShift, bodyY + 14, enemy.w - 36, bodyHeight - 32, 12);
       ctx.fill();
-      ctx.fillStyle = pal.bossHead || '#3c8f48';
+      const headBase = pal.bossHead || '#3c8f48';
       const headX = enemy.x + enemy.w / 2 - 18;
+      ctx.fillStyle = makeLightGradient(headX, enemy.y - 6, 36, 32, headBase, 0.22, -0.2);
       ctx.beginPath();
       ctx.roundRect(headX, enemy.y - 6, 36, 32, 16);
       ctx.fill();
@@ -3108,18 +3203,21 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
       ctx.lineTo(headX + 18, enemy.y - 14);
       ctx.stroke();
     } else {
-      ctx.fillStyle = pal.bossBody || '#32713b';
+      const bodyBase = pal.bossBody || '#32713b';
+      ctx.fillStyle = makeLightGradient(enemy.x, bodyY, enemy.w, bodyHeight, bodyBase, 0.2, -0.24);
       ctx.beginPath();
       ctx.roundRect(enemy.x, bodyY, enemy.w, bodyHeight, 24);
       ctx.fill();
 
-      ctx.fillStyle = pal.bossBelly || '#4ca254';
+      const bellyBase = pal.bossBelly || '#4ca254';
+      ctx.fillStyle = makeLightGradient(enemy.x + 16 + accentShift, bodyY + 12, enemy.w - 32, bodyHeight - 20, bellyBase, 0.2, -0.22);
       ctx.beginPath();
-      ctx.roundRect(enemy.x + 16, bodyY + 12, enemy.w - 32, bodyHeight - 20, 18);
+      ctx.roundRect(enemy.x + 16 + accentShift, bodyY + 12, enemy.w - 32, bodyHeight - 20, 18);
       ctx.fill();
 
-      ctx.fillStyle = pal.bossTail || '#28652f';
+      const tailBase = pal.bossTail || '#28652f';
       const tailDir = enemy.facing > 0 ? -1 : 1;
+      ctx.fillStyle = makeLightGradient(enemy.x - 40, bodyY + bodyHeight * 0.65 - 14, 80, 28, tailBase, 0.18, -0.22);
       ctx.beginPath();
       ctx.ellipse(enemy.x + (tailDir > 0 ? enemy.w + 30 : -30), bodyY + bodyHeight * 0.65, 40, 14, 0, 0, Math.PI*2);
       ctx.fill();
@@ -3127,7 +3225,8 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
       const headWidth = 46;
       const headHeight = 32;
       const headX = enemy.facing > 0 ? enemy.x + enemy.w - headWidth : enemy.x;
-      ctx.fillStyle = pal.bossHead || '#3c8f48';
+      const headBase = pal.bossHead || '#3c8f48';
+      ctx.fillStyle = makeLightGradient(headX, enemy.y + 6, headWidth, headHeight, headBase, 0.22, -0.2);
       ctx.beginPath();
       ctx.roundRect(headX, enemy.y + 6, headWidth, headHeight, 16);
       ctx.fill();
@@ -3143,8 +3242,10 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
         ctx.fillRect(toothX, enemy.y + headHeight + 4, 4, 6);
       }
 
-      ctx.fillStyle = pal.bossLeg || '#215929';
+      const legBase = pal.bossLeg || '#215929';
+      ctx.fillStyle = makeLightGradient(enemy.x + 14, bodyY + bodyHeight - 14, 14, 24, legBase, 0.18, -0.22);
       ctx.fillRect(enemy.x + 14, bodyY + bodyHeight - 14, 14, 24);
+      ctx.fillStyle = makeLightGradient(enemy.x + enemy.w - 28, bodyY + bodyHeight - 14, 14, 24, legBase, 0.18, -0.22);
       ctx.fillRect(enemy.x + enemy.w - 28, bodyY + bodyHeight - 14, 14, 24);
     }
 
@@ -3182,46 +3283,56 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
     ctx.beginPath();
     ctx.ellipse(enemy.centerX(), groundUnder - 2, 12, 4, 0, 0, Math.PI*2);
     ctx.fill();
+    const accentShift = LIGHT_DIR.x < 0 ? -2 : 2;
 
     if (variant === 'camel') {
       const bodyY = enemy.y + 12;
-      ctx.fillStyle = pal.enemyPrimary || '#7f3232';
+      const bodyBase = pal.enemyPrimary || '#7f3232';
+      ctx.fillStyle = makeLightGradient(enemy.x, bodyY, enemy.w, enemy.h - 18, bodyBase, 0.2, -0.24);
       ctx.beginPath();
       ctx.roundRect(enemy.x, bodyY, enemy.w, enemy.h - 18, 10);
       ctx.fill();
-      ctx.fillStyle = pal.enemySecondary || '#c54c4c';
+      const bellyBase = pal.enemySecondary || '#c54c4c';
+      ctx.fillStyle = makeLightGradient(enemy.x + 6 + accentShift, bodyY - 8, enemy.w - 12, enemy.h - 20, bellyBase, 0.2, -0.2);
       ctx.beginPath();
-      ctx.roundRect(enemy.x + 6, bodyY - 8, enemy.w - 12, enemy.h - 20, 12);
+      ctx.roundRect(enemy.x + 6 + accentShift, bodyY - 8, enemy.w - 12, enemy.h - 20, 12);
       ctx.fill();
-      ctx.fillStyle = pal.enemyAccent || '#532626';
+      const accentBase = pal.enemyAccent || '#532626';
+      ctx.fillStyle = makeLightGradient(enemy.x + enemy.w - 12, enemy.y + 6, 10, 16, accentBase, 0.16, -0.24);
       ctx.beginPath();
       ctx.roundRect(enemy.x + enemy.w - 12, enemy.y + 6, 10, 16, 6);
       ctx.fill();
-      ctx.fillStyle = pal.enemyHead || '#ffb27d';
+      const headBase = pal.enemyHead || '#ffb27d';
       const headX = enemy.facing > 0 ? enemy.x + enemy.w - 18 : enemy.x + 6;
+      ctx.fillStyle = makeLightGradient(headX, enemy.y, 16, 12, headBase, 0.22, -0.18);
       ctx.beginPath();
       ctx.roundRect(headX, enemy.y, 16, 12, 6);
       ctx.fill();
       ctx.fillStyle = pal.enemyEyeDark || '#2b1a1a';
       ctx.fillRect(headX + (enemy.facing > 0 ? 10 : 2), enemy.y + 4, 4, 3);
     } else if (variant === 'car') {
-      ctx.fillStyle = pal.enemySecondary || '#c54c4c';
+      const bodyBase = pal.enemySecondary || '#c54c4c';
+      ctx.fillStyle = makeLightGradient(enemy.x, enemy.y + 18, enemy.w, enemy.h - 26, bodyBase, 0.2, -0.24);
       ctx.fillRect(enemy.x, enemy.y + 18, enemy.w, enemy.h - 26);
-      ctx.fillStyle = pal.enemyPrimary || '#7f3232';
+      const roofBase = pal.enemyPrimary || '#7f3232';
+      ctx.fillStyle = makeLightGradient(enemy.x + 4, enemy.y + 12, enemy.w - 8, 14, roofBase, 0.2, -0.2);
       ctx.fillRect(enemy.x + 4, enemy.y + 12, enemy.w - 8, 14);
-      ctx.fillStyle = pal.enemyAccent || '#532626';
-      ctx.fillRect(enemy.x + 8, enemy.y + 8, enemy.w - 16, 8);
+      const accentBase = pal.enemyAccent || '#532626';
+      ctx.fillStyle = makeLightGradient(enemy.x + 8 + accentShift, enemy.y + 8, enemy.w - 16, 8, accentBase, 0.16, -0.24);
+      ctx.fillRect(enemy.x + 8 + accentShift, enemy.y + 8, enemy.w - 16, 8);
       ctx.fillStyle = '#111';
       ctx.beginPath();
       ctx.arc(enemy.x + 8, enemy.y + enemy.h - 6, 6, 0, Math.PI*2);
       ctx.arc(enemy.x + enemy.w - 8, enemy.y + enemy.h - 6, 6, 0, Math.PI*2);
       ctx.fill();
     } else if (variant === 'polar-bear') {
-      ctx.fillStyle = pal.enemyPrimary || '#7f3232';
+      const bodyBase = pal.enemyPrimary || '#7f3232';
+      ctx.fillStyle = makeLightGradient(enemy.x, enemy.y + 8, enemy.w, enemy.h - 12, bodyBase, 0.2, -0.24);
       ctx.beginPath();
       ctx.roundRect(enemy.x, enemy.y + 8, enemy.w, enemy.h - 12, 8);
       ctx.fill();
-      ctx.fillStyle = pal.enemyHead || '#ffb27d';
+      const headBase = pal.enemyHead || '#ffb27d';
+      ctx.fillStyle = makeLightGradient(enemy.x + 6, enemy.y, enemy.w - 12, 14, headBase, 0.22, -0.18);
       ctx.beginPath();
       ctx.roundRect(enemy.x + 6, enemy.y, enemy.w - 12, 14, 6);
       ctx.fill();
@@ -3229,38 +3340,46 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
       ctx.fillRect(enemy.x + 10, enemy.y + 4, 6, 4);
       ctx.fillStyle = pal.enemyEyeLight || '#f6f1ce';
       ctx.fillRect(enemy.x + 10, enemy.y + 4, 3, 2);
-      ctx.fillStyle = pal.enemyAccent || '#532626';
-      ctx.fillRect(enemy.x + 4, enemy.y + enemy.h - 12, enemy.w - 8, 10);
+      const accentBase = pal.enemyAccent || '#532626';
+      ctx.fillStyle = makeLightGradient(enemy.x + 4 + accentShift, enemy.y + enemy.h - 12, enemy.w - 8, 10, accentBase, 0.16, -0.24);
+      ctx.fillRect(enemy.x + 4 + accentShift, enemy.y + enemy.h - 12, enemy.w - 8, 10);
     } else if (variant === 'fish') {
-      ctx.fillStyle = pal.enemySecondary || '#c54c4c';
+      const bodyBase = pal.enemySecondary || '#c54c4c';
+      ctx.fillStyle = makeLightGradient(enemy.x, enemy.y, enemy.w, enemy.h, bodyBase, 0.2, -0.24);
       ctx.beginPath();
       ctx.ellipse(enemy.x + enemy.w / 2, enemy.y + enemy.h / 2, enemy.w / 2, enemy.h / 2.4, 0, 0, Math.PI*2);
       ctx.fill();
-      ctx.fillStyle = pal.enemyPrimary || '#7f3232';
+      const tailBase = pal.enemyPrimary || '#7f3232';
+      ctx.fillStyle = makeLightGradient(enemy.x - 10, enemy.y + enemy.h / 2 - 10, 10, 20, tailBase, 0.2, -0.24);
       ctx.beginPath();
       ctx.moveTo(enemy.x, enemy.y + enemy.h / 2);
       ctx.lineTo(enemy.x - 10, enemy.y + enemy.h / 2 - 10);
       ctx.lineTo(enemy.x - 10, enemy.y + enemy.h / 2 + 10);
       ctx.closePath();
       ctx.fill();
-      ctx.fillStyle = pal.enemyHead || '#ffb27d';
+      const headBase = pal.enemyHead || '#ffb27d';
+      ctx.fillStyle = makeLightGradient(enemy.x + enemy.w - 18, enemy.y + enemy.h / 2 - 8, 16, 16, headBase, 0.22, -0.18);
       ctx.beginPath();
       ctx.arc(enemy.x + enemy.w - 10, enemy.y + enemy.h / 2, 8, 0, Math.PI*2);
       ctx.fill();
       ctx.fillStyle = pal.enemyEyeDark || '#2b1a1a';
       ctx.fillRect(enemy.x + enemy.w - 12, enemy.y + enemy.h / 2 - 2, 3, 3);
     } else {
-      ctx.fillStyle = pal.enemyAccent || '#532626';
-      ctx.fillRect(enemy.x + 2, enemy.y + 14, enemy.w - 4, enemy.h - 14);
-      ctx.fillStyle = pal.enemyPrimary || '#7f3232';
+      const accentBase = pal.enemyAccent || '#532626';
+      ctx.fillStyle = makeLightGradient(enemy.x + 2 + accentShift, enemy.y + 14, enemy.w - 4, enemy.h - 14, accentBase, 0.16, -0.24);
+      ctx.fillRect(enemy.x + 2 + accentShift, enemy.y + 14, enemy.w - 4, enemy.h - 14);
+      const bodyBase = pal.enemyPrimary || '#7f3232';
+      ctx.fillStyle = makeLightGradient(enemy.x, enemy.y + 6, enemy.w, enemy.h - 16, bodyBase, 0.2, -0.24);
       ctx.fillRect(enemy.x, enemy.y + 6, enemy.w, enemy.h - 16);
-      ctx.fillStyle = pal.enemySecondary || '#c54c4c';
-      ctx.fillRect(enemy.x + 4, enemy.y + 8, enemy.w - 8, enemy.h - 20);
+      const bellyBase = pal.enemySecondary || '#c54c4c';
+      ctx.fillStyle = makeLightGradient(enemy.x + 4 + accentShift, enemy.y + 8, enemy.w - 8, enemy.h - 20, bellyBase, 0.2, -0.2);
+      ctx.fillRect(enemy.x + 4 + accentShift, enemy.y + 8, enemy.w - 8, enemy.h - 20);
 
       const headSize = 16;
       const headX = enemy.x + (enemy.w - headSize) / 2;
       const headY = enemy.y - headSize + 6;
-      ctx.fillStyle = pal.enemyHead || '#ffb27d';
+      const headBase = pal.enemyHead || '#ffb27d';
+      ctx.fillStyle = makeLightGradient(headX, headY, headSize, headSize, headBase, 0.22, -0.18);
       ctx.fillRect(headX, headY, headSize, headSize);
       ctx.fillStyle = pal.enemyEyeDark || '#2b1a1a';
       ctx.fillRect(headX + 4, headY + 8, 8, 3);
@@ -3330,26 +3449,29 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
     const armTop = player.y + 10;
 
     // rear limb pass
-    ctx.fillStyle = '#1a2331';
+    ctx.fillStyle = makeLightGradient(player.x + 4 - swing * 0.35, legTop, legWidth, legHeight, '#1a2331', 0.1, -0.2);
     ctx.fillRect(player.x + 4 - swing * 0.35, legTop, legWidth, legHeight);
-    ctx.fillStyle = '#23344d';
+    ctx.fillStyle = makeLightGradient(player.x - 4 - swing * 0.25, armTop, armWidth, armHeight, '#23344d', 0.1, -0.2);
     ctx.fillRect(player.x - 4 - swing * 0.25, armTop, armWidth, armHeight);
 
     // torso
-    ctx.fillStyle = player.bodyColor;
+    ctx.fillStyle = makeLightGradient(player.x, player.y, player.w, player.h, player.bodyColor, 0.22, -0.24);
     ctx.fillRect(player.x, player.y, player.w, player.h);
     ctx.fillStyle = '#ffffff12';
-    ctx.fillRect(player.x + 4, player.y + 6, player.w - 8, 10);
+    const highlightW = Math.max(6, player.w * 0.45);
+    const highlightX = LIGHT_DIR.x < 0 ? player.x + 4 : player.x + player.w - 4 - highlightW;
+    const highlightY = LIGHT_DIR.y < 0 ? player.y + 6 : player.y + player.h - 16;
+    ctx.fillRect(highlightX, highlightY, highlightW, 10);
 
     // front limbs
-    ctx.fillStyle = '#314567';
+    ctx.fillStyle = makeLightGradient(player.x + player.w - armWidth + 2 + swing * 0.25, armTop + 1, armWidth, armHeight, '#314567', 0.14, -0.22);
     ctx.fillRect(player.x + player.w - armWidth + 2 + swing * 0.25, armTop + 1, armWidth, armHeight);
-    ctx.fillStyle = '#233047';
+    ctx.fillStyle = makeLightGradient(player.x + player.w - legWidth - 4 + swing * 0.35, legTop, legWidth, legHeight, '#233047', 0.14, -0.22);
     ctx.fillRect(player.x + player.w - legWidth - 4 + swing * 0.35, legTop, legWidth, legHeight);
 
     // head
     const head = {x: player.x + (player.w-16)/2, y: player.y - 16, s:16};
-    ctx.fillStyle = player.headColor;
+    ctx.fillStyle = makeLightGradient(head.x, head.y, head.s, head.s, player.headColor, 0.24, -0.2);
     ctx.fillRect(head.x, head.y, head.s, head.s);
     ctx.fillStyle = '#1b1b1b';
     ctx.fillRect(head.x+4 + (player.facing>0?2:0), head.y+5, 3, 3);
