@@ -1074,35 +1074,6 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
     });
   }
 
-  function handleKeyDown(key) {
-    if (!key) return;
-    keys[key] = true;
-    if (key === 'r' || key === 'R') {
-      if (finished) {
-        if (levelIndex < LEVELS.length - 1) levelIndex += 1;
-        else levelIndex = 0;
-      }
-      showBiomeSelect();
-      return;
-    }
-    if (key === 'h' || key === 'H') { debugShowHit = !debugShowHit; }
-    if (finished) return;
-    for (const player of players) {
-      if (player.finished) continue;
-      if (player.controls.attack && player.controls.attack.includes(key)) {
-        if (hasUsableGun(player)) fireGun(player);
-        else playerAttack(player);
-      }
-      if (player.controls.wall && player.controls.wall.includes(key)) placeWall(player);
-      if (player.controls.lava && player.controls.lava.includes(key)) placeLava(player);
-    }
-  }
-
-  function handleKeyUp(key) {
-    if (!key) return;
-    keys[key] = false;
-  }
-
   function enableTouchControls() {
     if (!touchControls) return;
     touchControls.classList.remove('hidden');
