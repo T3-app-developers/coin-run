@@ -351,18 +351,8 @@
     return;
   }
 
-  // ===== canvas & sizing =====
-  const canvas = document.getElementById('game');
-  const ctx = canvas.getContext('2d');
-  let W = canvas.width, H = canvas.height;
-
-  function resize() {
-    // Keep fixed internal resolution; CSS scales it.
-    // (Could add DPR scaling if you prefer sharper rendering.)
-  }
-  window.addEventListener('resize', resize);
-
   // ===== UI elements =====
+  const canvas = document.getElementById('game');
   const ui = {
     p1: {
       coins: document.getElementById('p1-coins'),
@@ -388,9 +378,9 @@
   const celebrationDetails = document.getElementById('celebration-details');
   const celebrationNext = document.getElementById('celebration-next');
   const platformSelect = document.getElementById('platform-select');
-  const platformButtons = platformSelect.querySelectorAll('.platform-btn');
+  const platformButtons = platformSelect ? platformSelect.querySelectorAll('.platform-btn') : [];
   const modeSelect = document.getElementById('mode-select');
-  const modeButtons = modeSelect.querySelectorAll('.mode-btn');
+  const modeButtons = modeSelect ? modeSelect.querySelectorAll('.mode-btn') : [];
   const biomeSelect = document.getElementById('biome-select');
   const biomeButtonsWrap = document.getElementById('biome-buttons');
   const biomeBlurb = document.getElementById('biome-blurb');
@@ -442,6 +432,94 @@
   const upgradePill = document.getElementById('upgrade-pill');
   const upgradeText = document.getElementById('upgrade-text');
   if (wahAudio) wahAudio.volume = 0.55;
+
+  let ctx = null;
+  let W = 0;
+  let H = 0;
+  let platformMode = null;
+  let initFailed = false;
+
+  const isPanelVisible = (panel) => panel && !panel.classList.contains('hidden') && panel.style.display !== 'none';
+  const showInitError = (message) => {
+    const host = (isPanelVisible(platformSelect) && platformSelect)
+      ? platformSelect.querySelector('.card')
+      : (isPanelVisible(modeSelect) && modeSelect)
+        ? modeSelect.querySelector('.card')
+        : platformSelect?.querySelector('.card') || modeSelect?.querySelector('.card') || document.body;
+    let banner = document.getElementById('init-error');
+    if (!banner) {
+      banner = document.createElement('p');
+      banner.id = 'init-error';
+      banner.style.margin = '12px 0 0';
+      banner.style.fontWeight = '600';
+      banner.style.textAlign = 'center';
+      banner.style.color = '#ff9e64';
+      if (host && host.firstChild) {
+        host.insertBefore(banner, host.firstChild);
+      } else if (host) {
+        host.appendChild(banner);
+      } else {
+        document.body.appendChild(banner);
+      }
+    }
+    banner.textContent = message;
+  };
+
+  const failInit = (message, error) => {
+    initFailed = true;
+    console.error(message, error);
+    showInitError(message);
+  };
+
+  function showModeSelect() {
+    if (!platformSelect || !modeSelect) return;
+    if (!platformMode) {
+      const prefersCoarsePointer = window.matchMedia && window.matchMedia('(pointer: coarse)').matches;
+      platformMode = prefersCoarsePointer ? 'mobile' : 'desktop';
+      if (platformMode === 'mobile') {
+        enableTouchControls();
+      }
+      platformSelect.style.display = 'none';
+    }
+    hideBlockingOverlays();
+    modeSelect.classList.remove('hidden');
+    modeSelect.style.display = 'flex';
+  }
+
+  function choosePlatform(mode) {
+    if (!platformSelect) return;
+    platformMode = mode;
+    platformSelect.style.display = 'none';
+    if (mode === 'mobile') {
+      enableTouchControls();
+    }
+    showModeSelect();
+  }
+
+  platformButtons.forEach(btn => {
+    btn.addEventListener('click', () => {
+      const mode = btn.dataset.platform === 'mobile' ? 'mobile' : 'desktop';
+      choosePlatform(mode);
+    });
+  });
+
+  if (!canvas) {
+    failInit('Game canvas is missing. Please refresh or try another browser.');
+  } else {
+    ctx = canvas.getContext('2d');
+    if (!ctx) {
+      failInit('Canvas could not be initialized. Try updating your browser.');
+    } else {
+      W = canvas.width;
+      H = canvas.height;
+    }
+  }
+
+  function resize() {
+    // Keep fixed internal resolution; CSS scales it.
+    // (Could add DPR scaling if you prefer sharper rendering.)
+  }
+  if (!initFailed) window.addEventListener('resize', resize);
 
   let deathHideTimeout = null;
 
@@ -967,7 +1045,6 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
   const JUMP_VEL = -16;
 
   // game state
-  let platformMode = null;
   let gameMode = null;
   let activeBiomeId = null;
   let activeBiome = null;
@@ -1009,18 +1086,22 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
     if (!showSecondPlayer) clearChatInputs();
   }
 
-  updateModeHud(false);
+  try {
+    updateModeHud(false);
 
-  if (helpToggle) {
-    helpToggle.addEventListener('click', () => {
-      setHelpCollapsed(!helpPanel?.classList.contains('minimized'));
-    });
-  }
+    if (helpToggle) {
+      helpToggle.addEventListener('click', () => {
+        setHelpCollapsed(!helpPanel?.classList.contains('minimized'));
+      });
+    }
 
-  if (remoteToggle) {
-    remoteToggle.addEventListener('click', () => {
-      setRemoteShareCollapsed(!remoteShareCollapsed, true);
-    });
+    if (remoteToggle) {
+      remoteToggle.addEventListener('click', () => {
+        setRemoteShareCollapsed(!remoteShareCollapsed, true);
+      });
+    }
+  } catch (error) {
+    failInit('Game UI failed to initialize. You can still choose a mode.', error);
   }
 
   function bindChatUi() {
@@ -1490,36 +1571,6 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
     });
     window.addEventListener('blur', clearVirtualInputs);
   }
-
-  function showModeSelect() {
-    if (!platformMode) {
-      const prefersCoarsePointer = window.matchMedia && window.matchMedia('(pointer: coarse)').matches;
-      platformMode = prefersCoarsePointer ? 'mobile' : 'desktop';
-      if (platformMode === 'mobile') {
-        enableTouchControls();
-      }
-      platformSelect.style.display = 'none';
-    }
-    hideBlockingOverlays();
-    modeSelect.classList.remove('hidden');
-    modeSelect.style.display = 'flex';
-  }
-
-  function choosePlatform(mode) {
-    platformMode = mode;
-    platformSelect.style.display = 'none';
-    if (mode === 'mobile') {
-      enableTouchControls();
-    }
-    showModeSelect();
-  }
-
-  platformButtons.forEach(btn => {
-    btn.addEventListener('click', () => {
-      const mode = btn.dataset.platform === 'mobile' ? 'mobile' : 'desktop';
-      choosePlatform(mode);
-    });
-  });
 
   function setGameMode(mode) {
     remoteMode = mode === 'remote';
@@ -3814,9 +3865,15 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
   }
 
   // boot
-  uiTimer.textContent = formatTime(0);
-  hideDeathScreen(true);
-  requestAnimationFrame(loop);
+  if (!initFailed) {
+    try {
+      if (uiTimer) uiTimer.textContent = formatTime(0);
+      hideDeathScreen(true);
+      if (ctx) requestAnimationFrame(loop);
+    } catch (error) {
+      failInit('Game failed to start. You can still choose a mode.', error);
+    }
+  }
 })();
 </script>
 </body>
