@@ -185,6 +185,7 @@
   <div class="card">
     <h1>How would you like to play?</h1>
     <p>Pick an experience tailored for your device. You can still use a keyboard on desktop if you change your mind later.</p>
+    <p id="init-error" class="hidden" style="margin:12px 0 0; font-weight:600; text-align:center; color:#ff9e64;">Your browser is too old to run this game—please update or use a modern browser.</p>
     <div class="mode-buttons">
       <button class="platform-btn" data-platform="desktop">Desktop</button>
       <button class="platform-btn" data-platform="mobile">Mobile / Touch</button>
@@ -445,7 +446,9 @@
       ? platformSelect.querySelector('.card')
       : (isPanelVisible(modeSelect) && modeSelect)
         ? modeSelect.querySelector('.card')
-        : platformSelect?.querySelector('.card') || modeSelect?.querySelector('.card') || document.body;
+        : (platformSelect && platformSelect.querySelector('.card'))
+          || (modeSelect && modeSelect.querySelector('.card'))
+          || document.body;
     let banner = document.getElementById('init-error');
     if (!banner) {
       banner = document.createElement('p');
@@ -461,6 +464,9 @@
       } else {
         document.body.appendChild(banner);
       }
+    }
+    if (banner.classList && banner.classList.contains('hidden')) {
+      banner.classList.remove('hidden');
     }
     banner.textContent = message;
   };
@@ -1082,7 +1088,7 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
     p2Pills.forEach(el => el.classList.toggle('hidden', !showSecondPlayer));
     if (helpP2) helpP2.classList.toggle('hidden', !showSecondPlayer);
     if (chatUi) chatUi.classList.toggle('hidden', !showSecondPlayer);
-    if (chatLanes.p2?.lane) chatLanes.p2.lane.classList.toggle('hidden', !showSecondPlayer);
+    if (chatLanes.p2 && chatLanes.p2.lane) chatLanes.p2.lane.classList.toggle('hidden', !showSecondPlayer);
     if (!showSecondPlayer) clearChatInputs();
   }
 
@@ -1091,7 +1097,7 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
 
     if (helpToggle) {
       helpToggle.addEventListener('click', () => {
-        setHelpCollapsed(!helpPanel?.classList.contains('minimized'));
+        setHelpCollapsed(!(helpPanel && helpPanel.classList.contains('minimized')));
       });
     }
 
@@ -1188,7 +1194,9 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
 
   function closeChatInput() {
     activeChatPlayer = null;
-    Object.values(chatLanes).forEach(({ input }) => input?.blur());
+    Object.values(chatLanes).forEach(({ input }) => {
+      if (input) input.blur();
+    });
   }
 
   function submitChat(playerKey) {
@@ -1331,7 +1339,7 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
   function isKeyActiveForPlayer(player, key) {
     const resolved = resolveVirtualKey(key);
     if (!resolved) return false;
-    if (player?.label === 'P2' && remoteKeys[resolved]) return true;
+    if (player && player.label === 'P2' && remoteKeys[resolved]) return true;
     return !!keys[resolved];
   }
 
@@ -1496,9 +1504,9 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
     if (!base) return { ...DEFAULT_POWER_UPS };
     return {
       jumpBoost: !!base.jumpBoost,
-      jumpBoostTargetLevel: base.jumpBoostTargetLevel ?? null,
+      jumpBoostTargetLevel: base.jumpBoostTargetLevel !== undefined ? base.jumpBoostTargetLevel : null,
       nextLevelInvulnMs: Math.max(0, base.nextLevelInvulnMs || 0),
-      spawnShieldTargetLevel: base.spawnShieldTargetLevel ?? null,
+      spawnShieldTargetLevel: base.spawnShieldTargetLevel !== undefined ? base.spawnShieldTargetLevel : null,
     };
   }
 
@@ -1644,7 +1652,7 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
       this.controls = options.controls || {};
       this.attackCooldown = 0;
       this.dinoBites = 0;
-      this.slotIndex = options.slotIndex ?? 0;
+      this.slotIndex = Object.prototype.hasOwnProperty.call(options, 'slotIndex') ? options.slotIndex : 0;
       this.powerUps = clonePowerUps(options.powerUps);
       this.jumpBoostMultiplier = 1;
       this.spawnShieldMs = 0;
@@ -1682,8 +1690,8 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
   class Tree {
     constructor(x, biome = null) {
       this.x = x;
-      const style = biome?.resourceNode || {};
-      this.variant = biome?.id || 'default';
+      const style = (biome && biome.resourceNode) ? biome.resourceNode : {};
+      this.variant = (biome && biome.id) ? biome.id : 'default';
       this.w = style.w || 30;
       this.h = style.h || 100;
       this.baseY = GROUND_Y - this.h;
@@ -1705,14 +1713,14 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
   class Lava {
     constructor(x, options = {}) {
       this.x = x;
-      this.w = options.width ?? TILE;
-      this.depth = options.depth ?? LAVA_DEPTH;
-      this.h = options.height ?? LAVA_HEIGHT;
-      this.rim = options.rim ?? LAVA_RIM;
-      this.theme = options.theme ?? 'grass';
+      this.w = options.width !== undefined ? options.width : TILE;
+      this.depth = options.depth !== undefined ? options.depth : LAVA_DEPTH;
+      this.h = options.height !== undefined ? options.height : LAVA_HEIGHT;
+      this.rim = options.rim !== undefined ? options.rim : LAVA_RIM;
+      this.theme = options.theme !== undefined ? options.theme : 'grass';
       this.palette = options.palette || null;
       this.variant = options.variant || null;
-      const surface = options.surfaceY ?? (GROUND_Y + this.depth - this.h);
+      const surface = options.surfaceY !== undefined ? options.surfaceY : (GROUND_Y + this.depth - this.h);
       this.y = surface;
       this.baseY = surface;
       this.phase = rand(0, 1000);
@@ -1736,8 +1744,8 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
       depth: VOLCANO_CRATER_DEPTH,
       height: VOLCANO_LAVA_HEIGHT,
       rim: VOLCANO_LAVA_RIM,
-      theme: biome?.id || 'volcano',
-      palette: biome?.palette,
+      theme: (biome && biome.id) ? biome.id : 'volcano',
+      palette: biome ? biome.palette : undefined,
       variant: 'hazard'
     });
     lava.baseY = lava.y;
@@ -1806,7 +1814,7 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
       this.dead = false;
       this.hp = ENEMY_HITS_TO_DEFEAT;
       this.hitFlash = 0;
-      this.variant = biome?.enemyVariant || 'dino';
+      this.variant = (biome && biome.enemyVariant) ? biome.enemyVariant : 'dino';
       this.biome = biome;
       this.x = this.baseX;
       this.y = groundHeightAt(this.centerX()) - this.h;
@@ -1893,8 +1901,8 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
       this.maxHp = options.hp || BOSS_HITS_TO_DEFEAT;
       this.hp = this.maxHp;
       this.baseX = clamp(x, 160, levelLength - this.w - 80);
-      this.range = options.range ?? 140;
-      this.speed = options.speed ?? 1.1;
+      this.range = options.range !== undefined ? options.range : 140;
+      this.speed = options.speed !== undefined ? options.speed : 1.1;
       this.patterns = options.patterns && options.patterns.length ? options.patterns : [
         { speed: 1.1, range: 140, duration: 220 },
         { speed: 1.6, range: 220, duration: 160 },
@@ -1947,7 +1955,7 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
       this.dead = false;
       this.owner = owner;
       this.faction = faction;
-      this.rangeRemaining = range ?? Infinity;
+      this.rangeRemaining = range !== undefined ? range : Infinity;
     }
     aabb() {
       return { x: this.x - this.w/2, y: this.y - this.h/2, w: this.w, h: this.h };
@@ -2095,15 +2103,15 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
         lava: ['2'],
       },
       slotIndex: 0,
-      powerUps: playerProgress[0]?.powerUps
+      powerUps: playerProgress[0] ? playerProgress[0].powerUps : undefined
     });
     applyPersistedPowerUps(p1);
     players.push(p1);
     if (gameMode === 2) {
       const p2 = new Player(160, GROUND_Y - 34, {
         label: 'P2',
-        headColor: chars.p2?.head || '#3fb5ff',
-        bodyColor: chars.p2?.body || '#233149',
+        headColor: (chars.p2 && chars.p2.head) ? chars.p2.head : '#3fb5ff',
+        bodyColor: (chars.p2 && chars.p2.body) ? chars.p2.body : '#233149',
         controls: {
           left: ['ArrowLeft'],
           right: ['ArrowRight'],
@@ -2114,7 +2122,7 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
           lava: [']', '}'],
         },
         slotIndex: 1,
-        powerUps: playerProgress[1]?.powerUps
+        powerUps: playerProgress[1] ? playerProgress[1].powerUps : undefined
       });
       applyPersistedPowerUps(p2);
       players.push(p2);
@@ -2271,7 +2279,7 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
     const tx = tileX(ahead);
     const ty = LAVA_SURFACE_Y;
     if (!spaceFreeForLava(tx, ty)) return;
-    lavas.push(new Lava(tx, { theme: activeBiome?.id, palette: activeBiome?.palette }));
+    lavas.push(new Lava(tx, { theme: activeBiome && activeBiome.id ? activeBiome.id : undefined, palette: activeBiome ? activeBiome.palette : undefined }));
     player.wood -= 1;
     updateUI();
   }
@@ -2286,8 +2294,8 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
     const gun = player.gun;
     if (gun.ammo !== Infinity && gun.ammo <= 0) return false;
 
-    const projectileSpeed = gun.projectileSpeed ?? 14;
-    const projectileRange = gun.projectileRange ?? TILE * 8;
+    const projectileSpeed = gun.projectileSpeed !== undefined ? gun.projectileSpeed : 14;
+    const projectileRange = gun.projectileRange !== undefined ? gun.projectileRange : TILE * 8;
     bullets.push(new Bullet(
       player.centerX() + player.facing * (player.w / 2 + 8),
       player.y + player.h * 0.45,
@@ -2295,7 +2303,7 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
       { owner: player, faction: 'player', range: projectileRange }
     ));
 
-    player.gunCooldown = gun.fireRate ?? 12;
+    player.gunCooldown = gun.fireRate !== undefined ? gun.fireRate : 12;
     if (Number.isFinite(gun.ammo)) {
       gun.ammo = Math.max(0, gun.ammo - 1);
     }
@@ -2727,7 +2735,10 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
         parts.push('Jump boost active');
       }
       const spawnShieldActive = players.some(p => p.spawnShieldMs > 0 && p.invuln > 0);
-      const spawnShieldReady = playerProgress.some(entry => (entry?.powerUps?.nextLevelInvulnMs || 0) > 0);
+      const spawnShieldReady = playerProgress.some(entry => {
+        const powerUps = entry ? entry.powerUps : null;
+        return (powerUps && powerUps.nextLevelInvulnMs ? powerUps.nextLevelInvulnMs : 0) > 0;
+      });
       if (spawnShieldActive) {
         parts.push('Spawn shield active');
       } else if (spawnShieldReady) {
