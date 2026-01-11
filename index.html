@@ -389,6 +389,15 @@
   const p2Pills = Array.from(document.querySelectorAll('.p2-pill'));
   const biomeTip = document.getElementById('biome-tip');
   const remoteTip = document.getElementById('remote-tip');
+  const remoteCard = document.getElementById('remote-share');
+  const remoteCodeEl = document.getElementById('remote-code');
+  const remoteLinkEl = document.getElementById('remote-link');
+  const remoteQrEl = document.getElementById('remote-qr');
+  const remoteStatusEl = document.getElementById('remote-status');
+  const remoteRefreshBtn = document.getElementById('remote-refresh');
+  const remoteMessagesEl = document.getElementById('remote-messages');
+  const remoteChatForm = document.getElementById('remote-chat-form');
+  const remoteChatInput = document.getElementById('remote-chat-input');
   const resourceLabels = {
     p1: document.getElementById('p1-resource-label'),
     p2: document.getElementById('p2-resource-label'),
@@ -396,6 +405,18 @@
   const chatUi = document.getElementById('chat-ui');
   const chatForms = chatUi ? Array.from(chatUi.querySelectorAll('.chat-form')) : [];
   const chatInputs = chatUi ? Array.from(chatUi.querySelectorAll('.chat-input')) : [];
+  const getChatLane = (target) => {
+    const lane = chatForms.find(form => (form.dataset.target || '').toLowerCase() === target) || null;
+    return {
+      lane,
+      button: lane ? lane.querySelector('.chat-launch') : null,
+      input: lane ? lane.querySelector('.chat-input') : null,
+    };
+  };
+  const chatLanes = {
+    p1: getChatLane('p1'),
+    p2: getChatLane('p2'),
+  };
   const deathScreen = document.getElementById('death-screen');
   const wahAudio = document.getElementById('wah-audio');
   if (wahAudio) wahAudio.volume = 0.55;
