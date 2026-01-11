@@ -286,6 +286,29 @@
   const rand = (a, b) => Math.random() * (b - a) + a;
   const irand = (a, b) => Math.floor(rand(a, b));
   const sign = (x) => x < 0 ? -1 : 1;
+  const hexToRgb = (hex) => {
+    if (!hex) return { r: 0, g: 0, b: 0 };
+    const clean = hex.replace('#', '');
+    const expanded = clean.length === 3
+      ? clean.split('').map((c) => c + c).join('')
+      : clean;
+    const value = parseInt(expanded, 16);
+    return {
+      r: (value >> 16) & 255,
+      g: (value >> 8) & 255,
+      b: value & 255,
+    };
+  };
+  const mixHex = (from, to, t) => {
+    const a = hexToRgb(from);
+    const b = hexToRgb(to);
+    const mix = (v1, v2) => Math.round(v1 + (v2 - v1) * t);
+    return `rgb(${mix(a.r, b.r)}, ${mix(a.g, b.g)}, ${mix(a.b, b.b)})`;
+  };
+  const hexToRgba = (hex, alpha) => {
+    const { r, g, b } = hexToRgb(hex);
+    return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+  };
   const formatTime = (sec) => {
     const totalTenths = Math.round(sec * 10);
     const minutes = Math.floor(totalTenths / 600);
@@ -2568,10 +2591,11 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
     ctx.fillRect(0,0,W,H);
 
     // far hills
+    const fogColor = pal.skyBottom || '#bfeaff';
     ctx.save();
     ctx.translate(-camX*0.3,0);
-    const hillBase = pal.hillColor || '#9ed39b';
-    ctx.fillStyle = makeLightGradient(0, 300, levelLength, 200, hillBase, 0.16, -0.18);
+    ctx.fillStyle = mixHex(pal.hillColor || '#9ed39b', fogColor, 0.35);
+    ctx.globalAlpha = 0.85;
     const hillSpacing = 500;
     const hillCount = Math.ceil((levelLength + W) / hillSpacing);
     for (let i=0;i<hillCount;i++){
@@ -2662,7 +2686,9 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
   function drawBackdrop() {
     const pal = palette();
     ctx.save(); ctx.translate(-camX*0.6,0);
-    const silhouetteColor = pal.silhouetteColor || '#2f6130';
+    const fogColor = pal.skyBottom || '#bfeaff';
+    const silhouetteBase = pal.silhouetteColor || '#2f6130';
+    const silhouetteColor = mixHex(silhouetteBase, fogColor, 0.5);
     ctx.fillStyle = silhouetteColor;
     const silhouetteType = pal.silhouetteType || 'trees';
 
@@ -2745,6 +2771,16 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
         ctx.roundRect(x-6, GROUND_Y-90, 52, 34, 12); ctx.fill();
       }
     }
+    ctx.restore();
+    ctx.save();
+    const fogTop = mixHex(fogColor, '#000000', 0.15);
+    const fogNear = mixHex(fogColor, '#ffffff', 0.2);
+    const fogGrad = ctx.createLinearGradient(0, 0, 0, GROUND_Y);
+    fogGrad.addColorStop(0, hexToRgba(fogTop, 0.1));
+    fogGrad.addColorStop(0.65, hexToRgba(fogNear, 0.16));
+    fogGrad.addColorStop(1, hexToRgba(fogNear, 0.2));
+    ctx.fillStyle = fogGrad;
+    ctx.fillRect(0, 0, W, GROUND_Y);
     ctx.restore();
   }
 
