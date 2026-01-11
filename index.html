@@ -651,6 +651,7 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
   let keys = {};
   let debugShowHit = false;
   let finished = false;
+  let gameOver = false;
   let runStartTime = 0;
   let elapsedTime = 0;
   let finishDuration = 0;
@@ -1262,6 +1263,7 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
     hideDeathScreen(true);
     configureLevelDimensions();
     finished = false;
+    gameOver = false;
     overlay.style.display = 'none';
     overlay.classList.remove('celebrating');
     if (overlayCard) overlayCard.classList.remove('hidden');
@@ -1504,12 +1506,14 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
   }
 
   function handlePlayerDeath(player) {
+    if (gameOver) return true;
     showDeathScreen();
     playWahSound();
     player.lives -= 1;
     player.deaths += 1;
     player.dinoBites = 0;
     if (player.lives <= 0) {
+      gameOver = true;
       updateUI();
       showBiomeSelect();
       return true;
@@ -1544,6 +1548,7 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
       uiTimer.textContent = formatTime(0);
     }
 
+    if (gameOver || pendingBiomeReset) return;
     if (updateVolcano(dt)) return;
 
     for (const player of players) {
