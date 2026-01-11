@@ -1445,6 +1445,14 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
   }
 
   function showModeSelect() {
+    if (!platformMode) {
+      const prefersCoarsePointer = window.matchMedia && window.matchMedia('(pointer: coarse)').matches;
+      platformMode = prefersCoarsePointer ? 'mobile' : 'desktop';
+      if (platformMode === 'mobile') {
+        enableTouchControls();
+      }
+      platformSelect.style.display = 'none';
+    }
     modeSelect.classList.remove('hidden');
     modeSelect.style.display = 'flex';
   }
