@@ -43,6 +43,8 @@
   #overlay .card { background:#1f232a; border:1px solid #3a3f47; border-radius:14px; padding:22px 24px; max-width:560px; box-shadow:0 18px 60px #0009; }
   #overlay h1 { margin:0 0 8px 0; font-size:28px; }
   #overlay p { margin:6px 0; }
+  #death-screen { position:fixed; inset:0; display:none; align-items:center; justify-content:center; background:#000a; z-index:40; }
+  #death-screen .card { background:#1f232a; border:1px solid #3a3f47; border-radius:14px; padding:22px 24px; max-width:560px; box-shadow:0 18px 60px #0009; color:#fff; text-align:center; }
   #celebration-screen { position:relative; display:flex; flex-direction:column; align-items:center; gap:16px; max-width:720px; padding:12px; }
   #celebration-screen .celebration-card { position:relative; overflow:hidden; padding:36px 48px; border-radius:28px; background:linear-gradient(145deg, #283a5a, #1b2435 62%, #111722); border:1px solid #4b5973; box-shadow:0 22px 80px #000b, inset 0 0 0 1px #ffffff12; text-shadow:0 4px 30px #000d; }
   #celebration-screen .celebration-card::after { content:""; position:absolute; inset:18px; border-radius:22px; border:1px solid #ffffff12; pointer-events:none; }
@@ -3452,6 +3454,7 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
 
   // boot
   uiTimer.textContent = formatTime(0);
+  hideDeathScreen(true);
   requestAnimationFrame(loop);
 })();
 </script>
