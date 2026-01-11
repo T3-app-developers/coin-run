@@ -454,7 +454,7 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
   const BOSS_HITS_TO_DEFEAT = 10;
   const BOSS_BITES_TO_RESPAWN = 3;
   const BOSS_BITE_COOLDOWN = 45;
-  const DEFAULT_POWER_UPS = { jumpBoost: false, nextLevelInvulnMs: 0, spawnShieldTargetLevel: null };
+  const DEFAULT_POWER_UPS = { jumpBoost: false, jumpBoostTargetLevel: null, nextLevelInvulnMs: 0, spawnShieldTargetLevel: null };
   const JUMP_BOOST_MULTIPLIER = 1.2;
   const SPAWN_SHIELD_DURATION_MS = 3000;
   const MS_PER_FRAME = 1000 / 60;
@@ -517,6 +517,7 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
     if (!base) return { ...DEFAULT_POWER_UPS };
     return {
       jumpBoost: !!base.jumpBoost,
+      jumpBoostTargetLevel: base.jumpBoostTargetLevel ?? null,
       nextLevelInvulnMs: Math.max(0, base.nextLevelInvulnMs || 0),
       spawnShieldTargetLevel: base.spawnShieldTargetLevel ?? null,
     };
@@ -669,7 +670,12 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
   }
 
   function applyPersistedPowerUps(player) {
-    player.jumpBoostMultiplier = player.powerUps.jumpBoost ? JUMP_BOOST_MULTIPLIER : 1;
+    const jumpBoostReady = player.powerUps.jumpBoost
+      && (player.powerUps.jumpBoostTargetLevel === null || player.powerUps.jumpBoostTargetLevel === levelIndex);
+    player.jumpBoostMultiplier = jumpBoostReady ? JUMP_BOOST_MULTIPLIER : 1;
+    if (jumpBoostReady && player.powerUps.jumpBoostTargetLevel === levelIndex) {
+      player.powerUps.jumpBoostTargetLevel = null;
+    }
     const shieldReady = player.powerUps.nextLevelInvulnMs > 0 && player.powerUps.spawnShieldTargetLevel === levelIndex;
     if (shieldReady) {
       const frames = msToFrames(player.powerUps.nextLevelInvulnMs);
@@ -1327,12 +1333,13 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
   function grantBossPowerUps() {
     if (bossRewardsGranted) return;
     bossRewardsGranted = true;
-    const shieldTarget = (levelIndex + 1) % LEVELS.length;
+    const nextLevelIndex = (levelIndex + 1) % LEVELS.length;
     for (const player of players) {
       player.powerUps = player.powerUps || clonePowerUps();
       player.powerUps.jumpBoost = true;
+      player.powerUps.jumpBoostTargetLevel = nextLevelIndex;
       player.powerUps.nextLevelInvulnMs = Math.max(player.powerUps.nextLevelInvulnMs || 0, SPAWN_SHIELD_DURATION_MS);
-      player.powerUps.spawnShieldTargetLevel = shieldTarget;
+      player.powerUps.spawnShieldTargetLevel = nextLevelIndex;
       storePlayerProgress(player.slotIndex, player.powerUps);
     }
     const shieldSeconds = Math.round(SPAWN_SHIELD_DURATION_MS / 1000);
