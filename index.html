@@ -1315,12 +1315,18 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
     });
   }
 
-  buildBiomeButtons();
-  updateResourceLabels();
-  updateBiomeTip();
-  renderBiomeDetails(ensureActiveBiome());
-  setupChatLane('p1');
-  setupChatLane('p2');
+  if (!initFailed) {
+    try {
+      buildBiomeButtons();
+      updateResourceLabels();
+      updateBiomeTip();
+      renderBiomeDetails(ensureActiveBiome());
+      setupChatLane('p1');
+      setupChatLane('p2');
+    } catch (error) {
+      failInit('Game UI failed to initialize. You can still choose a mode.', error);
+    }
+  }
 
   function isKeyActiveForPlayer(player, key) {
     const resolved = resolveVirtualKey(key);
