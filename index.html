@@ -22,6 +22,8 @@
   #help.minimized .help-body { display:none; }
   .panel-toggle { background:#2f3540; border:1px solid #4a5160; color:#fff; font-weight:600; padding:4px 8px; border-radius:8px; cursor:pointer; font-size:12px; }
   .panel-toggle:hover { background:#3d4554; }
+  #addons-panel { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+  #addons-panel .addon-label { display:flex; align-items:center; gap:6px; }
   #remote-share { position:fixed; right:10px; top:180px; background:#232730; border:1px solid #3a3f47; padding:12px 14px; border-radius:12px; max-width: 420px; line-height:1.3; font-size:14px; box-shadow:0 12px 36px #0008; }
   #remote-share .remote-header { display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:6px; }
   #remote-share.minimized .remote-body { display:none; }
@@ -139,14 +141,70 @@
     <span id="boss-health-text" class="bad">--</span>
   </div>
   <div class="pill hidden" id="upgrade-pill">Upgrades: <span id="upgrade-text">None</span></div>
+  <div class="pill" id="addons-panel">
+    <span class="addon-label">Add-ons:</span>
+    <span class="addon-label">Remote <span id="remote-status-pill" class="remote-status remote-status-display offline">Offline</span></span>
+    <button class="panel-toggle" id="remote-toggle" type="button">Show QR</button>
+    <button class="panel-toggle" id="help-toggle" type="button">Hide</button>
+  </div>
+  <div id="chat-ui" class="hidden">
+    <div class="chat-lane">
+      <form class="chat-form" data-target="p1">
+        <button class="chat-btn chat-launch" type="button">P1 Chat</button>
+        <input class="chat-input" type="text" autocomplete="off" placeholder="P1 says..." />
+        <button class="chat-btn chat-send" type="submit">Send</button>
+      </form>
+    </div>
+    <div class="chat-lane">
+      <form class="chat-form" data-target="p2">
+        <button class="chat-btn chat-launch" type="button">P2 Chat</button>
+        <input class="chat-input" type="text" autocomplete="off" placeholder="P2 says..." />
+        <button class="chat-btn chat-send" type="submit">Send</button>
+      </form>
+    </div>
+  </div>
 </div>
 
 <div id="help">
-  <b>Controls</b><br>
-  <b>Player 1</b> – Move: <b>A/D</b> · Jump: <b>W</b>/<b>Space</b> · Mine: <b>E</b> (hold) · Attack: <b>X</b> (laser: 3 hits for grunts, 10 for the boss) · Wall: <b>1</b> · Lava: <b>2</b><br>
-  <span id="help-p2"><b>Player 2</b> – Move: <b>←/→</b> · Jump: <b>↑</b> · Mine: <b>/</b> (hold) · Attack: <b>.</b> (laser: 3 hits for grunts, 10 for the boss) · Wall: <b>[</b> · Lava: <b>]</b><br></span>
-  <span style="display:block; margin-top:8px; opacity:0.75;">Tip: the volcano erupts every 20 seconds and you can only finish a stage after the boss health bar is empty &mdash; taking it down awards a jump boost and a 3s spawn shield for the next level.</span>
-  Restart: <b>R</b> &nbsp;|&nbsp; Toggle Hitboxes: <b>H</b>
+  <div class="help-header">
+    <span class="help-title">Controls</span>
+  </div>
+  <div class="help-body">
+    <b>Player 1</b> – Move: <b>A/D</b> · Jump: <b>W</b>/<b>Space</b> · Mine: <b>E</b> (hold) · Attack: <b>X</b> (laser: 3 hits for grunts, 10 for the boss) · Wall: <b>1</b> · Lava: <b>2</b><br>
+    <span id="help-p2"><b>Player 2</b> – Move: <b>←/→</b> · Jump: <b>↑</b> · Mine: <b>/</b> (hold) · Attack: <b>.</b> (laser: 3 hits for grunts, 10 for the boss) · Wall: <b>[</b> · Lava: <b>]</b><br></span>
+    <span id="biome-tip" style="display:block; margin-top:8px; opacity:0.75;">Tip: the volcano erupts every 20 seconds and you can only finish a stage after the boss health bar is empty &mdash; taking it down awards a jump boost and a 3s spawn shield for the next level.</span>
+    Restart: <b>R</b> &nbsp;|&nbsp; Toggle Hitboxes: <b>H</b>
+  </div>
+</div>
+
+<div id="remote-share" class="hidden">
+  <div class="remote-header">
+    <h3>Remote Share</h3>
+  </div>
+  <div class="remote-body">
+    <div class="remote-row">
+      <span>Status: <span id="remote-status" class="remote-status remote-status-display offline">Offline</span></span>
+    </div>
+    <div class="remote-row">
+      <span>Code</span>
+      <code id="remote-code">----</code>
+      <button id="remote-refresh" type="button">New code</button>
+    </div>
+    <div class="remote-row">
+      <a id="remote-link" href="#" target="_blank" rel="noopener">Controller link</a>
+    </div>
+    <div class="remote-row">
+      <img id="remote-qr" alt="Remote controller QR code" />
+    </div>
+    <div class="remote-chat">
+      <h4>Remote Chat</h4>
+      <div id="remote-messages" class="remote-messages"></div>
+      <form id="remote-chat-form">
+        <input id="remote-chat-input" type="text" autocomplete="off" placeholder="Send a message" />
+        <button type="submit">Send</button>
+      </form>
+    </div>
+  </div>
 </div>
 
 <div id="overlay">
