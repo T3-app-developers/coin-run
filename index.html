@@ -9,6 +9,18 @@
   #ui { position:fixed; inset:0 0 auto 0; display:flex; gap:16px; align-items:center; padding:10px 14px; font-weight:600; backdrop-filter: blur(4px);  }
   .pill { background:#2b2f36; border:1px solid #3a3f47; padding:6px 10px; border-radius:999px; box-shadow: inset 0 0 0 1px #00000040; }
   .pill.boss-pill { display:flex; align-items:center; gap:10px; min-width:200px; }
+  .addons-pill { cursor:pointer; }
+  #addons-panel { position:fixed; left:14px; top:60px; background:#242a34; border:1px solid #3a3f47; border-radius:14px; padding:12px 14px; min-width:240px; box-shadow:0 16px 40px #0009; z-index:35; }
+  #addons-panel.hidden { display:none; }
+  #addons-panel .addons-header { display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:10px; }
+  #addons-panel .addons-title { font-weight:700; }
+  #addons-panel .addons-list { display:grid; gap:8px; }
+  #addons-panel .addon-item { display:flex; align-items:center; gap:10px; font-size:14px; font-weight:600; }
+  #addons-panel .addon-item input { width:16px; height:16px; accent-color:#9ef79a; }
+  body.app-display-hidden #ui .pill:not(.addons-pill) { display:none; }
+  body.app-display-hidden #help,
+  body.app-display-hidden #remote-share,
+  body.app-display-hidden #chat-ui { display:none; }
   .boss-health { flex:1; position:relative; height:12px; border-radius:999px; border:1px solid #4c525e; background:#16181d; overflow:hidden; }
   .boss-health-fill { position:absolute; inset:0; background:linear-gradient(90deg, #ff6b6b, #ffd166); box-shadow:0 0 6px #ff6b6b77; transition:width 0.15s ease; }
   #upgrade-pill { min-width:220px; }
@@ -139,6 +151,44 @@
     <span id="boss-health-text" class="bad">--</span>
   </div>
   <div class="pill hidden" id="upgrade-pill">Upgrades: <span id="upgrade-text">None</span></div>
+  <button class="pill addons-pill" id="addons-button" type="button">Add-ons</button>
+  <div id="chat-ui" class="chat-ui hidden" aria-live="polite">
+    <form class="chat-form chat-lane" data-target="p1">
+      <button type="button" class="chat-btn chat-launch">P1</button>
+      <input class="chat-input" type="text" placeholder="P1 chat" autocomplete="off" />
+      <button type="submit" class="chat-btn chat-send">Send</button>
+    </form>
+    <form class="chat-form chat-lane" data-target="p2">
+      <button type="button" class="chat-btn chat-launch">P2</button>
+      <input class="chat-input" type="text" placeholder="P2 chat" autocomplete="off" />
+      <button type="submit" class="chat-btn chat-send">Send</button>
+    </form>
+  </div>
+</div>
+
+<div id="addons-panel" class="hidden" aria-hidden="true">
+  <div class="addons-header">
+    <span class="addons-title">Add-ons</span>
+    <button class="panel-toggle" id="addons-close" type="button">Close</button>
+  </div>
+  <div class="addons-list">
+    <label class="addon-item" for="addon-chat">
+      <input id="addon-chat" type="checkbox" />
+      Chat overlays
+    </label>
+    <label class="addon-item" for="addon-local">
+      <input id="addon-local" type="checkbox" />
+      Local multiplayer
+    </label>
+    <label class="addon-item" for="addon-remote">
+      <input id="addon-remote" type="checkbox" />
+      Remote mode
+    </label>
+    <label class="addon-item" for="addon-display">
+      <input id="addon-display" type="checkbox" />
+      App display
+    </label>
+  </div>
 </div>
 
 <div id="help">
@@ -147,6 +197,30 @@
   <span id="help-p2"><b>Player 2</b> – Move: <b>←/→</b> · Jump: <b>↑</b> · Mine: <b>/</b> (hold) · Attack: <b>.</b> (laser: 3 hits for grunts, 10 for the boss) · Wall: <b>[</b> · Lava: <b>]</b><br></span>
   <span style="display:block; margin-top:8px; opacity:0.75;">Tip: the volcano erupts every 20 seconds and you can only finish a stage after the boss health bar is empty &mdash; taking it down awards a jump boost and a 3s spawn shield for the next level.</span>
   Restart: <b>R</b> &nbsp;|&nbsp; Toggle Hitboxes: <b>H</b>
+</div>
+
+<div id="remote-share" class="hidden">
+  <div class="remote-header">
+    <h3>Remote Co-Op</h3>
+    <button class="panel-toggle" id="remote-toggle" type="button">Hide QR</button>
+  </div>
+  <div class="remote-body">
+    <div class="remote-row">Status: <span id="remote-status" class="remote-status remote-status-display offline">Not connected</span></div>
+    <div class="remote-row">Session code: <code id="remote-code">----</code></div>
+    <div class="remote-row">Controller link: <a id="remote-link" href="#" target="_blank" rel="noreferrer">Generate link</a></div>
+    <div class="remote-row">
+      <img id="remote-qr" alt="Controller QR code" src="" />
+      <button id="remote-refresh" type="button">New code</button>
+    </div>
+    <div class="remote-chat">
+      <h4>Remote chat</h4>
+      <div id="remote-messages" class="remote-messages"></div>
+      <form id="remote-chat-form">
+        <input id="remote-chat-input" type="text" placeholder="Send to remote" autocomplete="off" />
+        <button type="submit">Send</button>
+      </form>
+    </div>
+  </div>
 </div>
 
 <div id="overlay">
@@ -405,6 +479,13 @@
   const remoteMessagesEl = document.getElementById('remote-messages');
   const remoteChatForm = document.getElementById('remote-chat-form');
   const remoteChatInput = document.getElementById('remote-chat-input');
+  const addonsButton = document.getElementById('addons-button');
+  const addonsPanel = document.getElementById('addons-panel');
+  const addonsClose = document.getElementById('addons-close');
+  const addonsChatToggle = document.getElementById('addon-chat');
+  const addonsLocalToggle = document.getElementById('addon-local');
+  const addonsRemoteToggle = document.getElementById('addon-remote');
+  const addonsDisplayToggle = document.getElementById('addon-display');
   const resourceLabels = {
     p1: document.getElementById('p1-resource-label'),
     p2: document.getElementById('p2-resource-label'),
@@ -488,8 +569,9 @@
       platformSelect.style.display = 'none';
     }
     hideBlockingOverlays();
-    modeSelect.classList.remove('hidden');
-    modeSelect.style.display = 'flex';
+    modeSelect.classList.add('hidden');
+    modeSelect.style.display = 'none';
+    syncModeFromAddons({ showBiome: true });
   }
 
   function choosePlatform(mode) {
@@ -1051,7 +1133,7 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
   const JUMP_VEL = -16;
 
   // game state
-  let gameMode = null;
+  let gameMode = 1;
   let activeBiomeId = null;
   let activeBiome = null;
   let pendingBiomeReset = false;
@@ -1081,23 +1163,119 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
     p1: { text: '', expiresAt: 0 },
     p2: { text: '', expiresAt: 0 },
   };
+  const addonsState = {
+    chatEnabled: false,
+    localMultiplayerEnabled: false,
+    remoteEnabled: false,
+    appDisplayEnabled: true,
+  };
 
   const REMOTE_ACTION_HINT = 'Buttons map to Player 2: ← → ↑ / . [ ]';
 
-  function updateModeHud(showSecondPlayer) {
+  function shouldShowSecondPlayer() {
+    return addonsState.localMultiplayerEnabled || addonsState.remoteEnabled;
+  }
+
+  function isChatActive() {
+    return addonsState.chatEnabled && shouldShowSecondPlayer();
+  }
+
+  function updateModeHud() {
+    const showSecondPlayer = shouldShowSecondPlayer();
+    const showChat = isChatActive();
     p2Pills.forEach(el => el.classList.toggle('hidden', !showSecondPlayer));
     if (helpP2) helpP2.classList.toggle('hidden', !showSecondPlayer);
-    if (chatUi) chatUi.classList.toggle('hidden', !showSecondPlayer);
+    if (chatUi) chatUi.classList.toggle('hidden', !showChat);
     if (chatLanes.p2 && chatLanes.p2.lane) chatLanes.p2.lane.classList.toggle('hidden', !showSecondPlayer);
-    if (!showSecondPlayer) clearChatInputs();
+    if (!showChat) clearChatInputs();
+  }
+
+  function setAddonsPanelOpen(open) {
+    if (!addonsPanel) return;
+    addonsPanel.classList.toggle('hidden', !open);
+    addonsPanel.setAttribute('aria-hidden', open ? 'false' : 'true');
+  }
+
+  function updateAddonsControls() {
+    if (addonsChatToggle) addonsChatToggle.checked = addonsState.chatEnabled;
+    if (addonsLocalToggle) addonsLocalToggle.checked = addonsState.localMultiplayerEnabled;
+    if (addonsRemoteToggle) addonsRemoteToggle.checked = addonsState.remoteEnabled;
+    if (addonsDisplayToggle) addonsDisplayToggle.checked = addonsState.appDisplayEnabled;
+    if (addonsLocalToggle) addonsLocalToggle.disabled = addonsState.remoteEnabled;
+    if (addonsRemoteToggle) addonsRemoteToggle.disabled = addonsState.localMultiplayerEnabled;
+  }
+
+  function updateAppDisplay() {
+    document.body.classList.toggle('app-display-hidden', !addonsState.appDisplayEnabled);
+  }
+
+  function syncModeFromAddons({ showBiome = false } = {}) {
+    const nextRemoteMode = addonsState.remoteEnabled;
+    const nextGameMode = nextRemoteMode || addonsState.localMultiplayerEnabled ? 2 : 1;
+    const modeChanged = nextRemoteMode !== remoteMode || nextGameMode !== gameMode;
+    remoteMode = nextRemoteMode;
+    gameMode = nextGameMode;
+    if (modeChanged) {
+      levelIndex = 0;
+      if (remoteMode) startRemoteSession();
+      else stopRemoteSession();
+    }
+    updateModeHud();
+    updateRemoteShareUi();
+    if (modeChanged && showBiome) showBiomeSelect();
+    return modeChanged;
+  }
+
+  function applyAddonsState(next = {}, options = {}) {
+    Object.assign(addonsState, next);
+    if (addonsState.remoteEnabled) addonsState.localMultiplayerEnabled = false;
+    if (addonsState.localMultiplayerEnabled) addonsState.remoteEnabled = false;
+    updateAddonsControls();
+    updateAppDisplay();
+    syncModeFromAddons(options);
   }
 
   try {
-    updateModeHud(false);
+    applyAddonsState();
 
     if (helpToggle) {
       helpToggle.addEventListener('click', () => {
         setHelpCollapsed(!(helpPanel && helpPanel.classList.contains('minimized')));
+      });
+    }
+
+    if (addonsButton) {
+      addonsButton.addEventListener('click', () => {
+        const isOpen = addonsPanel && !addonsPanel.classList.contains('hidden');
+        setAddonsPanelOpen(!isOpen);
+      });
+    }
+
+    if (addonsClose) {
+      addonsClose.addEventListener('click', () => setAddonsPanelOpen(false));
+    }
+
+    if (addonsChatToggle) {
+      addonsChatToggle.addEventListener('change', (event) => {
+        applyAddonsState({ chatEnabled: event.target.checked });
+      });
+    }
+
+    if (addonsLocalToggle) {
+      addonsLocalToggle.addEventListener('change', (event) => {
+        applyAddonsState({ localMultiplayerEnabled: event.target.checked }, { showBiome: true });
+      });
+    }
+
+    if (addonsRemoteToggle) {
+      addonsRemoteToggle.addEventListener('change', (event) => {
+        applyAddonsState({ remoteEnabled: event.target.checked }, { showBiome: true });
+      });
+    }
+
+    if (addonsDisplayToggle) {
+      addonsDisplayToggle.addEventListener('change', (event) => {
+        applyAddonsState({ appDisplayEnabled: event.target.checked });
       });
     }
 
@@ -1124,6 +1302,7 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
       form.addEventListener('submit', (e) => {
         e.preventDefault();
         if (!input) return;
+        if (!isChatActive()) return;
         const text = (input.value || '').trim();
         if (!text) return;
         setPlayerChat(target, text);
@@ -1202,7 +1381,7 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
   function submitChat(playerKey) {
     const lane = chatLanes[playerKey];
     if (!lane || !lane.input) return;
-    if (gameMode !== 2) { closeChatInput(); return; }
+    if (!isChatActive()) { closeChatInput(); return; }
     const text = lane.input.value.trim();
     if (text) {
       applyChatMessage(playerKey.toUpperCase(), text);
@@ -1214,7 +1393,7 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
   function focusChat(playerKey) {
     const lane = chatLanes[playerKey];
     if (!lane || !lane.input) return;
-    if (gameMode !== 2) return;
+    if (!isChatActive()) return;
     activeChatPlayer = playerKey;
     lane.input.focus();
     lane.input.select();
@@ -1394,7 +1573,7 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
 
   function updateRemoteShareUi() {
     if (!remoteCard) return;
-    const active = gameMode === 2;
+    const active = addonsState.remoteEnabled;
     remoteCard.classList.toggle('hidden', !active);
     if (!active) return;
     if (!remoteSessionCode) remoteSessionCode = generateRemoteCode();
@@ -1476,6 +1655,7 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
   }
 
   function startRemoteSession(forceNewCode = false) {
+    if (!addonsState.remoteEnabled) return;
     if (forceNewCode || !remoteSessionCode) remoteSessionCode = generateRemoteCode();
     remoteKeys = {};
     clearRemoteMessages();
@@ -1588,34 +1768,26 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
     window.addEventListener('blur', clearVirtualInputs);
   }
 
-  function setGameMode(mode) {
-    remoteMode = mode === 'remote';
-    gameMode = remoteMode ? 2 : (mode === 2 ? 2 : 1);
-    levelIndex = 0;
-    if (remoteMode) startRemoteSession();
-    else stopRemoteSession();
-    updateModeHud(gameMode === 2);
-    modeSelect.style.display = 'none';
-    if (remoteMode) {
-      setRemoteStatus(`Remote P2 armed. Open ${window.location.pathname}?controller=1 on another device to play.`);
-      connectRemoteSocket();
-    } else {
-      setRemoteStatus('Remote disabled. Choose Remote Co-Op to enable phone controls.');
-    }
-    showBiomeSelect();
-  }
-
   modeButtons.forEach(btn => {
     btn.addEventListener('click', () => {
       const raw = btn.dataset.mode;
       const mode = raw === 'remote' ? 'remote' : parseInt(raw, 10);
-      setGameMode(Number.isNaN(mode) ? (raw === 'remote' ? 'remote' : 1) : mode);
+      if (mode === 'remote') {
+        applyAddonsState({ remoteEnabled: true }, { showBiome: true });
+      } else if (mode === 2) {
+        applyAddonsState({ localMultiplayerEnabled: true }, { showBiome: true });
+      } else {
+        applyAddonsState({ localMultiplayerEnabled: false, remoteEnabled: false }, { showBiome: true });
+      }
+      if (modeSelect) modeSelect.style.display = 'none';
     });
   });
 
   if (remoteRefreshBtn) {
     remoteRefreshBtn.addEventListener('click', () => {
-      if (gameMode !== 2) setGameMode(2);
+      if (!addonsState.remoteEnabled) {
+        applyAddonsState({ remoteEnabled: true }, { showBiome: true });
+      }
       startRemoteSession(true);
     });
   }
@@ -1623,6 +1795,7 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
   if (remoteChatForm) {
     remoteChatForm.addEventListener('submit', (e) => {
       e.preventDefault();
+      if (!addonsState.remoteEnabled) return;
       const text = remoteChatInput ? remoteChatInput.value.trim() : '';
       if (text) sendRemoteChat(text, 'You');
       if (remoteChatInput) remoteChatInput.value = '';
@@ -2208,10 +2381,16 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
   window.addEventListener('keydown', (e) => {
     if (!platformMode) return;
     if (isTypingTarget(e.target)) return;
-    if (!gameMode) {
-      if (e.key === '1') setGameMode(1);
-      if (e.key === '2') setGameMode(2);
-      if (e.key === '3') setGameMode('remote');
+    if (e.key === '1') {
+      applyAddonsState({ localMultiplayerEnabled: false, remoteEnabled: false }, { showBiome: true });
+      return;
+    }
+    if (e.key === '2') {
+      applyAddonsState({ localMultiplayerEnabled: true }, { showBiome: true });
+      return;
+    }
+    if (e.key === '3') {
+      applyAddonsState({ remoteEnabled: true }, { showBiome: true });
       return;
     }
     const chatTarget = Object.values(chatLanes).some(({ input }) => input && input === e.target);
@@ -2219,7 +2398,7 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
     if (chatHidden === false) {
       const wantsP1 = CHAT_HOTKEYS.p1.includes(e.key);
       const wantsP2 = CHAT_HOTKEYS.p2.includes(e.key);
-      if (wantsP1 || (wantsP2 && gameMode === 2)) {
+      if (wantsP1 || (wantsP2 && shouldShowSecondPlayer())) {
         e.preventDefault();
         focusChat(wantsP1 ? 'p1' : 'p2');
         return;
