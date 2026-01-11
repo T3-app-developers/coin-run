@@ -2777,6 +2777,8 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
     const canopy = pal.resourceCanopy || '#3a7d3a';
     const accent = pal.resourceAccent || canopy;
     const type = tr.variant || 'default';
+    const groundY = tr.baseY + tr.h;
+    drawShadow(tr.x - 6, groundY + 2, tr.w + 12, Math.max(8, tr.w * 0.35), 0.28, -10);
 
     if (type === 'ice') {
       ctx.fillStyle = canopy;
@@ -2875,6 +2877,8 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
   function drawWall(w) {
     ctx.save(); ctx.translate(-camX,0);
     const pal = palette();
+    const shadowY = w.y + w.h + 2;
+    drawShadow(w.x - 4, shadowY, w.w + 8, Math.max(6, w.w * 0.18), 0.22, -8);
     ctx.fillStyle = pal.wallPrimary || '#9399a3';
     ctx.fillRect(w.x, w.y, w.w, w.h);
     // fake brick lines
@@ -2962,6 +2966,9 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
     ctx.save(); ctx.translate(-camX,0);
     const pal = palette();
     const bob = Math.sin(c.t*4) * 3;
+    const groundY = groundHeightAt(c.x);
+    const lift = clamp((groundY - (c.y + bob)) / 30, 0, 1);
+    drawShadow(c.x - c.r * 1.1, groundY + 1, c.r * 2.2, c.r * 0.7, 0.3 * (1 - lift * 0.7), -5);
     ctx.beginPath();
     ctx.arc(c.x, c.y + bob, c.r, 0, Math.PI*2);
     ctx.fillStyle = pal.coinPrimary || '#ffd166';
@@ -3168,6 +3175,23 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
     }
   }
 
+  function drawShadow(x, y, w, h, intensity, skew) {
+    const camCenter = camX + W / 2;
+    const shadowCenter = x + w / 2;
+    const dist = Math.abs(shadowCenter - camCenter);
+    const cameraFade = clamp(1 - dist / (W * 0.9), 0.15, 1);
+    const scaleFade = clamp(h / 14, 0.35, 1);
+    const opacity = clamp(intensity * cameraFade * scaleFade, 0, 0.5);
+    if (opacity <= 0) return;
+    ctx.save();
+    ctx.globalAlpha = opacity;
+    ctx.fillStyle = '#000000';
+    ctx.beginPath();
+    ctx.ellipse(shadowCenter + skew, y, w / 2, h / 2, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  }
+
   function drawEnemy(enemy) {
     if (enemy.dead) return;
     if (enemy.isBoss) {
@@ -3178,10 +3202,7 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
     const pal = palette();
     const variant = enemy.variant || 'dino';
     const groundUnder = groundHeightAt(enemy.centerX());
-    ctx.fillStyle = '#0003';
-    ctx.beginPath();
-    ctx.ellipse(enemy.centerX(), groundUnder - 2, 12, 4, 0, 0, Math.PI*2);
-    ctx.fill();
+    drawShadow(enemy.centerX() - 14, groundUnder + 1, 28, 8, 0.32, -6);
 
     if (variant === 'camel') {
       const bodyY = enemy.y + 12;
@@ -3315,10 +3336,7 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
     ctx.save(); ctx.translate(-camX,0);
 
     const groundUnder = volcano ? Math.min(GROUND_Y, volcano.groundAt(player.centerX())) : GROUND_Y;
-    ctx.fillStyle = '#0003';
-    ctx.beginPath();
-    ctx.ellipse(player.centerX(), groundUnder - 2, 12, 4, 0, 0, Math.PI*2);
-    ctx.fill();
+    drawShadow(player.centerX() - 14, groundUnder + 1, 28, 8, 0.34, -6);
 
     const speedRatio = clamp(Math.abs(player.vx) / MAX_RUN, 0, 1);
     const swing = Math.sin(performance.now() * 0.012 + player.centerX() * 0.045) * 4.5 * speedRatio;
