@@ -49,6 +49,15 @@
   #overlay .card { background:#1f232a; border:1px solid #3a3f47; border-radius:14px; padding:22px 24px; max-width:560px; box-shadow:0 18px 60px #0009; }
   #overlay h1 { margin:0 0 8px 0; font-size:28px; }
   #overlay p { margin:6px 0; }
+  #welcome-screen { position:fixed; inset:0; display:flex; align-items:center; justify-content:center; background:radial-gradient(circle at 50% 20%, #2a3040 0%, #171b24 45%, #0b0d13 100%); color:#fff; text-align:center; z-index:45; }
+  #welcome-screen .card { background:#1d222b; border:1px solid #3a3f47; border-radius:18px; padding:28px 32px; max-width:640px; box-shadow:0 20px 70px #000c; }
+  #welcome-screen h1 { margin:0 0 10px 0; font-size:34px; letter-spacing:0.6px; }
+  #welcome-screen p { margin:8px 0; opacity:0.85; }
+  #welcome-screen .welcome-actions { display:flex; gap:12px; justify-content:center; flex-wrap:wrap; margin-top:18px; }
+  #welcome-screen .play-btn { background:#9ef79a; border:0; color:#102012; font-weight:800; padding:12px 28px; border-radius:14px; font-size:18px; cursor:pointer; box-shadow:0 10px 30px #0007; }
+  #welcome-screen .play-btn:hover { filter:brightness(1.05); }
+  #welcome-screen .secondary-btn { background:#2f3540; border:1px solid #4a5160; color:#fff; font-weight:600; padding:10px 18px; border-radius:12px; font-size:15px; cursor:pointer; }
+  #welcome-screen.hidden { display:none; }
   #death-screen { position:fixed; inset:0; display:none; align-items:center; justify-content:center; background:#000a; z-index:40; }
   #death-screen .card { background:#1f232a; border:1px solid #3a3f47; border-radius:14px; padding:22px 24px; max-width:560px; box-shadow:0 18px 60px #0009; color:#fff; text-align:center; }
   #celebration-screen { position:relative; display:flex; flex-direction:column; align-items:center; gap:16px; max-width:720px; padding:12px; }
@@ -68,17 +77,16 @@
   #celebration-screen .celebration-burst .star-e { top:40%; left:-4%; width:20px; height:20px; animation-delay:-0.9s; background:linear-gradient(135deg, #8ec5fc, #e0c3fc); }
   @keyframes floaty { 0% { transform:translateY(0); } 50% { transform:translateY(-10px); } 100% { transform:translateY(0); } }
   @keyframes twinkle { 0% { transform:scale(0.6) rotate(0deg); opacity:0; } 20% { opacity:0.9; } 50% { transform:scale(1.1) rotate(28deg); opacity:0.7; } 80% { opacity:0.9; } 100% { transform:scale(0.6) rotate(60deg); opacity:0; } }
-  #platform-select, #mode-select, #biome-select { position:fixed; inset:0; display:flex; align-items:center; justify-content:center; background:#000d; color:#fff; text-align:center; }
-  #platform-select { z-index:30; }
-  #mode-select { z-index:20; }
   #biome-select { z-index:25; }
-  #platform-select .card, #mode-select .card, #biome-select .card { background:#1f232a; border:1px solid #3a3f47; border-radius:18px; padding:28px 32px; max-width:780px; box-shadow:0 18px 60px #0008; }
-  #platform-select h1, #mode-select h1, #biome-select h1 { margin:0 0 12px 0; font-size:30px; }
-  #platform-select p, #mode-select p, #biome-select p { margin:8px 0; opacity:0.85; }
+  #biome-select { position:fixed; inset:0; display:flex; align-items:center; justify-content:center; background:#000d; color:#fff; text-align:center; }
+  #biome-select .card { background:#1f232a; border:1px solid #3a3f47; border-radius:18px; padding:28px 32px; max-width:780px; box-shadow:0 18px 60px #0008; }
+  #biome-select h1 { margin:0 0 12px 0; font-size:30px; }
+  #biome-select p { margin:8px 0; opacity:0.85; }
   .mode-buttons { display:flex; gap:16px; justify-content:center; margin-top:18px; flex-wrap:wrap; }
   .mode-btn, .platform-btn, .biome-btn { background:#2f3540; border:1px solid #4a5160; color:#fff; font-weight:600; padding:12px 26px; border-radius:14px; font-size:18px; cursor:pointer; transition:transform 0.15s ease, background 0.15s ease, box-shadow 0.15s ease; }
   .mode-btn:hover, .platform-btn:hover, .biome-btn:hover { background:#3d4554; box-shadow:0 0 0 3px #ffffff12; transform:translateY(-2px); }
   .mode-btn:active, .platform-btn:active, .biome-btn:active { transform:translateY(0); background:#28303c; }
+  .mode-btn.active, .platform-btn.active { background:#3d4554; box-shadow:0 0 0 3px #9ef79a33; }
   .hidden { display:none !important; }
   .biome-grid { display:grid; grid-template-columns:repeat(auto-fit, minmax(140px, 1fr)); gap:12px; margin-top:18px; }
   .biome-btn { text-align:left; display:flex; flex-direction:column; gap:6px; align-items:flex-start; min-height:120px; }
@@ -113,12 +121,32 @@
   .chat-input { background:#1f232a; border:1px solid #3a3f47; border-radius:10px; color:#eaeaea; padding:6px 8px; min-width:140px; font-weight:600; box-shadow: inset 0 0 0 1px #00000020; }
   .chat-input::placeholder { color:#7c8695; }
   .chat-lane.hidden { display:none; }
+  #addons-panel { position:fixed; left:10px; top:70px; background:#232730; border:1px solid #3a3f47; padding:12px 14px; border-radius:12px; max-width:360px; line-height:1.3; font-size:14px; box-shadow:0 12px 36px #0008; color:#eaeaea; z-index:12; }
+  #addons-panel .addons-header { display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:6px; }
+  #addons-panel .addons-title { font-weight:700; }
+  #addons-panel.minimized .addons-body { display:none; }
+  #addons-panel .addons-section { margin-top:12px; padding-top:10px; border-top:1px solid #343b46; }
+  #addons-panel .addons-section:first-child { margin-top:0; padding-top:0; border-top:none; }
+  #addons-panel h3 { margin:0 0 6px 0; font-size:15px; }
+  #addons-panel p { margin:6px 0; opacity:0.75; font-size:13px; }
 </style>
 </head>
 <body>
 <canvas id="game" width="960" height="540"></canvas>
 
 <audio id="wah-audio" preload="auto" src="data:audio/wav;base64,UklGRrh4AABXQVZFZm10IBAAAAABAAEAIlYAAESsAAACABAAZGF0YZR4AAAAAKQHKw98FnodDCQZKo0vPSAzQkpGS05OUktVXF1eYWhqa3F2e3+Ah4iLjI6RkpWXmJubn6CkpaepqquvscLLzM3S1dnb3N/j5Orr7fDz9Pj6/P3+/wAA"></audio>
+
+<div id="welcome-screen">
+  <div class="card">
+    <h1>Green-Head Coin Run</h1>
+    <p>Dash through stacked ramps, mine resources, and outpace erupting hazards on every run.</p>
+    <p>Start in solo mode, then open add-ons to tweak player count, remote co-op, or touch controls.</p>
+    <div class="welcome-actions">
+      <button class="play-btn" id="welcome-play" type="button">Play</button>
+      <button class="secondary-btn" id="welcome-settings" type="button">Add-ons</button>
+    </div>
+  </div>
+</div>
 
 <div id="ui">
   <div class="pill">Level: <span id="level-indicator" class="good">1</span></div>
@@ -239,29 +267,32 @@
   </div>
 </div>
 
-<div id="platform-select">
-  <div class="card">
-    <h1>How would you like to play?</h1>
-    <p>Pick an experience tailored for your device. You can still use a keyboard on desktop if you change your mind later.</p>
-    <p id="init-error" class="hidden" style="margin:12px 0 0; font-weight:600; text-align:center; color:#ff9e64;">Your browser is too old to run this game—please update or use a modern browser.</p>
-    <div class="mode-buttons">
-      <button class="platform-btn" data-platform="desktop">Desktop</button>
-      <button class="platform-btn" data-platform="mobile">Mobile / Touch</button>
-    </div>
-    <p style="margin-top:18px; font-size:14px; opacity:0.7;">Mobile mode enables on-screen controls designed for solo play.</p>
+<div id="addons-panel" class="minimized">
+  <div class="addons-header">
+    <span class="addons-title">Add-ons</span>
+    <button class="panel-toggle" id="addons-toggle" type="button">Show</button>
   </div>
-</div>
-
-<div id="mode-select" class="hidden">
-  <div class="card">
-    <h1>Choose Game Mode</h1>
-    <p>Play solo or grab a friend! This choice sticks until you reload the page. You can press <b>1</b> or <b>2</b> to choose quickly. You will pick a biome at the start of every run.</p>
-    <div class="mode-buttons">
-      <button class="mode-btn" data-mode="1">One Player</button>
-      <button class="mode-btn" data-mode="2">Two Players</button>
-      <button class="mode-btn" data-mode="remote">Remote Co-Op</button>
+  <div class="addons-body">
+    <div id="platform-select" class="addons-section">
+      <h3>Controls</h3>
+      <p>Switch between desktop input and mobile touch controls.</p>
+      <p id="init-error" class="hidden" style="margin:12px 0 0; font-weight:600; text-align:center; color:#ff9e64;">Your browser is too old to run this game—please update or use a modern browser.</p>
+      <div class="mode-buttons">
+        <button class="platform-btn" data-platform="desktop" type="button">Desktop</button>
+        <button class="platform-btn" data-platform="mobile" type="button">Mobile / Touch</button>
+      </div>
+      <p style="margin-top:10px; font-size:13px; opacity:0.7;">Mobile mode enables on-screen controls designed for solo play.</p>
     </div>
-    <p style="margin-top:18px; font-size:14px; opacity:0.7;">You can press <b>R</b> anytime during a run to restart the current mode.</p>
+    <div id="mode-select" class="addons-section">
+      <h3>Game Mode</h3>
+      <p>Switch between solo, couch co-op, or remote play while you run.</p>
+      <div class="mode-buttons">
+        <button class="mode-btn" data-mode="1" type="button">One Player</button>
+        <button class="mode-btn" data-mode="2" type="button">Two Players</button>
+        <button class="mode-btn" data-mode="remote" type="button">Remote Co-Op</button>
+      </div>
+      <p style="margin-top:10px; font-size:13px; opacity:0.7;">Press <b>R</b> anytime during a run to restart the current mode.</p>
+    </div>
   </div>
 </div>
 
@@ -490,23 +521,29 @@
   const bossHealthText = document.getElementById('boss-health-text');
   const upgradePill = document.getElementById('upgrade-pill');
   const upgradeText = document.getElementById('upgrade-text');
+  const welcomeScreen = document.getElementById('welcome-screen');
+  const welcomePlayBtn = document.getElementById('welcome-play');
+  const welcomeSettingsBtn = document.getElementById('welcome-settings');
+  const addonsPanel = document.getElementById('addons-panel');
+  const addonsToggle = document.getElementById('addons-toggle');
   if (wahAudio) wahAudio.volume = 0.55;
 
   let ctx = null;
   let W = 0;
   let H = 0;
   let platformMode = null;
+  let platformModeLocked = false;
   let initFailed = false;
 
   const isPanelVisible = (panel) => panel && !panel.classList.contains('hidden') && panel.style.display !== 'none';
   const showInitError = (message) => {
-    const host = (isPanelVisible(platformSelect) && platformSelect)
-      ? platformSelect.querySelector('.card')
-      : (isPanelVisible(modeSelect) && modeSelect)
-        ? modeSelect.querySelector('.card')
-        : (platformSelect && platformSelect.querySelector('.card'))
-          || (modeSelect && modeSelect.querySelector('.card'))
-          || document.body;
+    const platformHost = platformSelect ? (platformSelect.querySelector('.card') || platformSelect) : null;
+    const modeHost = modeSelect ? (modeSelect.querySelector('.card') || modeSelect) : null;
+    const host = (isPanelVisible(platformSelect) && platformHost)
+      ? platformHost
+      : (isPanelVisible(modeSelect) && modeHost)
+        ? modeHost
+        : platformHost || modeHost || document.body;
     let banner = document.getElementById('init-error');
     if (!banner) {
       banner = document.createElement('p');
@@ -535,29 +572,30 @@
     showInitError(message);
   };
 
-  function showModeSelect() {
-    if (!platformSelect || !modeSelect) return;
-    if (!platformMode) {
-      const prefersCoarsePointer = window.matchMedia && window.matchMedia('(pointer: coarse)').matches;
-      platformMode = prefersCoarsePointer ? 'mobile' : 'desktop';
-      if (platformMode === 'mobile') {
-        enableTouchControls();
-      }
-      platformSelect.style.display = 'none';
+  function updatePlatformButtons() {
+    if (!platformButtons.length) return;
+    platformButtons.forEach(btn => {
+      btn.classList.toggle('active', btn.dataset.platform === platformMode);
+    });
+  }
+
+  function detectPlatformMode() {
+    if (platformMode && platformModeLocked) return;
+    const prefersCoarsePointer = window.matchMedia && window.matchMedia('(pointer: coarse)').matches;
+    platformMode = prefersCoarsePointer ? 'mobile' : 'desktop';
+    if (platformMode === 'mobile') {
+      enableTouchControls();
     }
-    hideBlockingOverlays();
-    modeSelect.classList.remove('hidden');
-    modeSelect.style.display = 'flex';
+    updatePlatformButtons();
   }
 
   function choosePlatform(mode) {
-    if (!platformSelect) return;
-    platformMode = mode;
-    platformSelect.style.display = 'none';
-    if (mode === 'mobile') {
+    platformMode = mode === 'mobile' ? 'mobile' : 'desktop';
+    platformModeLocked = true;
+    if (platformMode === 'mobile') {
       enableTouchControls();
     }
-    showModeSelect();
+    updatePlatformButtons();
   }
 
   platformButtons.forEach(btn => {
@@ -1164,6 +1202,13 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
         setRemoteShareCollapsed(!remoteShareCollapsed, true);
       });
     }
+
+    if (addonsToggle) {
+      addonsToggle.addEventListener('click', () => {
+        const isCollapsed = addonsPanel && addonsPanel.classList.contains('minimized');
+        setAddonsCollapsed(!isCollapsed);
+      });
+    }
   } catch (error) {
     failInit('Game UI failed to initialize. You can still choose a mode.', error);
   }
@@ -1389,6 +1434,7 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
       renderBiomeDetails(ensureActiveBiome());
       setupChatLane('p1');
       setupChatLane('p2');
+      detectPlatformMode();
     } catch (error) {
       failInit('Game UI failed to initialize. You can still choose a mode.', error);
     }
@@ -1448,6 +1494,12 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
     if (manual) remoteShareAutoCollapsed = true;
     remoteCard.classList.toggle('minimized', collapsed);
     remoteToggle.textContent = collapsed ? 'Show QR' : 'Hide QR';
+  }
+
+  function setAddonsCollapsed(collapsed) {
+    if (!addonsPanel || !addonsToggle) return;
+    addonsPanel.classList.toggle('minimized', collapsed);
+    addonsToggle.textContent = collapsed ? 'Show' : 'Hide';
   }
 
   function updateRemoteShareUi() {
@@ -1646,20 +1698,46 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
     window.addEventListener('blur', clearVirtualInputs);
   }
 
-  function setGameMode(mode) {
+  function updateModeButtons() {
+    if (!modeButtons.length) return;
+    modeButtons.forEach(btn => {
+      const raw = btn.dataset.mode;
+      const targetMode = raw === 'remote' ? 'remote' : parseInt(raw, 10);
+      const isRemote = targetMode === 'remote' && remoteMode;
+      const isMatch = isRemote || (targetMode === gameMode && !remoteMode);
+      btn.classList.toggle('active', isMatch);
+    });
+  }
+
+  function hideWelcomeScreen() {
+    if (!welcomeScreen) return;
+    welcomeScreen.classList.add('hidden');
+  }
+
+  function setGameMode(mode, options = {}) {
+    const { showBiome = true } = options;
     remoteMode = mode === 'remote';
     gameMode = remoteMode ? 2 : (mode === 2 ? 2 : 1);
     levelIndex = 0;
     if (remoteMode) startRemoteSession();
     else stopRemoteSession();
     updateModeHud(gameMode === 2);
-    modeSelect.style.display = 'none';
+    updateModeButtons();
+    hideWelcomeScreen();
     if (remoteMode) {
       setRemoteStatus(`Remote P2 armed. Open ${window.location.pathname}?controller=1 on another device to play.`);
       connectRemoteSocket();
     } else {
       setRemoteStatus('Remote disabled. Choose Remote Co-Op to enable phone controls.');
     }
+    if (showBiome) {
+      showBiomeSelect();
+    }
+  }
+
+  function startDefaultRun() {
+    detectPlatformMode();
+    setGameMode(1, { showBiome: false });
     showBiomeSelect();
   }
 
@@ -1670,6 +1748,19 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
       setGameMode(Number.isNaN(mode) ? (raw === 'remote' ? 'remote' : 1) : mode);
     });
   });
+
+  if (welcomePlayBtn) {
+    welcomePlayBtn.addEventListener('click', () => {
+      startDefaultRun();
+    });
+  }
+
+  if (welcomeSettingsBtn) {
+    welcomeSettingsBtn.addEventListener('click', () => {
+      setAddonsCollapsed(false);
+      hideWelcomeScreen();
+    });
+  }
 
   if (remoteRefreshBtn) {
     remoteRefreshBtn.addEventListener('click', () => {
