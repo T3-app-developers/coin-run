@@ -150,7 +150,7 @@
     <b>Player 1</b> – Move: <b>A/D</b> · Jump: <b>W</b>/<b>Space</b> · Mine: <b>E</b> (hold) · Attack: <b>X</b> (laser: 3 hits for grunts, 10 for the boss) · Wall: <b>1</b> · Lava: <b>2</b><br>
     <span id="help-p2"><b>Player 2</b> – Move: <b>←/→</b> · Jump: <b>↑</b> · Mine: <b>/</b> (hold) · Attack: <b>.</b> (laser: 3 hits for grunts, 10 for the boss) · Wall: <b>[</b> · Lava: <b>]</b><br></span>
     <span id="biome-tip" style="display:block; margin-top:8px; opacity:0.75;">Tip: pick a biome to customize your run.</span>
-    <span id="remote-hint">Remote P2: pick <b>Remote Co-Op</b> below, then open <code>controller.html</code> from the share card to send inputs and chat.</span>
+    <span id="remote-hint">Remote P2: pick <b>Remote Co-Op</b> below, then open the <code>controller.html</code> link from the share card to send inputs and chat.</span>
     <span id="remote-status-inline" class="remote-status-display"></span>
     Restart: <b>R</b> &nbsp;|&nbsp; Toggle Hitboxes: <b>H</b>
   </div>
@@ -162,7 +162,7 @@
     <button type="button" id="remote-toggle" class="panel-toggle">Hide QR</button>
   </div>
   <div class="remote-body">
-    <p style="margin:6px 0 8px 0; opacity:0.82;">Send this to your friend so they can drive Player 2 from their phone while your keyboard stays as a fallback. Their controller page now asks if they're on mobile or desktop so touch remotes work smoothly on phones.</p>
+    <p style="margin:6px 0 8px 0; opacity:0.82;">Send this <code>controller.html</code> link to your friend so they can drive Player 2 from their phone while your keyboard stays as a fallback. Their controller page now asks if they're on mobile or desktop so touch remotes work smoothly on phones.</p>
     <div class="remote-row" style="margin-bottom:6px;">
       <code id="remote-code">----</code>
       <button type="button" id="remote-refresh">New code</button>
@@ -277,7 +277,9 @@
 (() => {
   const queryParams = new URLSearchParams(window.location.search);
   const isControllerPage = queryParams.get('controller') === '1';
-  const REMOTE_SOCKET_PATH = '/remote';
+  const REMOTE_WS_BASE = 'wss://free.blr2.piesocket.com/v3';
+  const REMOTE_WS_KEY = 'demouid';
+  const REMOTE_CHANNEL_PREFIX = 'coin-run-';
 
   // ===== helpers =====
   const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
@@ -302,17 +304,19 @@
     return VIRTUAL_KEY_ALIASES.hasOwnProperty(raw) ? VIRTUAL_KEY_ALIASES[raw] : raw;
   }
 
-  function buildRemoteSocketUrl() {
-    const proto = window.location.protocol === 'https:' ? 'wss' : 'ws';
-    return `${proto}://${window.location.host}${REMOTE_SOCKET_PATH}`;
+  function remoteSocketUrl(code) {
+    const channel = `${REMOTE_CHANNEL_PREFIX}${code}`;
+    return `${REMOTE_WS_BASE}/${encodeURIComponent(channel)}?api_key=${encodeURIComponent(REMOTE_WS_KEY)}&notify_self=1`;
   }
 
   function renderControllerPage() {
-    const wsUrl = buildRemoteSocketUrl();
+    const controllerCode = (queryParams.get('code') || '').trim().toUpperCase();
+    const wsUrl = controllerCode ? remoteSocketUrl(controllerCode) : 'Missing code';
     document.body.innerHTML = `
       <div id="controller-ui">
         <h1>Remote P2 Controller</h1>
-        <p>Connected players listen for <code>{ key, pressed }</code> over WebSocket at <code>${wsUrl}</code>.</p>
+        <p>Connected players listen for <code>{ action, pressed, code }</code> over WebSocket at <code>${wsUrl}</code>.</p>
+        <p>${controllerCode ? `Joining code <strong>${controllerCode}</strong>.` : 'Missing a join code. Open the controller link from the host screen.'}</p>
         <div class="controller-grid">
           <button class="controller-btn" data-key="ArrowUp">Jump</button>
           <button class="controller-btn" data-key=".">Attack</button>
@@ -329,11 +333,11 @@
     `;
     const statusEl = document.getElementById('controller-status');
     const buttons = Array.from(document.querySelectorAll('.controller-btn'));
-    const socket = new WebSocket(wsUrl);
+    const socket = controllerCode ? new WebSocket(wsUrl) : null;
     const setStatus = (msg) => { if (statusEl) statusEl.textContent = msg; };
     const sendPayload = (key, pressed) => {
-      if (socket.readyState !== WebSocket.OPEN) return;
-      socket.send(JSON.stringify({ key, pressed }));
+      if (!socket || socket.readyState !== WebSocket.OPEN || !controllerCode) return;
+      socket.send(JSON.stringify({ action: key, pressed, code: controllerCode }));
     };
     const down = (btn) => {
       btn.classList.add('active');
@@ -349,9 +353,13 @@
       btn.addEventListener('pointercancel', () => up(btn));
       btn.addEventListener('pointerleave', (e) => { if (e.buttons === 0) up(btn); });
     });
-    socket.addEventListener('open', () => setStatus(`Connected to ${wsUrl}. Send inputs to control Player 2.`));
-    socket.addEventListener('close', () => setStatus('Connection closed. Reopen this page when the host is ready.'));
-    socket.addEventListener('error', () => setStatus('Connection error. Check that the game tab is listening.'));
+    if (socket) {
+      socket.addEventListener('open', () => setStatus(`Connected to ${wsUrl}. Send inputs to control Player 2.`));
+      socket.addEventListener('close', () => setStatus('Connection closed. Reopen this page when the host is ready.'));
+      socket.addEventListener('error', () => setStatus('Connection error. Check that the game tab is listening.'));
+    } else {
+      setStatus('Missing code. Reopen this page from the host link to connect.');
+    }
   }
 
   if (isControllerPage) {
@@ -967,10 +975,6 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
     p2: { text: '', expiresAt: 0 },
   };
 
-  const REMOTE_WS_BASE = 'wss://free.blr2.piesocket.com/v3';
-  const REMOTE_WS_KEY = 'demouid';
-  const REMOTE_CHANNEL_PREFIX = 'coin-run-';
-
   const REMOTE_ACTION_HINT = 'Buttons map to Player 2: ← → ↑ / . [ ]';
 
   function updateModeHud(showSecondPlayer) {
@@ -1227,11 +1231,6 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
     let basePath = location.pathname.replace(/index\.html$/, '');
     if (!basePath.endsWith('/')) basePath += '/';
     return `${location.origin}${basePath}controller.html?code=${encodeURIComponent(code)}`;
-  }
-
-  function remoteSocketUrl(code) {
-    const channel = `${REMOTE_CHANNEL_PREFIX}${code}`;
-    return `${REMOTE_WS_BASE}/${encodeURIComponent(channel)}?api_key=${encodeURIComponent(REMOTE_WS_KEY)}&notify_self=1`;
   }
 
   function clearRemoteMessages() {
