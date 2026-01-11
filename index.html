@@ -1545,6 +1545,8 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
   }
 
   function enableTouchControls() {
+    if (initFailed) return;
+    if (typeof handleKeyDown !== 'function' || typeof handleKeyUp !== 'function') return;
     if (!touchControls) return;
     touchControls.classList.remove('hidden');
     const buttons = Array.from(touchControls.querySelectorAll('.touch-btn'));
