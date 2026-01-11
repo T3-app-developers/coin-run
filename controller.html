@@ -128,7 +128,7 @@
   }
 
   function connect() {
-    const code = (codeInput?.value || '').trim().toUpperCase();
+    const code = ((codeInput && codeInput.value) || '').trim().toUpperCase();
     if (!code) {
       setStatus('Enter a code first', false);
       return;
@@ -228,7 +228,7 @@
   if (chatForm) {
     chatForm.addEventListener('submit', (e) => {
       e.preventDefault();
-      const text = (chatInput?.value || '').trim();
+      const text = ((chatInput && chatInput.value) || '').trim();
       if (!text) return;
       appendChat(text, 'You');
       sendPayload({ type: 'chat', text, from: 'Controller' });
