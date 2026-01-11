@@ -655,6 +655,7 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
   const LAVA_DEPTH = 46;
   const LAVA_HEIGHT = 20;
   const LAVA_SURFACE_Y = GROUND_Y + LAVA_DEPTH - LAVA_HEIGHT;
+  const LIGHT_DIR = { x: -1, y: -1 };
   const ENEMY_ATTACK_DISTANCE = TILE * 2;
   const ENEMY_ATTACK_TOLERANCE = TILE * 0.6;
   const ENEMY_ATTACK_VERTICAL_TOLERANCE = TILE;
@@ -2542,6 +2543,23 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
     turfGrad.addColorStop(1, pal.turfBottom || '#447d3d');
     ctx.fillStyle = turfGrad;
     ctx.fillRect(0, turfTop, levelLength, GROUND_SURFACE + 4);
+    const highlightTop = LIGHT_DIR.y < 0;
+    ctx.save();
+    ctx.globalAlpha = 0.35;
+    ctx.fillStyle = '#fff';
+    if (highlightTop) {
+      ctx.fillRect(0, turfTop, levelLength, 1);
+    } else {
+      ctx.fillRect(0, turfTop + GROUND_SURFACE + 3, levelLength, 1);
+    }
+    ctx.globalAlpha = 0.25;
+    ctx.fillStyle = '#000';
+    if (highlightTop) {
+      ctx.fillRect(0, GROUND_Y + 2, levelLength, 1);
+    } else {
+      ctx.fillRect(0, turfTop, levelLength, 1);
+    }
+    ctx.restore();
     ctx.fillStyle = pal.edge || '#2f4f2d';
     ctx.fillRect(0, GROUND_Y - 2, levelLength, 2);
     ctx.fillStyle = '#0003';
@@ -2877,6 +2895,15 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
     const pal = palette();
     ctx.fillStyle = pal.wallPrimary || '#9399a3';
     ctx.fillRect(w.x, w.y, w.w, w.h);
+    const highlightTop = LIGHT_DIR.y < 0;
+    ctx.save();
+    ctx.globalAlpha = 0.35;
+    ctx.fillStyle = '#fff';
+    ctx.fillRect(w.x, highlightTop ? w.y : w.y + w.h - 1, w.w, 1);
+    ctx.globalAlpha = 0.25;
+    ctx.fillStyle = '#000';
+    ctx.fillRect(w.x, highlightTop ? w.y + w.h - 1 : w.y, w.w, 1);
+    ctx.restore();
     // fake brick lines
     ctx.strokeStyle = pal.wallStroke || '#747b85';
     ctx.lineWidth = 1;
@@ -2972,8 +2999,17 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
     // inner shine
     ctx.fillStyle = '#fff8';
     ctx.beginPath();
-    ctx.arc(c.x-4, c.y + bob - 4, 4, 0, Math.PI*2);
+    ctx.arc(c.x + LIGHT_DIR.x * 4, c.y + bob + LIGHT_DIR.y * 4, 4, 0, Math.PI*2);
     ctx.fill();
+    const shadowAngle = Math.atan2(-LIGHT_DIR.y, -LIGHT_DIR.x);
+    ctx.save();
+    ctx.globalAlpha = 0.35;
+    ctx.strokeStyle = '#000';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(c.x, c.y + bob, c.r - 2, shadowAngle - Math.PI * 0.4, shadowAngle + Math.PI * 0.4);
+    ctx.stroke();
+    ctx.restore();
     ctx.restore();
   }
 
@@ -3298,12 +3334,15 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
     const rect = bullet.aabb();
     ctx.fillStyle = pal.bulletPrimary || '#ff9e64';
     ctx.fillRect(rect.x, rect.y, rect.w, rect.h);
+    const highlightOnLeft = LIGHT_DIR.x < 0;
     ctx.fillStyle = pal.bulletHighlight || '#ffd8b2';
-    if (bullet.vx > 0) {
-      ctx.fillRect(rect.x + rect.w - 4, rect.y, 4, rect.h);
-    } else {
-      ctx.fillRect(rect.x, rect.y, 4, rect.h);
-    }
+    ctx.save();
+    ctx.globalAlpha = 0.7;
+    ctx.fillRect(highlightOnLeft ? rect.x : rect.x + rect.w - 3, rect.y, 3, rect.h);
+    ctx.globalAlpha = 0.35;
+    ctx.fillStyle = '#000';
+    ctx.fillRect(highlightOnLeft ? rect.x + rect.w - 2 : rect.x + 1, rect.y + 1, 1, rect.h - 2);
+    ctx.restore();
     if (debugShowHit) {
       ctx.strokeStyle = '#ffffff55';
       ctx.strokeRect(rect.x, rect.y, rect.w, rect.h);
