@@ -1207,6 +1207,14 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
     }
     remoteSocket = null;
     remoteConnected = false;
+    clearRemoteInputs();
+  }
+
+  function clearRemoteInputs() {
+    Object.keys(remoteKeys).forEach(key => {
+      if (remoteKeys[key]) handleKeyUp(key);
+    });
+    remoteKeys = {};
   }
 
   function handleRemotePayload(payload) {
@@ -1249,10 +1257,12 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
     };
     remoteSocket.onclose = () => {
       remoteConnected = false;
+      clearRemoteInputs();
       setRemoteStatus('Disconnected', false);
     };
     remoteSocket.onerror = () => {
       remoteConnected = false;
+      clearRemoteInputs();
       setRemoteStatus('WebSocket error', false);
     };
     remoteSocket.onmessage = (event) => {
