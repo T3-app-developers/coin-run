@@ -549,6 +549,11 @@
     }, delay);
   }
 
+  function hideBlockingOverlays() {
+    if (overlay) overlay.style.display = 'none';
+    if (deathScreen) deathScreen.style.display = 'none';
+  }
+
   window.playWahSound = playWahSound;
 
   // ===== audio =====
@@ -1203,6 +1208,7 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
   function showBiomeSelect() {
     pendingBiomeReset = true;
     if (!biomeSelect) { resetLevel(); return; }
+    hideBlockingOverlays();
     resetInputState();
     clearVirtualInputs();
     biomeSelect.classList.remove('hidden');
@@ -1476,6 +1482,7 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
       }
       platformSelect.style.display = 'none';
     }
+    hideBlockingOverlays();
     modeSelect.classList.remove('hidden');
     modeSelect.style.display = 'flex';
   }
