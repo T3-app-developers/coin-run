@@ -67,6 +67,7 @@
   #overlay p { margin:6px 0; }
   #welcome-screen { position:fixed; inset:0; display:flex; align-items:center; justify-content:center; background:radial-gradient(circle at 50% 20%, #2a3040 0%, #171b24 45%, #0b0d13 100%); color:#fff; text-align:center; z-index:45; }
   #welcome-screen .card { background:#1d222b; border:1px solid #3a3f47; border-radius:18px; padding:28px 32px; max-width:640px; box-shadow:0 20px 70px #000c; }
+  #welcome-screen .welcome-logo { width:min(220px, 70vw); margin:0 auto 16px; display:block; filter:drop-shadow(0 12px 20px #0008); }
   #welcome-screen h1 { margin:0 0 10px 0; font-size:34px; letter-spacing:0.6px; }
   #welcome-screen p { margin:8px 0; opacity:0.85; }
   #welcome-screen .welcome-actions { display:flex; gap:12px; justify-content:center; flex-wrap:wrap; margin-top:18px; }
@@ -146,6 +147,7 @@
 
 <div id="welcome-screen">
   <div class="card">
+    <img class="welcome-logo" src="assets/logo.svg" alt="Coin Run logo" />
     <h1>Green-Head Coin Run</h1>
     <p>Dash through stacked ramps, mine resources, and outpace erupting hazards on every run.</p>
     <p>Start in solo mode, then open add-ons to tweak player count, remote co-op, or touch controls.</p>
