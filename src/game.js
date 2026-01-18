@@ -529,6 +529,7 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
 
   // game state
   let gameMode = 1;
+  let platformMode = 'desktop';
   let activeBiomeId = null;
   let activeBiome = null;
   let pendingBiomeReset = false;
@@ -546,13 +547,14 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
   };
   let remoteMode = false;
   let remoteReconnectTimer = null;
-  const remoteStatusDisplays = Array.from(document.querySelectorAll('.remote-status-display'));
   let debugShowHit = false;
   let finished = false;
   let runStartTime = 0;
   let elapsedTime = 0;
   let finishDuration = 0;
   const virtualButtons = [];
+  let initFailed = false;
+  let deathScreenTimer = null;
   const CHAT_LIFETIME_MS = 4500;
   const chatState = {
     p1: { text: '', expiresAt: 0 },
@@ -566,6 +568,110 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
   };
 
   const REMOTE_ACTION_HINT = 'Buttons map to Player 2: ← → ↑ / . [ ]';
+
+  function failInit(message, error) {
+    initFailed = true;
+    if (error) console.error(error);
+    if (message) console.error(message);
+    const initError = document.getElementById('init-error');
+    if (initError) {
+      initError.textContent = message || 'The game failed to initialize. Please refresh or try again.';
+      initError.classList.remove('hidden');
+    }
+  }
+
+  function hideWelcomeScreen() {
+    if (!welcomeScreen) return;
+    welcomeScreen.classList.add('hidden');
+    welcomeScreen.setAttribute('aria-hidden', 'true');
+  }
+
+  function hideDeathScreen(force = false) {
+    if (!deathScreen) return;
+    if (deathScreenTimer && force) {
+      clearTimeout(deathScreenTimer);
+      deathScreenTimer = null;
+    }
+    deathScreen.style.display = 'none';
+  }
+
+  function showDeathScreen() {
+    if (!deathScreen) return;
+    if (deathScreenTimer) {
+      clearTimeout(deathScreenTimer);
+      deathScreenTimer = null;
+    }
+    deathScreen.style.display = 'flex';
+  }
+
+  function scheduleDeathScreenHide(delay = 0) {
+    if (!deathScreen) return;
+    if (deathScreenTimer) clearTimeout(deathScreenTimer);
+    deathScreenTimer = window.setTimeout(() => {
+      hideDeathScreen(true);
+    }, Math.max(0, delay));
+  }
+
+  function hideBlockingOverlays() {
+    if (overlay) {
+      overlay.style.display = 'none';
+      overlay.classList.remove('celebrating');
+    }
+    if (overlayCard) overlayCard.classList.remove('hidden');
+    if (celebrationScreen) {
+      celebrationScreen.classList.add('hidden');
+      celebrationScreen.setAttribute('aria-hidden', 'true');
+    }
+    hideDeathScreen(true);
+    hideWelcomeScreen();
+  }
+
+  function clearChatState() {
+    Object.values(chatState).forEach(entry => {
+      entry.text = '';
+      entry.expiresAt = 0;
+    });
+    players.forEach(player => {
+      player.chatText = '';
+      player.chatUntil = 0;
+    });
+  }
+
+  function setPlayerChat(target, text) {
+    const key = (target || '').toLowerCase();
+    const entry = chatState[key];
+    if (!entry) return;
+    entry.text = text;
+    entry.expiresAt = performance.now() + CHAT_LIFETIME_MS;
+    applyChatMessage(key.toUpperCase(), text);
+  }
+
+  function setPlatformMode(nextMode) {
+    platformMode = nextMode === 'mobile' ? 'mobile' : 'desktop';
+    platformButtons.forEach(btn => {
+      btn.classList.toggle('active', btn.dataset.platform === platformMode);
+    });
+    if (!touchControls) return;
+    if (platformMode === 'mobile') {
+      enableTouchControls();
+    } else {
+      touchControls.classList.add('hidden');
+      clearVirtualInputs();
+    }
+  }
+
+  function detectPlatformMode() {
+    if (!platformButtons.length) return;
+    const prefersTouch = window.matchMedia
+      ? window.matchMedia('(pointer: coarse)').matches
+      : ('ontouchstart' in window || navigator.maxTouchPoints > 0);
+    setPlatformMode(prefersTouch ? 'mobile' : 'desktop');
+    platformButtons.forEach(btn => {
+      btn.addEventListener('click', () => {
+        setPlatformMode(btn.dataset.platform || 'desktop');
+      });
+    });
+  }
 
   function shouldShowSecondPlayer() {
     return addonsState.localMultiplayerEnabled || addonsState.remoteEnabled;
@@ -1175,6 +1281,13 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
       btn.addEventListener('contextmenu', e => e.preventDefault());
     });
     window.addEventListener('blur', clearVirtualInputs);
+  }
+
+  function startDefaultRun() {
+    hideWelcomeScreen();
+    setAddonsPanelOpen(false);
+    applyAddonsState({ localMultiplayerEnabled: false, remoteEnabled: false });
+    showBiomeSelect();
   }
 
   modeButtons.forEach(btn => {
