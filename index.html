@@ -347,13 +347,12 @@
   </div>
 </div>
 
+<script src="config.js"></script>
 <script>
 (() => {
   const queryParams = new URLSearchParams(window.location.search);
   const isControllerPage = queryParams.get('controller') === '1';
-  const REMOTE_WS_BASE = 'wss://free.blr2.piesocket.com/v3';
-  const REMOTE_WS_KEY = 'demouid';
-  const REMOTE_CHANNEL_PREFIX = 'coin-run-';
+  const { REMOTE_WS_BASE, REMOTE_WS_KEY, REMOTE_CHANNEL_PREFIX } = window.APP_CONFIG || {};
 
   // ===== helpers =====
   const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
