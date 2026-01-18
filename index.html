@@ -406,61 +406,13 @@
     return `${REMOTE_WS_BASE}/${encodeURIComponent(channel)}?api_key=${encodeURIComponent(REMOTE_WS_KEY)}&notify_self=1`;
   }
 
-  function renderControllerPage() {
-    const controllerCode = (queryParams.get('code') || '').trim().toUpperCase();
-    const wsUrl = controllerCode ? remoteSocketUrl(controllerCode) : 'Missing code';
-    document.body.innerHTML = `
-      <div id="controller-ui">
-        <h1>Remote P2 Controller</h1>
-        <p>Connected players listen for <code>{ action, pressed, code }</code> over WebSocket at <code>${wsUrl}</code>.</p>
-        <p>${controllerCode ? `Joining code <strong>${controllerCode}</strong>.` : 'Missing a join code. Open the controller link from the host screen.'}</p>
-        <div class="controller-grid">
-          <button class="controller-btn" data-key="ArrowUp">Jump</button>
-          <button class="controller-btn" data-key=".">Attack</button>
-          <button class="controller-btn" data-key="/">Mine</button>
-          <button class="controller-btn" data-key="ArrowLeft">Left</button>
-          <button class="controller-btn" data-key="ArrowRight">Right</button>
-          <button class="controller-btn" data-key="[">Wall</button>
-          <button class="controller-btn" data-key="]">Lava</button>
-          <button class="controller-btn" data-key="r">Restart</button>
-          <button class="controller-btn" data-key="h">Hitboxes</button>
-        </div>
-        <div id="controller-status" class="controller-status">Connecting to ${wsUrl}...</div>
-      </div>
-    `;
-    const statusEl = document.getElementById('controller-status');
-    const buttons = Array.from(document.querySelectorAll('.controller-btn'));
-    const socket = controllerCode ? new WebSocket(wsUrl) : null;
-    const setStatus = (msg) => { if (statusEl) statusEl.textContent = msg; };
-    const sendPayload = (key, pressed) => {
-      if (!socket || socket.readyState !== WebSocket.OPEN || !controllerCode) return;
-      socket.send(JSON.stringify({ action: key, pressed, code: controllerCode }));
-    };
-    const down = (btn) => {
-      btn.classList.add('active');
-      sendPayload(resolveVirtualKey(btn.dataset.key), true);
-    };
-    const up = (btn) => {
-      btn.classList.remove('active');
-      sendPayload(resolveVirtualKey(btn.dataset.key), false);
-    };
-    buttons.forEach(btn => {
-      btn.addEventListener('pointerdown', (e) => { e.preventDefault(); down(btn); });
-      btn.addEventListener('pointerup', () => up(btn));
-      btn.addEventListener('pointercancel', () => up(btn));
-      btn.addEventListener('pointerleave', (e) => { if (e.buttons === 0) up(btn); });
-    });
-    if (socket) {
-      socket.addEventListener('open', () => setStatus(`Connected to ${wsUrl}. Send inputs to control Player 2.`));
-      socket.addEventListener('close', () => setStatus('Connection closed. Reopen this page when the host is ready.'));
-      socket.addEventListener('error', () => setStatus('Connection error. Check that the game tab is listening.'));
-    } else {
-      setStatus('Missing code. Reopen this page from the host link to connect.');
-    }
-  }
-
   if (isControllerPage) {
-    renderControllerPage();
+    const redirectUrl = new URL('controller.html', window.location.href);
+    const controllerCode = queryParams.get('code');
+    if (controllerCode) {
+      redirectUrl.searchParams.set('code', controllerCode);
+    }
+    window.location.replace(redirectUrl.toString());
     return;
   }
 
