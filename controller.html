@@ -68,11 +68,10 @@
     </div>
   </div>
 </div>
+<script src="config.js"></script>
 <script>
 (() => {
-  const REMOTE_WS_BASE = 'wss://free.blr2.piesocket.com/v3';
-  const REMOTE_WS_KEY = 'demouid';
-  const REMOTE_CHANNEL_PREFIX = 'coin-run-';
+  const { REMOTE_WS_BASE, REMOTE_WS_KEY, REMOTE_CHANNEL_PREFIX } = window.APP_CONFIG || {};
 
   const joinForm = document.getElementById('join-form');
   const codeInput = document.getElementById('code-input');
