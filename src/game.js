@@ -1,0 +1,3497 @@
+import { createUI } from './ui.js';
+import {
+  clamp,
+  rand,
+  irand,
+  sign,
+  hexToRgb,
+  mixHex,
+  hexToRgba,
+  formatTime,
+  resolveVirtualKey,
+  remoteSocketUrl,
+} from './utils.js';
+
+export const initGame = () => {
+  // ===== UI elements =====
+  const uiElements = createUI();
+  const {
+    canvas,
+    ui,
+    uiLevel,
+    uiTimer,
+    uiLavaStatus,
+    overlay,
+    overlayCard,
+    celebrationScreen,
+    celebrationTitle,
+    celebrationSummary,
+    celebrationDetails,
+    celebrationNext,
+    platformSelect,
+    platformButtons,
+    modeSelect,
+    modeButtons,
+    biomeSelect,
+    biomeButtonsWrap,
+    biomeBlurb,
+    biomeTitle,
+    biomeFeatures,
+    biomeBoss,
+    touchControls,
+    helpP2,
+    helpPanel,
+    helpToggle,
+    p2Pills,
+    biomeTip,
+    remoteTip,
+    remoteCard,
+    remoteToggle,
+    remoteCodeEl,
+    remoteLinkEl,
+    remoteQrEl,
+    remoteStatusEl,
+    remoteRefreshBtn,
+    remoteMessagesEl,
+    remoteChatForm,
+    remoteChatInput,
+    addonsButton,
+    addonsPanel,
+    addonsClose,
+    addonsChatToggle,
+    addonsLocalToggle,
+    addonsRemoteToggle,
+    addonsDisplayToggle,
+    resourceLabels,
+    chatUi,
+    chatForms,
+    chatInputs,
+    chatLanes,
+    deathScreen,
+    wahAudio,
+    bossIndicator,
+    bossLabel,
+    bossHealthFill,
+    bossHealthText,
+    upgradePill,
+    upgradeText,
+    welcomeScreen,
+    welcomePlayBtn,
+    welcomeSettingsBtn,
+    addonsToggle,
+    ovTitle,
+    ovBody,
+    remoteStatusDisplays,
+  } = uiElements;
+
+  // ===== audio =====
+  function createAudio(src, options = {}) {
+    const audio = new Audio(src);
+    audio.preload = 'auto';
+    if (options.volume !== undefined) audio.volume = options.volume;
+    return audio;
+  }
+
+  function playSound(sound) {
+    if (!sound) return;
+    try {
+      sound.currentTime = 0;
+      const playPromise = sound.play();
+      if (playPromise && typeof playPromise.catch === 'function') {
+        playPromise.catch(() => {});
+      }
+    } catch (_) {
+      // Some browsers block autoplay until user interaction; ignore errors.
+    }
+  }
+
+  function stopSound(sound) {
+    if (!sound) return;
+    sound.pause();
+    sound.currentTime = 0;
+  }
+
+  const celebrationAudioSrc = `
+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
+`.replace(/\s+/g, '');
+
+  const celebrationAudio = createAudio(`data:audio/wav;base64,${celebrationAudioSrc}`, { volume: 0.75 });
+  celebrationAudio.load();
+
+  // ===== world constants =====
+  const TILE = 40;
+  const GROUND_Y = 440;
+  const BASE_LEVEL_LEN = 3000; // baseline used for scaling stages
+  const LEVELS = [
+    {
+      name: 'Level 1',
+      lengthMultiplier: 2,
+      enemyCount: 3,
+      boss: { enabled: true, name: 'Hatchling', hp: 8 }
+    },
+    {
+      name: 'Level 2',
+      lengthMultiplier: 3,
+      enemyCount: 5,
+      boss: { enabled: true, name: 'Volcano Rex', hp: 12 }
+    },
+    {
+      name: 'Level 3',
+      lengthMultiplier: 4,
+      enemyCount: 7,
+      boss: {
+        enabled: true,
+        name: 'Volcano Overlord',
+        hp: 16,
+        patterns: [
+          { speed: 1.2, range: 160, duration: 200 },
+          { speed: 1.9, range: 240, duration: 140 },
+          { speed: 0.9, range: 120, duration: 180 },
+        ]
+      }
+    },
+  ];
+  let levelIndex = 0;
+  let levelLength = BASE_LEVEL_LEN * LEVELS[levelIndex].lengthMultiplier;
+  let goalX = levelLength - 140;
+  const GROUND_SURFACE = 16;
+  const LAVA_RIM = 8;
+  const LAVA_DEPTH = 46;
+  const LAVA_HEIGHT = 20;
+  const LAVA_SURFACE_Y = GROUND_Y + LAVA_DEPTH - LAVA_HEIGHT;
+  const LIGHT_DIR = { x: -1, y: -1 };
+  const ENEMY_ATTACK_DISTANCE = TILE * 2;
+  const ENEMY_ATTACK_TOLERANCE = TILE * 0.6;
+  const ENEMY_ATTACK_VERTICAL_TOLERANCE = TILE;
+  const ENEMY_HITS_TO_DEFEAT = 3;
+  const BOSS_HITS_TO_DEFEAT = 10;
+  const BOSS_BITES_TO_RESPAWN = 3;
+  const BOSS_BITE_COOLDOWN = 45;
+  const DEFAULT_POWER_UPS = { jumpBoost: false, jumpBoostTargetLevel: null, nextLevelInvulnMs: 0, spawnShieldTargetLevel: null };
+  const JUMP_BOOST_MULTIPLIER = 1.2;
+  const SPAWN_SHIELD_DURATION_MS = 3000;
+  const MS_PER_FRAME = 1000 / 60;
+
+  const BASE_BIOME = {
+    id: 'volcano',
+    label: 'Volcano Valley',
+    icon: '🌋',
+    gruntName: 'dino',
+    bossName: 'dino',
+    enemyVariant: 'dino',
+    bossVariant: 'dino',
+    resourceName: 'Wood',
+    resourceIcon: '🪵',
+    hazardName: 'Volcano',
+    hazardVerb: 'erupts',
+    hazardNoun: 'volcano',
+    minedItem: 'wood',
+    blurb: 'Classic lava slopes and piney trees.',
+    features: [
+      'Crisp teal skies and pine silhouettes wrap around warm lava embers.',
+      'Glowing coins and spruce-green ramps guide the eye toward the summit.',
+      'Resource trees match the slopey rock strata so nothing feels out of place.',
+    ],
+    bossGoal: 'A forest-colored dino that blends into the peaks; its amber eyes and molten breath tie back to the erupting rim.',
+    characters: {
+      p1: { head: '#2fd06c', body: '#2f3b52' },
+      p2: { head: '#3fb5ff', body: '#233149' },
+    },
+    palette: {
+      skyTop: '#6ec6ff', skyBottom: '#bfeaff', hillColor: '#9ed39b',
+      turfTop: '#90e084', turfMid: '#66ba5d', turfBottom: '#447d3d', edge: '#2f4f2d',
+      frontTop: '#4b3a25', frontMid: '#3a2718', frontBottom: '#1f140b', strata: '#0002', blade: '#9ef79a',
+      silhouetteType: 'trees', silhouetteColor: '#2f6130',
+      goalFlag: '#ffd166',
+      hazardBodyLight: '#6d3e2c', hazardBodyMid: '#543121', hazardBodyDark: '#2d1c14', hazardSide: '#4a2b1e', hazardLipLight: '#8f5539', hazardLipDark: '#2c1a12', hazardCavityTop: '#361f15', hazardCavityBottom: '#120805', hazardSmoke: '#f3ede4', hazardGlow: '#ff842c', hazardRimGlow: '#ffd65e',
+      lavaRimTop: '#6fa95c', lavaRimBottom: '#35592d', lavaWallDark: '#1c2b16', lavaWallMid: '#3f5a29', lavaCavityTop: '#331b11', lavaCavityBottom: '#0f0603', lavaFillLight: '#ffb56b', lavaFillMid: '#ff6b3a', lavaFillDark: '#d62020', lavaStroke: '#ffd166', lavaGlow: '#ff6b3a55',
+      resourceTrunk: '#7c4f2a', resourceCanopy: '#3a7d3a', resourceAccent: '#3a7d3a',
+      wallPrimary: '#9399a3', wallStroke: '#747b85',
+      coinPrimary: '#ffd166', coinEdge: '#c9a44f',
+      bulletPrimary: '#ff9e64', bulletHighlight: '#ffd8b2',
+      enemyPrimary: '#7f3232', enemySecondary: '#c54c4c', enemyAccent: '#532626', enemyHead: '#ffb27d', enemyEyeDark: '#2b1a1a', enemyEyeLight: '#f6f1ce',
+      bossBody: '#32713b', bossBelly: '#4ca254', bossTail: '#28652f', bossHead: '#3c8f48', bossEyeDark: '#1c2b16', bossEyeLight: '#f6f1ce', bossTooth: '#fef9d6', bossLeg: '#215929', hpFill: '#9ef79a'
+    }
+  };
+
+  const BIOMES = {
+    volcano: {
+      ...BASE_BIOME,
+      label: 'Volcano Valley',
+      icon: '🌋',
+      blurb: 'Emerald slopes cut by glowing lava seams and pine crowns.',
+      features: [
+        'Lava channels glow against mossy rock, tying together the hazard and ground.',
+        'Tree resources mirror the pine silhouettes on the distant hills.',
+        'Gold coins and banners pop against the teal sky for a clean goal line.',
+      ],
+      bossGoal: 'A magma-charged dino perched near the caldera whose green armor echoes the hills beneath it.',
+    },
+    ice: {
+      id: 'ice',
+      label: 'Ice',
+      icon: '❄️',
+      gruntName: 'polar bear',
+      bossName: 'polar bear',
+      enemyVariant: 'polar-bear',
+      bossVariant: 'polar-bear',
+      resourceName: 'Ice',
+      resourceIcon: '🧊',
+      hazardName: 'Frost Geyser',
+      hazardVerb: 'erupts',
+      hazardNoun: 'geyser',
+      minedItem: 'ice',
+      blurb: 'Crystalline tundra with freezing vents and frosty loot.',
+      features: [
+        'Pastel skies fade into frosted hills, keeping the whole scene airy.',
+        'Ice bricks and trees share the same glacial gradients for a tidy palette.',
+        'Hazard vents glow cyan so you can read danger against the snow.',
+      ],
+      bossGoal: 'A glacier-backed polar bear with frosted armor plates and claws carved from the same ice you mine.',
+      characters: {
+        p1: { head: '#b8f1ff', body: '#3a5d7f' },
+        p2: { head: '#c3e6ff', body: '#2e4b6a' },
+      },
+      palette: {
+        skyTop: '#8fd3ff', skyBottom: '#e5f6ff', hillColor: '#c7e7ff',
+        turfTop: '#dff4ff', turfMid: '#b6d9f2', turfBottom: '#7ea4c4', edge: '#88a8c8',
+        frontTop: '#5b7b9a', frontMid: '#3e5872', frontBottom: '#1c2f46', blade: '#eff8ff',
+        silhouetteType: 'ice', silhouetteColor: '#b5d9f5',
+        hazardBodyLight: '#78a6c8', hazardBodyMid: '#5c84a3', hazardBodyDark: '#2f4e69', hazardSide: '#2f4e69', hazardLipLight: '#c1e2ff', hazardLipDark: '#24405b', hazardCavityTop: '#28435d', hazardCavityBottom: '#0f1e2d', hazardSmoke: '#f5fbff', hazardGlow: '#a8dbff', hazardRimGlow: '#dff3ff',
+        lavaRimTop: '#cbe7ff', lavaRimBottom: '#7aa7c8', lavaWallDark: '#1f3649', lavaWallMid: '#3f617f', lavaCavityTop: '#1a2e40', lavaCavityBottom: '#0c1724', lavaFillLight: '#b7e8ff', lavaFillMid: '#6ad1ff', lavaFillDark: '#2f9dd9', lavaStroke: '#dff7ff', lavaGlow: '#8ecff9',
+        resourceTrunk: '#9ac9f5', resourceCanopy: '#d7f0ff', resourceAccent: '#bcdfff',
+        wallPrimary: '#b3cde5', wallStroke: '#90abc7',
+        bulletPrimary: '#7bd3ff', bulletHighlight: '#e4f7ff',
+        enemyPrimary: '#4f708a', enemySecondary: '#6f96b6', enemyAccent: '#a8cbea', enemyHead: '#d7eaff', enemyEyeDark: '#1c2733', enemyEyeLight: '#f1fbff',
+        bossBody: '#4f7b92', bossBelly: '#6ba3bb', bossTail: '#365a74', bossHead: '#375971', bossEyeDark: '#102032', bossEyeLight: '#e6f6ff', bossTooth: '#e8f5ff', bossLeg: '#2e4d64', hpFill: '#a9e2ff'
+      }
+    },
+    city: {
+      id: 'city',
+      label: 'City',
+      icon: '🏙️',
+      gruntName: 'car',
+      bossName: 'monkey',
+      enemyVariant: 'car',
+      bossVariant: 'monkey',
+      resourceName: 'Concrete',
+      resourceIcon: '🧱',
+      hazardName: 'Steam Stack',
+      hazardVerb: 'bursts',
+      hazardNoun: 'stack',
+      minedItem: 'concrete',
+      blurb: 'Industrial skyline, street lights, and hot vents from the undercity.',
+      features: [
+        'Cool steel blues and sodium lamps set a clean dusk-in-the-city gradient.',
+        'Concrete resources echo the blocky silhouettes in the distance.',
+        'Vents glow amber like traffic lights so hazards feel urban, not random.',
+      ],
+      bossGoal: 'A steel-plated monkey mech with subway-yellow eyes, framed by smokestacks to feel like the city built it.',
+      characters: {
+        p1: { head: '#ffd166', body: '#3a3e4a' },
+        p2: { head: '#a6c1ff', body: '#2c3341' },
+      },
+      palette: {
+        skyTop: '#7f9abf', skyBottom: '#c5d4e8', hillColor: '#9fb4c9',
+        turfTop: '#b0b7c4', turfMid: '#8f97a4', turfBottom: '#6c727d', edge: '#59606d',
+        frontTop: '#4a4f59', frontMid: '#363a42', frontBottom: '#1f2228', blade: '#d5deea',
+        silhouetteType: 'city', silhouetteColor: '#556072',
+        hazardBodyLight: '#7b7f8a', hazardBodyMid: '#5b5f69', hazardBodyDark: '#30323a', hazardSide: '#2b2e35', hazardLipLight: '#d9dce3', hazardLipDark: '#1f232b', hazardCavityTop: '#2d3139', hazardCavityBottom: '#0f1218', hazardSmoke: '#e6f0ff', hazardGlow: '#ffcc7a', hazardRimGlow: '#ffe0a6',
+        lavaRimTop: '#a2a9b8', lavaRimBottom: '#5a5f6b', lavaWallDark: '#1f242d', lavaWallMid: '#3b424f', lavaCavityTop: '#242a35', lavaCavityBottom: '#0b0e14', lavaFillLight: '#ffd98a', lavaFillMid: '#ff9f46', lavaFillDark: '#d8572b', lavaStroke: '#ffe9b8', lavaGlow: '#ffb97a66',
+        resourceTrunk: '#7f8791', resourceCanopy: '#b8c0cc', resourceAccent: '#9099a8',
+        wallPrimary: '#9aa3b3', wallStroke: '#7a8291',
+        bulletPrimary: '#ffd98a', bulletHighlight: '#fff0c4',
+        enemyPrimary: '#5c4e6b', enemySecondary: '#8a6ad3', enemyAccent: '#403452', enemyHead: '#c8b7dd', enemyEyeDark: '#1d1826', enemyEyeLight: '#f1e6ff',
+        bossBody: '#4b5568', bossBelly: '#6a7891', bossTail: '#323848', bossHead: '#5b6b83', bossEyeDark: '#0f1117', bossEyeLight: '#f8f2ff', bossTooth: '#f5f5ff', bossLeg: '#323845', hpFill: '#ffd98a'
+      }
+    },
+    sand: {
+      id: 'sand',
+      label: 'Sand',
+      icon: '🏜️',
+      gruntName: 'camel',
+      bossName: 'camel',
+      enemyVariant: 'camel',
+      bossVariant: 'camel',
+      resourceName: 'Sandcastle',
+      resourceIcon: '🏰',
+      hazardName: 'Glass Dune',
+      hazardVerb: 'erupts',
+      hazardNoun: 'dune',
+      minedItem: 'sandcastle',
+      blurb: 'Sun-baked dunes, sandstone arches, and shimmering heat vents.',
+      features: [
+        'Layered oranges and golds match the sandstone arches and ramps.',
+        'Coin shine pairs with the sun-bleached highlights on every ledge.',
+        'Glass dunes bloom with warm light so hazards feel like desert mirages.',
+      ],
+      bossGoal: 'A dune-swept camel with amber plating and turquoise eyes that echo oasis tiles near the goal.',
+      characters: {
+        p1: { head: '#ffd38c', body: '#704c2e' },
+        p2: { head: '#ffe9b0', body: '#8a5b32' },
+      },
+      palette: {
+        skyTop: '#f3c27c', skyBottom: '#ffe7c1', hillColor: '#e2b76a',
+        turfTop: '#f5d19a', turfMid: '#e0b86e', turfBottom: '#c38b3a', edge: '#a26f28',
+        frontTop: '#c37c3a', frontMid: '#a4632c', frontBottom: '#5d3616', blade: '#fff4d3',
+        silhouetteType: 'dunes', silhouetteColor: '#d5a75b',
+        hazardBodyLight: '#d78d46', hazardBodyMid: '#ae6c2f', hazardBodyDark: '#6d3f19', hazardSide: '#7a4b21', hazardLipLight: '#f3d3a3', hazardLipDark: '#5a3519', hazardCavityTop: '#6a3818', hazardCavityBottom: '#2d1607', hazardSmoke: '#ffe8c2', hazardGlow: '#ffb86b', hazardRimGlow: '#ffdba6',
+        lavaRimTop: '#f6d7a1', lavaRimBottom: '#c48b41', lavaWallDark: '#4e2e12', lavaWallMid: '#825024', lavaCavityTop: '#4f2a12', lavaCavityBottom: '#221107', lavaFillLight: '#ffd480', lavaFillMid: '#ff9f3f', lavaFillDark: '#d45a2c', lavaStroke: '#ffe0a6', lavaGlow: '#ffba7a55',
+        resourceTrunk: '#c8923a', resourceCanopy: '#f3d9a5', resourceAccent: '#e6bd72',
+        wallPrimary: '#d6b57a', wallStroke: '#9c7a3f',
+        bulletPrimary: '#ffc176', bulletHighlight: '#ffe8bf',
+        enemyPrimary: '#7c4f2a', enemySecondary: '#d78d46', enemyAccent: '#4b2c16', enemyHead: '#f4d1a5', enemyEyeDark: '#2a1a10', enemyEyeLight: '#fff4d6',
+        bossBody: '#a06734', bossBelly: '#d18b4b', bossTail: '#7b4c25', bossHead: '#c37a3c', bossEyeDark: '#2a180d', bossEyeLight: '#ffe7c0', bossTooth: '#ffe9c6', bossLeg: '#7b4c25', hpFill: '#ffd98a'
+      }
+    },
+    water: {
+      id: 'water',
+      label: 'Water',
+      icon: '🌊',
+      gruntName: 'fish',
+      bossName: 'fish',
+      enemyVariant: 'fish',
+      bossVariant: 'fish',
+      resourceName: 'Fish Cake',
+      resourceIcon: '🍣',
+      hazardName: 'Geothermal Vent',
+      hazardVerb: 'erupts',
+      hazardNoun: 'vent',
+      minedItem: 'fish cake',
+      blurb: 'Underwater ruins, kelp silhouettes, and vents of steaming bubbles.',
+      features: [
+        'Blue-green gradients drift from surface light to deep teal shadows.',
+        'Coral pillars and kelp silhouettes line up with the resource trees.',
+        'Bubble vents glow aqua so the hazard reads like part of the reef.',
+      ],
+      bossGoal: 'A reef-armored fish with coral fins and tidepool eyes waiting in the ruins beyond the goal arch.',
+      characters: {
+        p1: { head: '#9bf0ff', body: '#1f5e6c' },
+        p2: { head: '#d9fff4', body: '#2c7a86' },
+      },
+      palette: {
+        skyTop: '#6fd2e8', skyBottom: '#c1f3ff', hillColor: '#7bd0d9',
+        turfTop: '#9be0d7', turfMid: '#55b8b5', turfBottom: '#2d6f78', edge: '#1f515a',
+        frontTop: '#3a6b73', frontMid: '#264d53', frontBottom: '#132b2e', blade: '#d6fbf6',
+        silhouetteType: 'kelp', silhouetteColor: '#3b8c80',
+        hazardBodyLight: '#3a92a0', hazardBodyMid: '#2c6c77', hazardBodyDark: '#123b45', hazardSide: '#1d4f59', hazardLipLight: '#8ae2e3', hazardLipDark: '#0f323a', hazardCavityTop: '#103642', hazardCavityBottom: '#04171d', hazardSmoke: '#e6fcff', hazardGlow: '#8be7ff', hazardRimGlow: '#c5f7ff',
+        lavaRimTop: '#8fdfe3', lavaRimBottom: '#2f6c7c', lavaWallDark: '#0e2a33', lavaWallMid: '#1b4a56', lavaCavityTop: '#0d2831', lavaCavityBottom: '#031419', lavaFillLight: '#5de1ff', lavaFillMid: '#22b2d1', lavaFillDark: '#107a9c', lavaStroke: '#c8f6ff', lavaGlow: '#5de1ff55',
+        resourceTrunk: '#2c7a86', resourceCanopy: '#8bf2de', resourceAccent: '#c6fff0',
+        wallPrimary: '#5f9fb0', wallStroke: '#3c6d7a',
+        bulletPrimary: '#8bf1ff', bulletHighlight: '#e9ffff',
+        enemyPrimary: '#2d6f78', enemySecondary: '#55b8b5', enemyAccent: '#18444c', enemyHead: '#b8f4f8', enemyEyeDark: '#0c262c', enemyEyeLight: '#e6ffff',
+        bossBody: '#2f7c8c', bossBelly: '#4cc0c1', bossTail: '#1f5965', bossHead: '#2a7080', bossEyeDark: '#0a1d25', bossEyeLight: '#d6ffff', bossTooth: '#eaffff', bossLeg: '#1f5965', hpFill: '#8bf2de'
+      }
+    },
+    space: {
+      id: 'space',
+      label: 'Space',
+      icon: '🪐',
+      bossName: 'alien',
+      bossVariant: 'alien',
+      resourceName: 'Meteor',
+      resourceIcon: '☄️',
+      hazardName: 'Impact Crater',
+      hazardVerb: 'pulses',
+      hazardNoun: 'crater',
+      minedItem: 'meteor',
+      blurb: 'Star-speckled sky, lunar rock, and a crater that occasionally rumbles.',
+      features: [
+        'Nebula purples fade into dusty rock so the ground feels otherworldly.',
+        'Meteor resources sparkle with the same starlight as the horizon.',
+        'Craters glow magenta when active, matching the cosmic hazard flare.',
+      ],
+      bossGoal: 'A low-gravity alien with comet stripes and pale starlit eyes guarding the lunar outpost ahead.',
+      characters: {
+        p1: { head: '#e6d3ff', body: '#3a2a5b' },
+        p2: { head: '#c4b0ff', body: '#4c2f6e' },
+      },
+      palette: {
+        skyTop: '#1e1236', skyBottom: '#4c2a5f', hillColor: '#2f1d45',
+        turfTop: '#5a3b7a', turfMid: '#4a2f66', turfBottom: '#331f48', edge: '#261637',
+        frontTop: '#2f1b44', frontMid: '#221433', frontBottom: '#140a21', blade: '#ccb9f8',
+        silhouetteType: 'craters', silhouetteColor: '#3d2855',
+        hazardBodyLight: '#60418a', hazardBodyMid: '#4c326f', hazardBodyDark: '#2c1d43', hazardSide: '#35234f', hazardLipLight: '#9576c0', hazardLipDark: '#241638', hazardCavityTop: '#241738', hazardCavityBottom: '#0d0818', hazardSmoke: '#e9d9ff', hazardGlow: '#b287ff', hazardRimGlow: '#e3c6ff',
+        lavaRimTop: '#7b5aa6', lavaRimBottom: '#3d275b', lavaWallDark: '#1a0f2c', lavaWallMid: '#2c1b3f', lavaCavityTop: '#190f29', lavaCavityBottom: '#0b0616', lavaFillLight: '#b15cff', lavaFillMid: '#7535d6', lavaFillDark: '#3b187f', lavaStroke: '#f1ddff', lavaGlow: '#b15cff55',
+        resourceTrunk: '#5c3f7a', resourceCanopy: '#c2a4ff', resourceAccent: '#8b6dd6',
+        wallPrimary: '#7b5aa6', wallStroke: '#563b7a',
+        bulletPrimary: '#cfb1ff', bulletHighlight: '#f4e8ff',
+        enemyPrimary: '#4a2f6e', enemySecondary: '#7b5aa6', enemyAccent: '#2a1a3f', enemyHead: '#d9c3ff', enemyEyeDark: '#140c1f', enemyEyeLight: '#f3eaff',
+        bossBody: '#5b3c82', bossBelly: '#8c66c5', bossTail: '#3b245a', bossHead: '#7448a8', bossEyeDark: '#0e0717', bossEyeLight: '#f3eaff', bossTooth: '#f4e8ff', bossLeg: '#3b245a', hpFill: '#cfb1ff'
+      }
+    },
+  };
+
+  const DEFAULT_BIOME_ID = 'volcano';
+
+  const VOLCANO_STEPS = 12;
+  const VOLCANO_STEP_HEIGHT = 12;
+  const VOLCANO_CRATER_WIDTH = TILE * 3;
+  const VOLCANO_RIM_WIDTH = TILE;
+  const VOLCANO_CRATER_DEPTH = 96;
+  const VOLCANO_LAVA_HEIGHT = 42;
+  const VOLCANO_LAVA_RIM = 22;
+  const VOLCANO_WIDTH = VOLCANO_STEPS * TILE * 2 + VOLCANO_CRATER_WIDTH;
+  const VOLCANO_ERUPTION_INTERVAL = 20 * 60;
+  const VOLCANO_ERUPTION_DURATION = 150;
+
+  // physics
+  const GRAV = 0.9;
+  const FRICTION = 0.85;
+  const AIRFRIC = 0.98;
+  const MOVE_ACCEL = 0.9;
+  const MAX_RUN = 6.2;
+  const JUMP_VEL = -16;
+
+  // game state
+  let gameMode = 1;
+  let activeBiomeId = null;
+  let activeBiome = null;
+  let pendingBiomeReset = false;
+  let keys = {};
+  let remoteKeys = {};
+  let remoteSessionCode = '';
+  let remoteSocket = null;
+  let remoteConnected = false;
+  let remoteShareCollapsed = false;
+  let remoteShareAutoCollapsed = false;
+  const inputSources = {
+    keyboard: new Set(),
+    virtual: new Set(),
+    remote: new Set(),
+  };
+  let remoteMode = false;
+  let remoteReconnectTimer = null;
+  const remoteStatusDisplays = Array.from(document.querySelectorAll('.remote-status-display'));
+  let debugShowHit = false;
+  let finished = false;
+  let runStartTime = 0;
+  let elapsedTime = 0;
+  let finishDuration = 0;
+  const virtualButtons = [];
+  const CHAT_LIFETIME_MS = 4500;
+  const chatState = {
+    p1: { text: '', expiresAt: 0 },
+    p2: { text: '', expiresAt: 0 },
+  };
+  const addonsState = {
+    chatEnabled: false,
+    localMultiplayerEnabled: false,
+    remoteEnabled: false,
+    appDisplayEnabled: true,
+  };
+
+  const REMOTE_ACTION_HINT = 'Buttons map to Player 2: ← → ↑ / . [ ]';
+
+  function shouldShowSecondPlayer() {
+    return addonsState.localMultiplayerEnabled || addonsState.remoteEnabled;
+  }
+
+  function isChatActive() {
+    return addonsState.chatEnabled && shouldShowSecondPlayer();
+  }
+
+  function updateModeHud() {
+    const showSecondPlayer = shouldShowSecondPlayer();
+    const showChat = isChatActive();
+    p2Pills.forEach(el => el.classList.toggle('hidden', !showSecondPlayer));
+    if (helpP2) helpP2.classList.toggle('hidden', !showSecondPlayer);
+    if (chatUi) chatUi.classList.toggle('hidden', !showChat);
+    if (chatLanes.p2 && chatLanes.p2.lane) chatLanes.p2.lane.classList.toggle('hidden', !showSecondPlayer);
+    if (!showChat) clearChatInputs();
+  }
+
+  function setAddonsPanelOpen(open) {
+    if (!addonsPanel) return;
+    addonsPanel.classList.toggle('hidden', !open);
+    addonsPanel.setAttribute('aria-hidden', open ? 'false' : 'true');
+  }
+
+  function updateAddonsControls() {
+    if (addonsChatToggle) addonsChatToggle.checked = addonsState.chatEnabled;
+    if (addonsLocalToggle) addonsLocalToggle.checked = addonsState.localMultiplayerEnabled;
+    if (addonsRemoteToggle) addonsRemoteToggle.checked = addonsState.remoteEnabled;
+    if (addonsDisplayToggle) addonsDisplayToggle.checked = addonsState.appDisplayEnabled;
+    if (addonsLocalToggle) addonsLocalToggle.disabled = addonsState.remoteEnabled;
+    if (addonsRemoteToggle) addonsRemoteToggle.disabled = addonsState.localMultiplayerEnabled;
+  }
+
+  function updateAppDisplay() {
+    document.body.classList.toggle('app-display-hidden', !addonsState.appDisplayEnabled);
+  }
+
+  function syncModeFromAddons({ showBiome = false } = {}) {
+    const nextRemoteMode = addonsState.remoteEnabled;
+    const nextGameMode = nextRemoteMode || addonsState.localMultiplayerEnabled ? 2 : 1;
+    const modeChanged = nextRemoteMode !== remoteMode || nextGameMode !== gameMode;
+    remoteMode = nextRemoteMode;
+    gameMode = nextGameMode;
+    if (modeChanged) {
+      levelIndex = 0;
+      if (remoteMode) startRemoteSession();
+      else stopRemoteSession();
+    }
+    updateModeHud();
+    updateRemoteShareUi();
+    if (modeChanged && showBiome) showBiomeSelect();
+    return modeChanged;
+  }
+
+  function applyAddonsState(next = {}, options = {}) {
+    Object.assign(addonsState, next);
+    if (addonsState.remoteEnabled) addonsState.localMultiplayerEnabled = false;
+    if (addonsState.localMultiplayerEnabled) addonsState.remoteEnabled = false;
+    updateAddonsControls();
+    updateAppDisplay();
+    syncModeFromAddons(options);
+  }
+
+  try {
+    applyAddonsState();
+
+    if (helpToggle) {
+      helpToggle.addEventListener('click', () => {
+        setHelpCollapsed(!(helpPanel && helpPanel.classList.contains('minimized')));
+      });
+    }
+
+    if (addonsButton) {
+      addonsButton.addEventListener('click', () => {
+        const isOpen = addonsPanel && !addonsPanel.classList.contains('hidden');
+        setAddonsPanelOpen(!isOpen);
+      });
+    }
+
+    if (addonsClose) {
+      addonsClose.addEventListener('click', () => setAddonsPanelOpen(false));
+    }
+
+    if (addonsChatToggle) {
+      addonsChatToggle.addEventListener('change', (event) => {
+        applyAddonsState({ chatEnabled: event.target.checked });
+      });
+    }
+
+    if (addonsLocalToggle) {
+      addonsLocalToggle.addEventListener('change', (event) => {
+        applyAddonsState({ localMultiplayerEnabled: event.target.checked }, { showBiome: true });
+      });
+    }
+
+    if (addonsRemoteToggle) {
+      addonsRemoteToggle.addEventListener('change', (event) => {
+        applyAddonsState({ remoteEnabled: event.target.checked }, { showBiome: true });
+      });
+    }
+
+    if (addonsDisplayToggle) {
+      addonsDisplayToggle.addEventListener('change', (event) => {
+        applyAddonsState({ appDisplayEnabled: event.target.checked });
+      });
+    }
+
+    if (remoteToggle) {
+      remoteToggle.addEventListener('click', () => {
+        setRemoteShareCollapsed(!remoteShareCollapsed, true);
+      });
+    }
+
+    if (addonsToggle) {
+      addonsToggle.addEventListener('click', () => {
+        const isCollapsed = addonsPanel && addonsPanel.classList.contains('minimized');
+        setAddonsCollapsed(!isCollapsed);
+      });
+    }
+  } catch (error) {
+    failInit('Game UI failed to initialize. You can still choose a mode.', error);
+  }
+
+  function bindChatUi() {
+    chatForms.forEach(form => {
+      const target = form.dataset.target || 'p1';
+      const input = form.querySelector('.chat-input');
+      const launch = form.querySelector('.chat-launch');
+      if (launch && input) {
+        launch.addEventListener('click', () => {
+          input.focus();
+          input.select();
+        });
+      }
+      form.addEventListener('submit', (e) => {
+        e.preventDefault();
+        if (!input) return;
+        if (!isChatActive()) return;
+        const text = (input.value || '').trim();
+        if (!text) return;
+        setPlayerChat(target, text);
+        if (remoteMode && target === 'p2') {
+          sendRemoteChat(text, 'Host');
+        }
+        input.value = '';
+      });
+    });
+  }
+
+  bindChatUi();
+
+  const biomeEntries = Object.values(BIOMES);
+
+  function mergeBiomeConfig(config) {
+    const palette = { ...BASE_BIOME.palette, ...(config && config.palette ? config.palette : {}) };
+    const characters = { ...BASE_BIOME.characters, ...(config && config.characters ? config.characters : {}) };
+    return { ...BASE_BIOME, ...(config || {}), palette, characters };
+  }
+
+  function ensureActiveBiome(id = activeBiomeId) {
+    const resolved = mergeBiomeConfig(BIOMES[id] || BIOMES[DEFAULT_BIOME_ID] || BASE_BIOME);
+    activeBiomeId = resolved.id;
+    activeBiome = resolved;
+    return resolved;
+  }
+
+  function palette() {
+    return ensureActiveBiome().palette;
+  }
+
+  function updateBiomeTip() {
+    const b = ensureActiveBiome();
+    const interval = Math.round(VOLCANO_ERUPTION_INTERVAL / 60);
+    const bossLabel = b.bossName ? `${b.bossName} boss` : 'boss';
+    if (biomeTip) biomeTip.textContent = `Tip: the ${b.hazardNoun.toLowerCase()} ${b.hazardVerb} every ${interval} seconds and the ${bossLabel} at the goal needs ten laser hits — it must chomp you three times before you lose a life.`;
+  }
+
+  function updateResourceLabels() {
+    const b = ensureActiveBiome();
+    if (resourceLabels.p1) resourceLabels.p1.textContent = b.resourceName;
+    if (resourceLabels.p2) resourceLabels.p2.textContent = b.resourceName;
+  }
+
+  function clearChatInputs() {
+    activeChatPlayer = null;
+    Object.values(chatLanes).forEach(({ input }) => {
+      if (input) {
+        input.value = '';
+        input.blur();
+      }
+    });
+  }
+
+  function resetInputState() {
+    keys = {};
+    Object.values(inputSources).forEach(source => source.clear());
+    clearVirtualInputs();
+  }
+
+  function applyChatMessage(playerLabel, text) {
+    const player = players.find(p => p.label === playerLabel);
+    if (!player) return;
+    player.chatText = text;
+    player.chatUntil = performance.now() + CHAT_VISIBLE_MS;
+  }
+
+  function closeChatInput() {
+    activeChatPlayer = null;
+    Object.values(chatLanes).forEach(({ input }) => {
+      if (input) input.blur();
+    });
+  }
+
+  function submitChat(playerKey) {
+    const lane = chatLanes[playerKey];
+    if (!lane || !lane.input) return;
+    if (!isChatActive()) { closeChatInput(); return; }
+    const text = lane.input.value.trim();
+    if (text) {
+      applyChatMessage(playerKey.toUpperCase(), text);
+    }
+    lane.input.value = '';
+    closeChatInput();
+  }
+
+  function focusChat(playerKey) {
+    const lane = chatLanes[playerKey];
+    if (!lane || !lane.input) return;
+    if (!isChatActive()) return;
+    activeChatPlayer = playerKey;
+    lane.input.focus();
+    lane.input.select();
+  }
+
+  function setupChatLane(playerKey) {
+    const lane = chatLanes[playerKey];
+    if (!lane) return;
+    const { button, input } = lane;
+    if (button) button.addEventListener('click', () => focusChat(playerKey));
+    if (input) {
+      input.addEventListener('focus', () => { activeChatPlayer = playerKey; });
+      input.addEventListener('blur', () => {
+        if (activeChatPlayer === playerKey) activeChatPlayer = null;
+      });
+      input.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          e.stopPropagation();
+          submitChat(playerKey);
+        } else if (e.key === 'Escape') {
+          e.preventDefault();
+          e.stopPropagation();
+          closeChatInput();
+        } else {
+          e.stopPropagation();
+        }
+      });
+    }
+  }
+
+  function describeBiome(b) {
+    const hazard = b.hazardName.toLowerCase();
+    const base = b.blurb || `${b.icon} ${b.label}`;
+    return `${b.icon} ${b.label} · ${base} You mine ${b.resourceName} and face the ${hazard}.`;
+  }
+
+  function renderBiomeDetails(b) {
+    if (!b) return;
+    if (biomeTitle) biomeTitle.textContent = `${b.icon} ${b.label}`;
+    if (biomeBlurb) biomeBlurb.textContent = b.blurb || describeBiome(b);
+    if (biomeFeatures) {
+      biomeFeatures.innerHTML = '';
+      if (b.features && b.features.length) {
+        biomeFeatures.classList.remove('hidden');
+        b.features.forEach(text => {
+          const li = document.createElement('li');
+          li.textContent = text;
+          biomeFeatures.appendChild(li);
+        });
+      } else {
+        biomeFeatures.classList.add('hidden');
+      }
+    }
+    if (biomeBoss) {
+      const hasBoss = Boolean(b.bossGoal);
+      biomeBoss.textContent = hasBoss ? `End boss: ${b.bossGoal}` : '';
+      biomeBoss.classList.toggle('hidden', !hasBoss);
+    }
+  }
+
+  function chooseBiome(id) {
+    ensureActiveBiome(id);
+    updateBiomeTip();
+    updateResourceLabels();
+    if (activeBiome) renderBiomeDetails(activeBiome);
+    if (biomeSelect) {
+      biomeSelect.classList.add('hidden');
+      biomeSelect.style.display = 'none';
+    }
+    pendingBiomeReset = false;
+    resetLevel();
+  }
+
+  function showBiomeSelect() {
+    pendingBiomeReset = true;
+    if (!biomeSelect) { resetLevel(); return; }
+    hideBlockingOverlays();
+    resetInputState();
+    clearVirtualInputs();
+    biomeSelect.classList.remove('hidden');
+    biomeSelect.style.display = 'flex';
+    updateBiomeTip();
+    if (biomeBlurb) {
+      const next = ensureActiveBiome();
+      renderBiomeDetails(next);
+    }
+  }
+
+  function buildBiomeButtons() {
+    if (!biomeButtonsWrap) return;
+    biomeButtonsWrap.innerHTML = '';
+    biomeEntries.forEach(b => {
+      const btn = document.createElement('button');
+      btn.className = 'biome-btn';
+      btn.type = 'button';
+      btn.dataset.biome = b.id;
+      btn.innerHTML = `
+        <strong>${b.icon} ${b.label}</strong>
+        <small>${b.hazardName} · mines ${b.resourceName}</small>
+        <span class="biome-pill"><span class="icon">${b.resourceIcon}</span>${b.resourceName}</span>
+      `;
+      btn.addEventListener('mouseenter', () => renderBiomeDetails(mergeBiomeConfig(b)));
+      btn.addEventListener('click', () => chooseBiome(b.id));
+      biomeButtonsWrap.appendChild(btn);
+    });
+  }
+
+  if (!initFailed) {
+    try {
+      buildBiomeButtons();
+      updateResourceLabels();
+      updateBiomeTip();
+      renderBiomeDetails(ensureActiveBiome());
+      setupChatLane('p1');
+      setupChatLane('p2');
+      detectPlatformMode();
+    } catch (error) {
+      failInit('Game UI failed to initialize. You can still choose a mode.', error);
+    }
+  }
+
+  function isKeyActiveForPlayer(player, key) {
+    const resolved = resolveVirtualKey(key);
+    if (!resolved) return false;
+    if (player && player.label === 'P2' && remoteKeys[resolved]) return true;
+    return !!keys[resolved];
+  }
+
+  function generateRemoteCode() {
+    return Math.random().toString(36).slice(2, 6).toUpperCase();
+  }
+
+  function controllerLink(code) {
+    let basePath = location.pathname.replace(/index\.html$/, '');
+    if (!basePath.endsWith('/')) basePath += '/';
+    return `${location.origin}${basePath}controller.html?code=${encodeURIComponent(code)}`;
+  }
+
+  function clearRemoteMessages() {
+    if (remoteMessagesEl) remoteMessagesEl.innerHTML = '';
+  }
+
+  function addRemoteMessage(text, from = 'Friend') {
+    if (!remoteMessagesEl || !text) return;
+    const row = document.createElement('div');
+    row.className = 'remote-message';
+    row.textContent = `${from}: ${text}`;
+    remoteMessagesEl.appendChild(row);
+    remoteMessagesEl.scrollTop = remoteMessagesEl.scrollHeight;
+  }
+
+  function setRemoteStatus(label, connected = false) {
+    if (!remoteStatusDisplays.length) return;
+    remoteStatusDisplays.forEach(el => {
+      el.textContent = label;
+      el.classList.toggle('offline', !connected);
+    });
+    if (connected && !remoteShareAutoCollapsed) {
+      setRemoteShareCollapsed(true);
+      remoteShareAutoCollapsed = true;
+    }
+  }
+
+  function setHelpCollapsed(collapsed) {
+    if (!helpPanel || !helpToggle) return;
+    helpPanel.classList.toggle('minimized', collapsed);
+    helpToggle.textContent = collapsed ? 'Show' : 'Hide';
+  }
+
+  function setRemoteShareCollapsed(collapsed, manual = false) {
+    if (!remoteCard || !remoteToggle) return;
+    remoteShareCollapsed = collapsed;
+    if (manual) remoteShareAutoCollapsed = true;
+    remoteCard.classList.toggle('minimized', collapsed);
+    remoteToggle.textContent = collapsed ? 'Show QR' : 'Hide QR';
+  }
+
+  function setAddonsCollapsed(collapsed) {
+    if (!addonsPanel || !addonsToggle) return;
+    addonsPanel.classList.toggle('minimized', collapsed);
+    addonsToggle.textContent = collapsed ? 'Show' : 'Hide';
+  }
+
+  function updateRemoteShareUi() {
+    if (!remoteCard) return;
+    const active = addonsState.remoteEnabled;
+    remoteCard.classList.toggle('hidden', !active);
+    if (!active) return;
+    if (!remoteSessionCode) remoteSessionCode = generateRemoteCode();
+    const link = controllerLink(remoteSessionCode);
+    if (remoteCodeEl) remoteCodeEl.textContent = remoteSessionCode;
+    if (remoteLinkEl) {
+      remoteLinkEl.href = link;
+      remoteLinkEl.textContent = link;
+    }
+    if (remoteQrEl) remoteQrEl.src = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(link)}`;
+    setRemoteStatus(remoteConnected ? 'Connected' : 'Not connected', remoteConnected);
+  }
+
+  function closeRemoteSocket() {
+    if (remoteSocket) {
+      try { remoteSocket.close(); } catch (_) { /* ignore */ }
+    }
+    remoteSocket = null;
+    remoteConnected = false;
+  }
+
+  function handleRemotePayload(payload) {
+    if (!payload || payload.code !== remoteSessionCode) return;
+    if (payload.type === 'chat' && payload.text) {
+      addRemoteMessage(payload.text, payload.from || 'Friend');
+      setPlayerChat('p2', payload.text);
+      return;
+    }
+    const action = payload.action;
+    if (!action) return;
+    const resolved = resolveVirtualKey(action);
+    if (!resolved) return;
+    remoteKeys[resolved] = !!payload.pressed;
+    if (payload.pressed) handleKeyDown(resolved);
+    else handleKeyUp(resolved);
+  }
+
+  function sendRemoteChat(text, from = 'You') {
+    if (!text) return;
+    addRemoteMessage(text, from);
+    setPlayerChat('p1', text);
+    if (remoteSocket && remoteSocket.readyState === WebSocket.OPEN) {
+      remoteSocket.send(JSON.stringify({ code: remoteSessionCode, type: 'chat', text, from }));
+    }
+  }
+
+  function connectRemoteSocket() {
+    if (!remoteSessionCode) remoteSessionCode = generateRemoteCode();
+    closeRemoteSocket();
+    if (!remoteStatusDisplays.length) return;
+    setRemoteStatus('Connecting...', false);
+    try {
+      remoteSocket = new WebSocket(remoteSocketUrl(remoteSessionCode));
+    } catch (err) {
+      setRemoteStatus('WebSocket error', false);
+      return;
+    }
+    remoteSocket.onopen = () => {
+      remoteConnected = true;
+      setRemoteStatus('Connected', true);
+    };
+    remoteSocket.onclose = () => {
+      remoteConnected = false;
+      setRemoteStatus('Disconnected', false);
+    };
+    remoteSocket.onerror = () => {
+      remoteConnected = false;
+      setRemoteStatus('WebSocket error', false);
+    };
+    remoteSocket.onmessage = (event) => {
+      let data = null;
+      try {
+        data = JSON.parse(event.data);
+      } catch (_) {
+        return;
+      }
+      handleRemotePayload(data);
+    };
+  }
+
+  function startRemoteSession(forceNewCode = false) {
+    if (!addonsState.remoteEnabled) return;
+    if (forceNewCode || !remoteSessionCode) remoteSessionCode = generateRemoteCode();
+    remoteKeys = {};
+    clearRemoteMessages();
+    addRemoteMessage(REMOTE_ACTION_HINT, 'Tip');
+    remoteShareAutoCollapsed = false;
+    setRemoteShareCollapsed(false);
+    updateRemoteShareUi();
+    connectRemoteSocket();
+  }
+
+  function stopRemoteSession() {
+    remoteKeys = {};
+    closeRemoteSocket();
+    updateRemoteShareUi();
+  }
+
+  function clearVirtualInputs() {
+    virtualButtons.forEach(({btn, key}) => {
+      btn.classList.remove('active');
+      inputSources.virtual.delete(key);
+      recomputeKey(key);
+    });
+  }
+
+  function clonePowerUps(base = DEFAULT_POWER_UPS) {
+    if (!base) return { ...DEFAULT_POWER_UPS };
+    return {
+      jumpBoost: !!base.jumpBoost,
+      jumpBoostTargetLevel: base.jumpBoostTargetLevel !== undefined ? base.jumpBoostTargetLevel : null,
+      nextLevelInvulnMs: Math.max(0, base.nextLevelInvulnMs || 0),
+      spawnShieldTargetLevel: base.spawnShieldTargetLevel !== undefined ? base.spawnShieldTargetLevel : null,
+    };
+  }
+
+  function createDefaultPlayerProgress() {
+    return Array.from({ length: 2 }, () => ({ powerUps: clonePowerUps() }));
+  }
+
+  function storePlayerProgress(slot, powerUps) {
+    if (!playerProgress[slot]) playerProgress[slot] = { powerUps: clonePowerUps() };
+    playerProgress[slot].powerUps = clonePowerUps(powerUps);
+  }
+
+  function msToFrames(ms) {
+    return Math.round((ms || 0) / MS_PER_FRAME);
+  }
+
+  function handleKeyDown(key) {
+    if (!key) return;
+    keys[key] = true;
+    if (key === 'r' || key === 'R') {
+      if (finished) {
+        if (levelIndex < LEVELS.length - 1) levelIndex += 1;
+        else levelIndex = 0;
+      }
+      showBiomeSelect();
+      return;
+    }
+    if (key === 'h' || key === 'H') { debugShowHit = !debugShowHit; }
+    if (finished) return;
+    for (const player of players) {
+      if (player.finished) continue;
+      if (player.controls.attack && player.controls.attack.includes(key)) {
+        if (hasUsableGun(player)) fireGun(player);
+        else playerAttack(player);
+      }
+      if (player.controls.wall && player.controls.wall.includes(key)) placeWall(player);
+      if (player.controls.lava && player.controls.lava.includes(key)) placeLava(player);
+    }
+  }
+
+  function handleKeyUp(key) {
+    if (!key) return;
+    keys[key] = false;
+  }
+
+  function enableTouchControls() {
+    if (initFailed) return;
+    if (typeof handleKeyDown !== 'function' || typeof handleKeyUp !== 'function') return;
+    if (!touchControls) return;
+    touchControls.classList.remove('hidden');
+    const buttons = Array.from(touchControls.querySelectorAll('.touch-btn'));
+    buttons.forEach(btn => {
+      const resolvedKey = resolveVirtualKey(btn.dataset.key);
+      const entry = { btn, key: resolvedKey };
+      virtualButtons.push(entry);
+      const press = (e) => {
+        if (e) {
+          e.preventDefault();
+          if (btn.setPointerCapture) btn.setPointerCapture(e.pointerId);
+        }
+        btn.classList.add('active');
+        handleKeyDown(resolvedKey, 'virtual');
+      };
+      const release = (e) => {
+        if (e && btn.releasePointerCapture && btn.hasPointerCapture && btn.hasPointerCapture(e.pointerId)) {
+          btn.releasePointerCapture(e.pointerId);
+        }
+        btn.classList.remove('active');
+        handleKeyUp(resolvedKey, 'virtual');
+      };
+      btn.addEventListener('pointerdown', press);
+      btn.addEventListener('pointerup', release);
+      btn.addEventListener('pointercancel', release);
+      btn.addEventListener('pointerleave', (e) => {
+        if (e.buttons === 0) release(e);
+      });
+      btn.addEventListener('contextmenu', e => e.preventDefault());
+    });
+    window.addEventListener('blur', clearVirtualInputs);
+  }
+
+  modeButtons.forEach(btn => {
+    btn.addEventListener('click', () => {
+      const raw = btn.dataset.mode;
+      const mode = raw === 'remote' ? 'remote' : parseInt(raw, 10);
+      if (mode === 'remote') {
+        applyAddonsState({ remoteEnabled: true }, { showBiome: true });
+      } else if (mode === 2) {
+        applyAddonsState({ localMultiplayerEnabled: true }, { showBiome: true });
+      } else {
+        applyAddonsState({ localMultiplayerEnabled: false, remoteEnabled: false }, { showBiome: true });
+      }
+      if (modeSelect) modeSelect.style.display = 'none';
+    });
+  });
+
+  if (welcomePlayBtn) {
+    welcomePlayBtn.addEventListener('click', () => {
+      startDefaultRun();
+    });
+  }
+
+  if (welcomeSettingsBtn) {
+    welcomeSettingsBtn.addEventListener('click', () => {
+      setAddonsCollapsed(false);
+      hideWelcomeScreen();
+    });
+  }
+
+  if (remoteRefreshBtn) {
+    remoteRefreshBtn.addEventListener('click', () => {
+      if (!addonsState.remoteEnabled) {
+        applyAddonsState({ remoteEnabled: true }, { showBiome: true });
+      }
+      startRemoteSession(true);
+    });
+  }
+
+  if (remoteChatForm) {
+    remoteChatForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+      if (!addonsState.remoteEnabled) return;
+      const text = remoteChatInput ? remoteChatInput.value.trim() : '';
+      if (text) sendRemoteChat(text, 'You');
+      if (remoteChatInput) remoteChatInput.value = '';
+    });
+  }
+
+  // ===== entities =====
+  class Player {
+    constructor(x, y, options = {}) {
+      this.x = x; this.y = y;
+      this.vx = 0; this.vy = 0;
+      this.w = 22; this.h = 34; // compact body; head drawn on top
+      this.grounded = false;
+      this.facing = 1; // 1 right, -1 left
+      this.safeX = x; this.safeY = y;
+      this.coins = 0;
+      this.wood = 0;
+      this.invuln = 0; // frames
+      this.lives = 3;
+      this.deaths = 0;
+      this.finished = false;
+      this.chatText = '';
+      this.chatUntil = 0;
+      this.label = options.label || 'P';
+      this.bodyColor = options.bodyColor || '#2f3b52';
+      this.headColor = options.headColor || '#2fd06c';
+      this.controls = options.controls || {};
+      this.attackCooldown = 0;
+      this.dinoBites = 0;
+      this.slotIndex = Object.prototype.hasOwnProperty.call(options, 'slotIndex') ? options.slotIndex : 0;
+      this.powerUps = clonePowerUps(options.powerUps);
+      this.jumpBoostMultiplier = 1;
+      this.spawnShieldMs = 0;
+    }
+    aabb() { return {x:this.x, y:this.y, w:this.w, h:this.h}; }
+    centerX() { return this.x + this.w/2; }
+    bottom() { return this.y + this.h; }
+    controlDown(action) {
+      const binds = this.controls[action];
+      if (!binds) return false;
+      return binds.some(k => isKeyActiveForPlayer(this, k));
+    }
+  }
+
+  function applyPersistedPowerUps(player) {
+    const jumpBoostReady = player.powerUps.jumpBoost
+      && (player.powerUps.jumpBoostTargetLevel === null || player.powerUps.jumpBoostTargetLevel === levelIndex);
+    player.jumpBoostMultiplier = jumpBoostReady ? JUMP_BOOST_MULTIPLIER : 1;
+    if (jumpBoostReady && player.powerUps.jumpBoostTargetLevel === levelIndex) {
+      player.powerUps.jumpBoostTargetLevel = null;
+    }
+    const shieldReady = player.powerUps.nextLevelInvulnMs > 0 && player.powerUps.spawnShieldTargetLevel === levelIndex;
+    if (shieldReady) {
+      const frames = msToFrames(player.powerUps.nextLevelInvulnMs);
+      player.invuln = Math.max(player.invuln, frames);
+      player.spawnShieldMs = player.powerUps.nextLevelInvulnMs;
+      player.powerUps.nextLevelInvulnMs = 0;
+      player.powerUps.spawnShieldTargetLevel = null;
+    } else if (player.spawnShieldMs > 0) {
+      player.spawnShieldMs = 0;
+    }
+    storePlayerProgress(player.slotIndex, player.powerUps);
+  }
+
+  class Tree {
+    constructor(x, biome = null) {
+      this.x = x;
+      const style = (biome && biome.resourceNode) ? biome.resourceNode : {};
+      this.variant = (biome && biome.id) ? biome.id : 'default';
+      this.w = style.w || 30;
+      this.h = style.h || 100;
+      this.baseY = GROUND_Y - this.h;
+      this.hp = style.hp || 3; // number of "chunks"
+      this.progress = 0; // chopping progress per segment
+      this.dead = false;
+    }
+    aabb() { return {x:this.x, y:this.baseY, w:this.w, h:this.h}; }
+  }
+
+  class Wall {
+    constructor(x, y) {
+      this.x = x; this.y = y; // top-left
+      this.w = TILE; this.h = TILE;
+    }
+    aabb() { return {x:this.x, y:this.y, w:this.w, h:this.h}; }
+  }
+
+  class Lava {
+    constructor(x, options = {}) {
+      this.x = x;
+      this.w = options.width !== undefined ? options.width : TILE;
+      this.depth = options.depth !== undefined ? options.depth : LAVA_DEPTH;
+      this.h = options.height !== undefined ? options.height : LAVA_HEIGHT;
+      this.rim = options.rim !== undefined ? options.rim : LAVA_RIM;
+      this.theme = options.theme !== undefined ? options.theme : 'grass';
+      this.palette = options.palette || null;
+      this.variant = options.variant || null;
+      const surface = options.surfaceY !== undefined ? options.surfaceY : (GROUND_Y + this.depth - this.h);
+      this.y = surface;
+      this.baseY = surface;
+      this.phase = rand(0, 1000);
+    }
+    aabb() { return {x:this.x, y:this.y, w:this.w, h:this.h}; }
+  }
+
+  function createVolcano(baseX, biome = activeBiome) {
+    const margin = TILE * 2;
+    const slopeWidth = VOLCANO_STEPS * TILE;
+    const clampedBase = clamp(baseX, 240, Math.max(240, levelLength - VOLCANO_WIDTH - 240));
+    const craterX = clampedBase + slopeWidth;
+    const lipLeft = craterX - VOLCANO_RIM_WIDTH;
+    const lipRight = craterX + VOLCANO_CRATER_WIDTH + VOLCANO_RIM_WIDTH;
+    const rimY = GROUND_Y - VOLCANO_STEPS * VOLCANO_STEP_HEIGHT;
+    const craterInnerInset = 14;
+    const craterLavaWidth = Math.max(60, VOLCANO_CRATER_WIDTH - craterInnerInset * 2);
+    const lavaX = craterX + (VOLCANO_CRATER_WIDTH - craterLavaWidth) / 2;
+    const lava = new Lava(lavaX, {
+      width: craterLavaWidth,
+      depth: VOLCANO_CRATER_DEPTH,
+      height: VOLCANO_LAVA_HEIGHT,
+      rim: VOLCANO_LAVA_RIM,
+      theme: (biome && biome.id) ? biome.id : 'volcano',
+      palette: biome ? biome.palette : undefined,
+      variant: 'hazard'
+    });
+    lava.baseY = lava.y;
+    const volcanoObj = {
+      x: clampedBase,
+      width: VOLCANO_WIDTH,
+      height: VOLCANO_STEPS * VOLCANO_STEP_HEIGHT,
+      craterX,
+      craterWidth: VOLCANO_CRATER_WIDTH,
+      rimWidth: VOLCANO_RIM_WIDTH,
+      rimY,
+      lipLeft,
+      lipRight,
+      lava,
+      biome,
+      safeMin: clampedBase - margin,
+      safeMax: clampedBase + VOLCANO_WIDTH + margin,
+      eruptionTimer: VOLCANO_ERUPTION_INTERVAL,
+      eruptionTicks: 0,
+      isErupting: false,
+      explosionPulse: 0,
+      groundAt(px) {
+        if (px < this.x || px > this.x + this.width) return GROUND_Y;
+        if (px >= this.craterX && px <= this.craterX + this.craterWidth) return GROUND_Y;
+        if (px < this.craterX) {
+          if (px <= this.lipLeft) {
+            const span = Math.max(1, this.lipLeft - this.x);
+            const t = clamp((px - this.x) / span, 0, 1);
+            return GROUND_Y - t * this.height;
+          }
+          return this.rimY;
+        }
+        if (px >= this.craterX + this.craterWidth) {
+          if (px >= this.lipRight) {
+            const span = Math.max(1, (this.x + this.width) - this.lipRight);
+            const t = clamp(((this.x + this.width) - px) / span, 0, 1);
+            return GROUND_Y - t * this.height;
+          }
+          return this.rimY;
+        }
+        return GROUND_Y;
+      }
+    };
+    return volcanoObj;
+  }
+
+  class Coin {
+    constructor(x, y) {
+      this.x = x; this.y = y;
+      this.r = 10;
+      this.t = 0;
+      this.collected = false;
+    }
+  }
+
+  class Enemy {
+    constructor(x, biome = ensureActiveBiome()) {
+      this.w = 28;
+      this.h = 40;
+      this.baseX = clamp(x, 80, levelLength - 80);
+      this.range = 140;
+      this.speed = 1.4;
+      this.dir = Math.random() < 0.5 ? -1 : 1;
+      this.facing = this.dir;
+      this.fireTimer = rand(90, 160);
+      this.dead = false;
+      this.hp = ENEMY_HITS_TO_DEFEAT;
+      this.hitFlash = 0;
+      this.variant = (biome && biome.enemyVariant) ? biome.enemyVariant : 'dino';
+      this.biome = biome;
+      this.x = this.baseX;
+      this.y = groundHeightAt(this.centerX()) - this.h;
+    }
+    centerX() { return this.x + this.w/2; }
+    aabb() { return { x: this.x, y: this.y, w: this.w, h: this.h }; }
+    takeHit() {
+      if (this.dead) return false;
+      this.hp -= 1;
+      this.hitFlash = 12;
+      if (this.hp <= 0) {
+        this.dead = true;
+      }
+      return true;
+    }
+    update(dt, players, allowFire = true) {
+      let minX = clamp(this.baseX - this.range, 40, levelLength - this.w - 40);
+      let maxX = clamp(this.baseX + this.range, this.w + 40, levelLength - 40);
+      if (volcano) {
+        const safeMin = volcano.safeMin;
+        const safeMax = volcano.safeMax;
+        if (maxX > safeMin && minX < safeMax) {
+          const prefersLeft = this.x + this.w / 2 <= safeMin || this.baseX <= safeMin;
+          const prefersRight = this.x + this.w / 2 >= safeMax || this.baseX >= safeMax;
+          if (prefersLeft && !prefersRight) {
+            maxX = Math.max(minX, Math.min(maxX, safeMin - this.w));
+          } else if (prefersRight && !prefersLeft) {
+            minX = Math.min(maxX, Math.max(minX, safeMax));
+          } else {
+            if (this.dir <= 0) {
+              maxX = Math.max(minX, Math.min(maxX, safeMin - this.w));
+            } else {
+              minX = Math.min(maxX, Math.max(minX, safeMax));
+            }
+          }
+        }
+      }
+      this.x += this.dir * this.speed * dt;
+      if (this.x < minX) { this.x = minX; this.dir = 1; }
+      if (this.x > maxX) { this.x = maxX; this.dir = -1; }
+      if (this.dir !== 0) this.facing = this.dir;
+      this.y = groundHeightAt(this.centerX()) - this.h;
+      if (this.hitFlash > 0) this.hitFlash = Math.max(0, this.hitFlash - dt);
+
+      if (!allowFire) {
+        this.fireTimer = Math.max(this.fireTimer, 45);
+        return null;
+      }
+
+      this.fireTimer -= dt;
+      if (this.fireTimer <= 0 && players && players.length) {
+        const target = players.reduce((closest, p) => {
+          if (p.finished) return closest;
+          const dist = Math.abs(p.centerX() - this.centerX());
+          if (!closest || dist < closest.dist) {
+            return { player: p, dist };
+          }
+          return closest;
+        }, null);
+        if (target && target.player && target.dist <= TILE) {
+          const dir = target.player.centerX() >= this.centerX() ? 1 : -1;
+          this.facing = dir;
+          this.fireTimer = rand(90, 160);
+          return new Bullet(
+            this.centerX() + dir * (this.w / 2 + 6),
+            this.y + this.h * 0.45,
+            dir * 12,
+            { faction: 'enemy' }
+          );
+        }
+        this.fireTimer = rand(60, 120);
+      }
+      return null;
+    }
+  }
+
+  class Boss extends Enemy {
+    constructor(x, options = {}) {
+      super(x);
+      this.isBoss = true;
+      this.name = options.name || 'Boss';
+      this.w = options.width || 88;
+      this.h = options.height || 70;
+      this.maxHp = options.hp || BOSS_HITS_TO_DEFEAT;
+      this.hp = this.maxHp;
+      this.baseX = clamp(x, 160, levelLength - this.w - 80);
+      this.range = options.range !== undefined ? options.range : 140;
+      this.speed = options.speed !== undefined ? options.speed : 1.1;
+      this.patterns = options.patterns && options.patterns.length ? options.patterns : [
+        { speed: 1.1, range: 140, duration: 220 },
+        { speed: 1.6, range: 220, duration: 160 },
+        { speed: 0.8, range: 110, duration: 180 },
+      ];
+      this.patternIndex = 0;
+      this.patternTimer = 0;
+      this.biteCooldown = 0;
+      this.x = this.baseX;
+      this.y = groundHeightAt(this.centerX()) - this.h;
+      this.enterPattern(0);
+    }
+    enterPattern(index) {
+      const phase = this.patterns[index] || {};
+      if (phase.speed !== undefined) this.speed = phase.speed;
+      if (phase.range !== undefined) this.range = phase.range;
+      this.patternTimer = phase.duration || 180;
+    }
+    takeHit() {
+      if (this.dead) return false;
+      this.hp -= 1;
+      this.hitFlash = 18;
+      if (this.hp <= 0) {
+        this.dead = true;
+      }
+      return true;
+    }
+    update(dt, players) {
+      if (this.dead) return null;
+      if (this.biteCooldown > 0) {
+        this.biteCooldown = Math.max(0, this.biteCooldown - dt);
+      }
+      this.patternTimer -= dt;
+      if (this.patternTimer <= 0 && this.patterns.length) {
+        this.patternIndex = (this.patternIndex + 1) % this.patterns.length;
+        this.enterPattern(this.patternIndex);
+      }
+      return super.update(dt, players, false);
+    }
+  }
+
+  class Bullet {
+    constructor(x, y, vx, { owner = null, faction = 'enemy', range = Infinity } = {}) {
+      this.x = x;
+      this.y = y;
+      this.vx = vx;
+      this.w = 12;
+      this.h = 4;
+      this.life = 240;
+      this.dead = false;
+      this.owner = owner;
+      this.faction = faction;
+      this.rangeRemaining = range !== undefined ? range : Infinity;
+    }
+    aabb() {
+      return { x: this.x - this.w/2, y: this.y - this.h/2, w: this.w, h: this.h };
+    }
+    update(dt) {
+      const dx = this.vx * dt;
+      this.x += dx;
+      this.life -= dt;
+      this.rangeRemaining -= Math.abs(dx);
+      if (this.rangeRemaining <= 0) this.dead = true;
+      if (this.life <= 0) this.dead = true;
+    }
+  }
+
+  // ===== world containers =====
+  let players = [];
+  let playerProgress = createDefaultPlayerProgress();
+  let trees = [];
+  let walls = [];
+  let lavas = [];
+  let coins = [];
+  let enemies = [];
+  let bullets = [];
+  let volcano = null;
+  let currentBoss = null;
+  let bossRewardsGranted = false;
+  let bossUpgradeSummary = '';
+
+  // ===== camera =====
+  let camX = 0;
+
+  function groundHeightAt(px) {
+    if (!volcano) return GROUND_Y;
+    return Math.min(GROUND_Y, volcano.groundAt(px));
+  }
+
+  function updateVolcanoHud() {
+    if (!uiLavaStatus) return;
+    const hazardLabel = ensureActiveBiome().hazardName || 'Hazard';
+    if (!volcano) {
+      uiLavaStatus.textContent = hazardLabel;
+      uiLavaStatus.classList.remove('warn', 'bad');
+      uiLavaStatus.classList.add('good');
+      return;
+    }
+    if (volcano.isErupting) {
+      uiLavaStatus.textContent = `${hazardLabel}!`;
+      uiLavaStatus.classList.add('bad');
+      uiLavaStatus.classList.remove('good', 'warn');
+      return;
+    }
+    const seconds = Math.max(0, Math.ceil(volcano.eruptionTimer / 60));
+    uiLavaStatus.textContent = `${seconds}s`;
+    uiLavaStatus.classList.toggle('warn', seconds <= 5 && seconds > 2);
+    uiLavaStatus.classList.toggle('bad', seconds <= 2);
+    uiLavaStatus.classList.toggle('good', seconds > 5);
+  }
+
+  function updateVolcano(dt) {
+    if (!volcano) return false;
+    if (volcano.isErupting) {
+      volcano.eruptionTicks -= dt;
+      volcano.lava.y = Math.max(volcano.rimY - 24, volcano.lava.y - 1.2 * dt);
+      if (!finished) {
+        const blastMin = volcano.x - TILE;
+        const blastMax = volcano.x + volcano.width + TILE;
+        for (const player of players) {
+          if (player.invuln > 0) continue;
+          const cx = player.centerX();
+          if (cx >= blastMin && cx <= blastMax) {
+            if (handlePlayerDeath(player)) return true;
+          }
+        }
+      }
+      if (volcano.eruptionTicks <= 0) {
+        volcano.isErupting = false;
+        volcano.eruptionTimer = VOLCANO_ERUPTION_INTERVAL;
+        volcano.lava.y = volcano.lava.baseY;
+      }
+    } else {
+      volcano.eruptionTimer -= dt;
+      if (volcano.eruptionTimer <= 0) {
+        volcano.isErupting = true;
+        volcano.eruptionTicks = VOLCANO_ERUPTION_DURATION;
+        volcano.explosionPulse = 1;
+      }
+      if (volcano.lava.baseY !== undefined) {
+        volcano.lava.y = Math.min(volcano.lava.baseY, volcano.lava.y + 0.5 * dt);
+      }
+    }
+    if (volcano.explosionPulse > 0) {
+      volcano.explosionPulse = Math.max(0, volcano.explosionPulse - dt * 0.02);
+    }
+    updateVolcanoHud();
+    return false;
+  }
+
+  function configureLevelDimensions() {
+    const config = LEVELS[levelIndex] || LEVELS[0];
+    levelLength = BASE_LEVEL_LEN * config.lengthMultiplier;
+    goalX = levelLength - 140;
+  }
+
+  function resetLevel() {
+    if (!gameMode) return;
+    if (pendingBiomeReset || !activeBiome) { showBiomeSelect(); return; }
+    ensureActiveBiome();
+    updateResourceLabels();
+    updateBiomeTip();
+    hideDeathScreen(true);
+    clearChatState();
+    configureLevelDimensions();
+    bossRewardsGranted = false;
+    bossUpgradeSummary = '';
+    currentBoss = null;
+    finished = false;
+    overlay.style.display = 'none';
+    overlay.classList.remove('celebrating');
+    if (overlayCard) overlayCard.classList.remove('hidden');
+    celebrationScreen.classList.add('hidden');
+    celebrationScreen.setAttribute('aria-hidden', 'true');
+    stopSound(celebrationAudio);
+    const config = LEVELS[levelIndex] || LEVELS[0];
+    trees = [];
+    walls = [];
+    lavas = [];
+    coins = [];
+    enemies = [];
+    bullets = [];
+    clearChatInputs();
+    volcano = createVolcano(tileX(levelLength * 0.55), activeBiome);
+    updateVolcanoHud();
+    players = [];
+    const p1 = new Player(100, GROUND_Y - 34, {
+      label: 'P1',
+      headColor: '#2fd06c',
+      bodyColor: '#2f3b52',
+      controls: {
+        left: ['a','A'],
+        right: ['d','D'],
+        jump: ['w','W',' '],
+        chop: ['e','E'],
+        attack: ['x','X'],
+        wall: ['1'],
+        lava: ['2'],
+      },
+      slotIndex: 0,
+      powerUps: playerProgress[0] ? playerProgress[0].powerUps : undefined
+    });
+    applyPersistedPowerUps(p1);
+    players.push(p1);
+    if (gameMode === 2) {
+      const p2 = new Player(160, GROUND_Y - 34, {
+        label: 'P2',
+        headColor: (chars.p2 && chars.p2.head) ? chars.p2.head : '#3fb5ff',
+        bodyColor: (chars.p2 && chars.p2.body) ? chars.p2.body : '#233149',
+        controls: {
+          left: ['ArrowLeft'],
+          right: ['ArrowRight'],
+          jump: ['ArrowUp'],
+          chop: ['/', '?'],
+          attack: ['.', '>'],
+          wall: ['[', '{'],
+          lava: [']', '}'],
+        },
+        slotIndex: 1,
+        powerUps: playerProgress[1] ? playerProgress[1].powerUps : undefined
+      });
+      applyPersistedPowerUps(p2);
+      players.push(p2);
+    }
+    // scatter trees
+    const bands = 22;
+    const span = Math.max(200, levelLength - 400);
+    const step = span / bands;
+    for (let i=0; i<bands; i++) {
+      let attempts = 0;
+      let x;
+      const min = 160 + i * step;
+      const max = Math.min(levelLength - 200, min + step - 20);
+      do {
+        x = irand(min, Math.max(min + 1, max));
+        attempts++;
+      } while (volcano && x > volcano.safeMin && x < volcano.safeMax && attempts < 8);
+      if (volcano && x > volcano.safeMin && x < volcano.safeMax) continue;
+      trees.push(new Tree(x, activeBiome));
+    }
+    // sprinkle a few natural hazards
+    for (let i=0; i<6; i++) {
+      let attempts = 0;
+      let x;
+      do {
+        x = irand(260, Math.max(280, levelLength - 400));
+        attempts++;
+      } while (volcano && x > volcano.safeMin - TILE && x < volcano.safeMax + TILE && attempts < 12);
+      if (volcano && x > volcano.safeMin - TILE && x < volcano.safeMax + TILE) continue;
+      lavas.push(new Lava(tileX(x), { theme: activeBiome.id, palette: activeBiome.palette }));
+    }
+    if (volcano) {
+      lavas.push(volcano.lava);
+      coins.push(new Coin(volcano.craterX - 28, volcano.rimY - 18));
+      coins.push(new Coin(volcano.craterX + volcano.craterWidth + 28, volcano.rimY - 18));
+    }
+
+    const enemyCount = (LEVELS[levelIndex] || LEVELS[0]).enemyCount;
+    if (enemyCount > 0) {
+      const spacing = levelLength / (enemyCount + 1);
+      for (let i=0; i<enemyCount; i++) {
+        let ex;
+        let attempts = 0;
+        do {
+          ex = spacing * (i + 1) + rand(-80, 80);
+          ex = clamp(ex, 160, levelLength - 200);
+          attempts++;
+        } while (volcano && ex > volcano.safeMin - 60 && ex < volcano.safeMax + 60 && attempts < 6);
+        if (volcano && ex > volcano.safeMin - 60 && ex < volcano.safeMax + 60) {
+          ex = volcano.safeMax + 120 + i * 40;
+          ex = clamp(ex, 160, levelLength - 200);
+        }
+        enemies.push(new Enemy(ex, activeBiome));
+      }
+    }
+
+    const bossConfig = config.boss;
+    if (bossConfig && bossConfig.enabled) {
+      const bossSpawnX = clamp(goalX - TILE * 3, 200, levelLength - 240);
+      currentBoss = new Boss(bossSpawnX, bossConfig);
+      enemies.push(currentBoss);
+    } else {
+      currentBoss = null;
+    }
+
+    camX = 0;
+    runStartTime = performance.now();
+    elapsedTime = 0;
+    finishDuration = 0;
+    resetInputState();
+    clearVirtualInputs();
+    updateUI();
+    uiTimer.textContent = formatTime(0);
+  }
+
+  // ===== controls =====
+  function isTypingTarget(el) {
+    if (!el) return false;
+    const tag = el.tagName;
+    return tag === 'INPUT' || tag === 'TEXTAREA' || el.isContentEditable;
+  }
+
+  window.addEventListener('keydown', (e) => {
+    if (!platformMode) return;
+    if (isTypingTarget(e.target)) return;
+    if (e.key === '1') {
+      applyAddonsState({ localMultiplayerEnabled: false, remoteEnabled: false }, { showBiome: true });
+      return;
+    }
+    if (e.key === '2') {
+      applyAddonsState({ localMultiplayerEnabled: true }, { showBiome: true });
+      return;
+    }
+    if (e.key === '3') {
+      applyAddonsState({ remoteEnabled: true }, { showBiome: true });
+      return;
+    }
+    const chatTarget = Object.values(chatLanes).some(({ input }) => input && input === e.target);
+    const chatHidden = !chatUi || chatUi.classList.contains('hidden');
+    if (chatHidden === false) {
+      const wantsP1 = CHAT_HOTKEYS.p1.includes(e.key);
+      const wantsP2 = CHAT_HOTKEYS.p2.includes(e.key);
+      if (wantsP1 || (wantsP2 && shouldShowSecondPlayer())) {
+        e.preventDefault();
+        focusChat(wantsP1 ? 'p1' : 'p2');
+        return;
+      }
+    }
+    if (activeChatPlayer || chatTarget) {
+      if (e.key === 'Escape') closeChatInput();
+      return;
+    }
+    handleKeyDown(e.key);
+  });
+  window.addEventListener('keyup', (e) => {
+    if (!platformMode || !gameMode) return;
+    if (isTypingTarget(e.target)) return;
+    handleKeyUp(e.key);
+  });
+
+  // ===== placement helpers =====
+  function tileX(x) { return Math.floor(x / TILE) * TILE; }
+
+  function spaceFreeForWall(tx, ty) {
+    // no overlap with existing walls or trees; must sit on ground
+    if (ty !== GROUND_Y - TILE) return false;
+    const rect = {x:tx, y:ty, w:TILE, h:TILE};
+    if (walls.some(w => aabbOverlap(rect, w.aabb()))) return false;
+    if (trees.some(t => aabbOverlap(rect, t.aabb()))) return false;
+    if (volcano && tx + TILE > volcano.safeMin && tx < volcano.safeMax) return false;
+    return true;
+  }
+
+  function spaceFreeForLava(tx, ty) {
+    if (ty !== LAVA_SURFACE_Y) return false;
+    const rect = {x:tx, y:ty, w:TILE, h:LAVA_HEIGHT};
+    if (lavas.some(l => aabbOverlap(rect, l.aabb()))) return false;
+    if (walls.some(w => tx < w.x + w.w && tx + TILE > w.x)) return false;
+    if (trees.some(t => !t.dead && tx < t.x + t.w && tx + TILE > t.x)) return false;
+    if (volcano && tx + TILE > volcano.safeMin && tx < volcano.safeMax) return false;
+    return true;
+  }
+
+  function placeWall(player) {
+    if (player.wood <= 0) return;
+    const ahead = player.centerX() + player.facing * (TILE * 1.2);
+    const tx = tileX(ahead);
+    const ty = GROUND_Y - TILE;
+    if (!spaceFreeForWall(tx, ty)) return;
+    walls.push(new Wall(tx, ty));
+    // spawn coin on top
+    coins.push(new Coin(tx + TILE/2, ty - 18));
+    player.wood -= 1;
+    updateUI();
+  }
+
+  function placeLava(player) {
+    if (player.wood <= 0) return;
+    const ahead = player.centerX() + player.facing * (TILE * 1.2);
+    const tx = tileX(ahead);
+    const ty = LAVA_SURFACE_Y;
+    if (!spaceFreeForLava(tx, ty)) return;
+    lavas.push(new Lava(tx, { theme: activeBiome && activeBiome.id ? activeBiome.id : undefined, palette: activeBiome ? activeBiome.palette : undefined }));
+    player.wood -= 1;
+    updateUI();
+  }
+
+  function hasUsableGun(player) {
+    return !!(player && player.gun && (player.gun.ammo === Infinity || player.gun.ammo > 0));
+  }
+
+  function fireGun(player) {
+    if (!player || !player.gun) return false;
+    if (player.gunCooldown > 0) return false;
+    const gun = player.gun;
+    if (gun.ammo !== Infinity && gun.ammo <= 0) return false;
+
+    const projectileSpeed = gun.projectileSpeed !== undefined ? gun.projectileSpeed : 14;
+    const projectileRange = gun.projectileRange !== undefined ? gun.projectileRange : TILE * 8;
+    bullets.push(new Bullet(
+      player.centerX() + player.facing * (player.w / 2 + 8),
+      player.y + player.h * 0.45,
+      player.facing * projectileSpeed,
+      { owner: player, faction: 'player', range: projectileRange }
+    ));
+
+    player.gunCooldown = gun.fireRate !== undefined ? gun.fireRate : 12;
+    if (Number.isFinite(gun.ammo)) {
+      gun.ammo = Math.max(0, gun.ammo - 1);
+    }
+    updateUI();
+    return true;
+  }
+
+  function playerAttack(player) {
+    if (player.attackCooldown > 0) return;
+    let hitEnemy = false;
+    for (const enemy of enemies) {
+      if (enemy.dead) continue;
+      const dx = enemy.centerX() - player.centerX();
+      const dirMatch = Math.abs(dx) < 1 ? true : sign(dx) === player.facing;
+      if (!dirMatch) continue;
+      const horizontal = Math.abs(dx);
+      if (horizontal > ENEMY_ATTACK_DISTANCE + ENEMY_ATTACK_TOLERANCE) continue;
+      const enemyMidY = enemy.y + enemy.h / 2;
+      const playerMidY = player.y + player.h / 2;
+      if (Math.abs(enemyMidY - playerMidY) > ENEMY_ATTACK_VERTICAL_TOLERANCE) continue;
+      if (enemy.takeHit()) {
+        hitEnemy = true;
+      }
+    }
+    player.attackCooldown = hitEnemy ? 20 : 12;
+  }
+
+  // ===== collisions =====
+  function aabbOverlap(a, b) {
+    return a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y;
+  }
+
+  function handleBossBite(player, boss) {
+    if (player.invuln > 0) return false;
+    if (boss && boss.biteCooldown > 0) return false;
+    if (boss) boss.biteCooldown = BOSS_BITE_COOLDOWN;
+    player.dinoBites = (player.dinoBites || 0) + 1;
+    updateUI();
+    if (player.dinoBites >= BOSS_BITES_TO_RESPAWN) {
+      player.dinoBites = 0;
+      updateUI();
+      return handlePlayerDeath(player);
+    }
+    player.invuln = 25;
+    return false;
+  }
+
+  function handlePlayerDeath(player) {
+    showDeathScreen();
+    playWahSound();
+    player.lives -= 1;
+    player.deaths += 1;
+    player.dinoBites = 0;
+    if (player.lives <= 0) {
+      updateUI();
+      showBiomeSelect();
+      return true;
+    }
+    if (player.coins > 0) player.coins -= 1;
+    player.x = Math.max(0, player.safeX - 60);
+    player.y = player.safeY;
+    player.vx = 0;
+    player.vy = 0;
+    player.invuln = 30;
+    updateUI();
+    scheduleDeathScreenHide(player.invuln * (1000 / 60) + 200);
+    return false;
+  }
+
+  function grantBossPowerUps() {
+    if (bossRewardsGranted) return;
+    bossRewardsGranted = true;
+    const nextLevelIndex = (levelIndex + 1) % LEVELS.length;
+    for (const player of players) {
+      player.powerUps = player.powerUps || clonePowerUps();
+      player.powerUps.jumpBoost = true;
+      player.powerUps.jumpBoostTargetLevel = nextLevelIndex;
+      player.powerUps.nextLevelInvulnMs = Math.max(player.powerUps.nextLevelInvulnMs || 0, SPAWN_SHIELD_DURATION_MS);
+      player.powerUps.spawnShieldTargetLevel = nextLevelIndex;
+      storePlayerProgress(player.slotIndex, player.powerUps);
+    }
+    const shieldSeconds = Math.round(SPAWN_SHIELD_DURATION_MS / 1000);
+    bossUpgradeSummary = `Jump boost unlocked · ${shieldSeconds}s invulnerability shield next level`;
+    updateUI();
+  }
+
+  // ===== game loop =====
+  let last = performance.now();
+  function loop(t) {
+    const dt = Math.min(33, t - last) / 16.666; // normalize to 60fps steps
+    last = t;
+    update(dt);
+    draw();
+    requestAnimationFrame(loop);
+  }
+
+  function update(dt) {
+    const now = performance.now();
+    if (!finished && runStartTime) {
+      elapsedTime = (now - runStartTime) / 1000;
+      uiTimer.textContent = formatTime(elapsedTime);
+    } else if (!runStartTime) {
+      uiTimer.textContent = formatTime(0);
+    }
+
+    if (updateVolcano(dt)) return;
+
+    for (const player of players) {
+      // controls
+      if (!finished && !player.finished) {
+        let ax = 0;
+        if (player.controlDown('left')) { ax -= MOVE_ACCEL; player.facing = -1; }
+        if (player.controlDown('right')) { ax += MOVE_ACCEL; player.facing =  1; }
+        player.vx += ax * dt;
+
+        const onGround = player.grounded;
+        if (player.controlDown('jump') && onGround) {
+          player.vy = JUMP_VEL * (player.jumpBoostMultiplier || 1);
+          player.grounded = false;
+        }
+      }
+
+      // physics integrate
+      player.vy += GRAV * dt;
+      if (player.grounded) player.vx *= Math.pow(FRICTION, dt);
+      else player.vx *= Math.pow(AIRFRIC, dt);
+      player.vx = clamp(player.vx, -MAX_RUN, MAX_RUN);
+
+      // move horizontal
+      player.x += player.vx * dt;
+      for (const w of walls) {
+        const a = player.aabb(), b = w.aabb();
+        if (aabbOverlap(a,b)) {
+          if (player.vx > 0) player.x = b.x - player.w;
+          if (player.vx < 0) player.x = b.x + b.w;
+          player.vx = 0;
+        }
+      }
+      player.x = clamp(player.x, 0, levelLength - player.w);
+
+      // move vertical
+      player.y += player.vy * dt;
+      player.grounded = false;
+
+      const feetRect = {x: player.x + 2, y: player.bottom() - 4, w: player.w - 4, h: 6};
+      const overLava = lavas.some(l => feetRect.x < l.x + l.w && feetRect.x + feetRect.w > l.x);
+      const sampleLeft = player.x + 4;
+      const sampleRight = player.x + player.w - 4;
+      let terrainY = GROUND_Y;
+      if (volcano) {
+        terrainY = Math.min(terrainY, volcano.groundAt(sampleLeft), volcano.groundAt(sampleRight));
+      }
+
+      if (player.bottom() >= terrainY && !overLava) {
+        player.y = terrainY - player.h;
+        player.vy = 0;
+        player.grounded = true;
+        player.safeX = player.x;
+        player.safeY = player.y;
+      }
+      for (const w of walls) {
+        const a = player.aabb(), b = w.aabb();
+        if (aabbOverlap(a,b)) {
+          if (player.vy > 0) {
+            player.y = b.y - player.h;
+            player.vy = 0;
+            player.grounded = true;
+          } else if (player.vy < 0) {
+            player.y = b.y + b.h;
+            player.vy = 0.1;
+          }
+        }
+      }
+
+      if (player.invuln > 0) player.invuln -= dt;
+      if (player.spawnShieldMs > 0 && player.invuln <= 0) {
+        player.spawnShieldMs = 0;
+      }
+      if (player.attackCooldown > 0) player.attackCooldown = Math.max(0, player.attackCooldown - dt);
+      if (player.gunCooldown > 0) player.gunCooldown = Math.max(0, player.gunCooldown - dt);
+      for (const l of lavas) {
+        if (aabbOverlap(player.aabb(), l.aabb()) && player.invuln <= 0) {
+          if (handlePlayerDeath(player)) return;
+        }
+      }
+    }
+
+    for (const enemy of enemies) {
+      if (enemy.dead) continue;
+      const bullet = enemy.update(dt, players, !finished);
+      if (bullet) bullets.push(bullet);
+    }
+
+    for (const bullet of bullets) {
+      if (bullet.dead) continue;
+      bullet.update(dt);
+      if (bullet.dead) continue;
+      const rect = bullet.aabb();
+      if (rect.x + rect.w < 0 || rect.x > levelLength) {
+        bullet.dead = true;
+        continue;
+      }
+      for (const w of walls) {
+        if (aabbOverlap(rect, w.aabb())) { bullet.dead = true; break; }
+      }
+      if (bullet.dead) continue;
+      if (bullet.faction === 'enemy') {
+        for (const player of players) {
+          if (player.finished || player.invuln > 0) continue;
+          if (bullet.owner && bullet.owner === player) continue;
+          if (aabbOverlap(rect, player.aabb())) {
+            if (handlePlayerDeath(player)) return;
+            bullet.dead = true;
+            break;
+          }
+        }
+      } else if (bullet.faction === 'player') {
+        for (const enemy of enemies) {
+          if (enemy.dead) continue;
+          if (aabbOverlap(rect, enemy.aabb())) {
+            enemy.takeHit();
+            bullet.dead = true;
+            break;
+          }
+        }
+      }
+    }
+
+    if (!finished) {
+      for (const enemy of enemies) {
+        if (enemy.dead) continue;
+        for (const player of players) {
+          if (player.finished || player.invuln > 0) continue;
+          if (aabbOverlap(player.aabb(), enemy.aabb())) {
+            if (enemy.isBoss) {
+              if (handleBossBite(player, enemy)) return;
+            } else if (handlePlayerDeath(player)) {
+              return;
+            }
+            break;
+          }
+        }
+      }
+    }
+
+    enemies = enemies.filter(e => !e.dead);
+    bullets = bullets.filter(b => !b.dead);
+
+    if (currentBoss && currentBoss.dead) {
+      grantBossPowerUps();
+    }
+
+    // mine tree (hold)
+    if (!finished) {
+      for (const tr of trees) {
+        if (tr.dead) continue;
+        let worked = false;
+        for (const player of players) {
+          if (player.finished) continue;
+          if (!player.controlDown('chop')) continue;
+          const near = Math.abs((tr.x + tr.w/2) - player.centerX()) < 38 && Math.abs((tr.baseY + tr.h) - player.bottom()) < 50;
+          if (near) {
+            worked = true;
+            tr.progress += 0.04 * dt;
+            if (tr.progress >= 1) {
+              tr.progress = 0;
+              tr.hp -= 1;
+              if (tr.hp <= 0) {
+                tr.dead = true;
+                player.wood += 2;
+                updateUI();
+              }
+            }
+          }
+        }
+        if (!worked) tr.progress = Math.max(0, tr.progress - 0.02 * dt);
+      }
+    } else {
+      for (const tr of trees) {
+        tr.progress = Math.max(0, tr.progress - 0.02 * dt);
+      }
+    }
+
+    // coin pickup
+    for (const c of coins) {
+      if (!c.collected) {
+        for (const player of players) {
+          const dx = player.centerX() - c.x;
+          const dy = (player.y + player.h/2) - c.y;
+          if (dx*dx + dy*dy < (14*14)) {
+            c.collected = true;
+            player.coins += 1;
+            updateUI();
+            break;
+          }
+        }
+      }
+      c.t += 0.05 * dt;
+    }
+
+    // camera
+    if (players.length) {
+      const avgX = players.reduce((sum, p) => sum + p.centerX(), 0) / players.length;
+      camX += ((avgX - W * 0.45) - camX) * 0.08;
+      camX = clamp(camX, 0, levelLength - W);
+    }
+
+    // finish check
+    if (!finished && players.length) {
+      const bossAlive = currentBoss && !currentBoss.dead;
+      for (const player of players) {
+        if (!player.finished && player.x > goalX && !bossAlive) {
+          player.finished = true;
+          player.vx = 0;
+          player.vy = 0;
+          player.grounded = true;
+        }
+      }
+      if (!bossAlive && players.every(p => p.finished)) {
+        finished = true;
+        finishDuration = elapsedTime;
+        const resourceLabel = ensureActiveBiome().resourceName || 'Resource';
+        const summary = players.map(p => `${p.label}: Coins <b>${p.coins}</b> · ${resourceLabel} <b>${p.wood}</b> · Deaths <b>${p.deaths}</b>`).join('<br>');
+        const config = LEVELS[levelIndex] || LEVELS[0];
+        const isFinalLevel = levelIndex >= LEVELS.length - 1;
+        const nextConfig = LEVELS[levelIndex + 1];
+        const nextLine = isFinalLevel
+          ? 'Press <b>R</b> to restart from Level 1.'
+          : `Press <b>R</b> to continue to ${nextConfig.name}.`;
+        celebrationTitle.textContent = isFinalLevel ? 'All Levels Complete!' : `${config.name} Complete!`;
+        celebrationSummary.innerHTML = `Finished in <b>${formatTime(finishDuration)}</b>`;
+        const upgradeLine = bossUpgradeSummary ? `<br><span class="good">Upgrades Earned: ${bossUpgradeSummary}</span>` : '';
+        celebrationDetails.innerHTML = `${summary}${upgradeLine}`;
+        celebrationNext.innerHTML = bossUpgradeSummary
+          ? `${nextLine}<br><span class="good">Next level starts with: ${bossUpgradeSummary}.</span>`
+          : nextLine;
+        overlay.classList.add('celebrating');
+        if (overlayCard) overlayCard.classList.add('hidden');
+        celebrationScreen.classList.remove('hidden');
+        celebrationScreen.setAttribute('aria-hidden', 'false');
+        overlay.style.display = 'flex';
+        uiTimer.textContent = formatTime(finishDuration);
+        playSound(celebrationAudio);
+      }
+    }
+  }
+
+  function describeGun(player) {
+    if (!player || !player.gun) return 'None';
+    const type = player.gun.gunType || 'Unknown';
+    const ammoValue = player.gun.ammo;
+    const ammo = ammoValue === Infinity
+      ? '∞'
+      : Math.max(0, Math.floor(Number.isFinite(ammoValue) ? ammoValue : 0));
+    return `${type} (${ammo})`;
+  }
+
+  function updateGunHud(el, player) {
+    if (!el) return;
+    el.textContent = describeGun(player);
+    const hasGun = !!(player && player.gun);
+    const hasAmmo = hasGun && (player.gun.ammo === Infinity || player.gun.ammo > 0);
+    el.classList.toggle('good', hasAmmo);
+    el.classList.toggle('warn', !hasGun);
+    el.classList.toggle('bad', hasGun && !hasAmmo);
+  }
+
+  function updateUI() {
+    const [p1, p2] = players;
+    if (uiLevel) {
+      const config = LEVELS[levelIndex] || LEVELS[0];
+      uiLevel.textContent = config.name;
+      uiLevel.classList.toggle('warn', levelIndex === LEVELS.length - 1);
+      uiLevel.classList.toggle('good', levelIndex !== LEVELS.length - 1);
+    }
+    if (p1) {
+      ui.p1.coins.textContent = p1.coins;
+      ui.p1.wood.textContent = p1.wood;
+      ui.p1.lives.textContent = `${p1.lives} (${p1.dinoBites}/${BOSS_BITES_TO_RESPAWN})`;
+      updateGunHud(ui.p1.gun, p1);
+    } else {
+      ui.p1.coins.textContent = '0';
+      ui.p1.wood.textContent = '0';
+      ui.p1.lives.textContent = `0 (0/${BOSS_BITES_TO_RESPAWN})`;
+      updateGunHud(ui.p1.gun, null);
+    }
+    if (p2) {
+      ui.p2.coins.textContent = p2.coins;
+      ui.p2.wood.textContent = p2.wood;
+      ui.p2.lives.textContent = `${p2.lives} (${p2.dinoBites}/${BOSS_BITES_TO_RESPAWN})`;
+      updateGunHud(ui.p2.gun, p2);
+    } else {
+      ui.p2.coins.textContent = '0';
+      ui.p2.wood.textContent = '0';
+      ui.p2.lives.textContent = `0 (0/${BOSS_BITES_TO_RESPAWN})`;
+      updateGunHud(ui.p2.gun, null);
+    }
+    updateBossStatusUI();
+    updateUpgradeAnnouncements();
+  }
+
+  function updateBossStatusUI() {
+    if (!bossIndicator) return;
+    if (!currentBoss || currentBoss.dead) {
+      bossIndicator.classList.add('hidden');
+      return;
+    }
+    bossIndicator.classList.remove('hidden');
+    if (bossLabel) bossLabel.textContent = currentBoss.name || 'Boss';
+    const maxHp = currentBoss.maxHp || BOSS_HITS_TO_DEFEAT;
+    const ratio = clamp(currentBoss.hp / maxHp, 0, 1);
+    if (bossHealthFill) bossHealthFill.style.width = `${(ratio * 100).toFixed(1)}%`;
+    if (bossHealthText) {
+      bossHealthText.textContent = `${Math.max(0, Math.ceil(currentBoss.hp))}/${maxHp}`;
+      bossHealthText.classList.toggle('good', ratio >= 0.75);
+      bossHealthText.classList.toggle('warn', ratio < 0.75 && ratio > 0.4);
+      bossHealthText.classList.toggle('bad', ratio <= 0.4);
+    }
+  }
+
+  function updateUpgradeAnnouncements() {
+    if (!upgradePill || !upgradeText) return;
+    let message = '';
+    if (bossUpgradeSummary) {
+      message = `Earned: ${bossUpgradeSummary}`;
+    } else {
+      const parts = [];
+      if (players.some(p => (p.jumpBoostMultiplier || 1) > 1)) {
+        parts.push('Jump boost active');
+      }
+      const spawnShieldActive = players.some(p => p.spawnShieldMs > 0 && p.invuln > 0);
+      const spawnShieldReady = playerProgress.some(entry => {
+        const powerUps = entry ? entry.powerUps : null;
+        return (powerUps && powerUps.nextLevelInvulnMs ? powerUps.nextLevelInvulnMs : 0) > 0;
+      });
+      if (spawnShieldActive) {
+        parts.push('Spawn shield active');
+      } else if (spawnShieldReady) {
+        parts.push('Spawn shield ready');
+      }
+      if (!parts.length) {
+        upgradePill.classList.add('hidden');
+        return;
+      }
+      message = parts.join(' · ');
+    }
+    upgradeText.textContent = message;
+    upgradePill.classList.remove('hidden');
+  }
+
+  // ===== drawing =====
+  const LIGHT_DIR = { x: -0.8, y: -0.6 };
+  function normalizeDir(dir) {
+    const mag = Math.hypot(dir.x, dir.y) || 1;
+    return { x: dir.x / mag, y: dir.y / mag };
+  }
+  const LIGHT_NORM = normalizeDir(LIGHT_DIR);
+  function shadeColor(color, amount) {
+    if (typeof color !== 'string' || color[0] !== '#') return color;
+    const hex = color.length === 4
+      ? `#${color[1]}${color[1]}${color[2]}${color[2]}${color[3]}${color[3]}`
+      : color;
+    if (hex.length !== 7) return color;
+    const num = parseInt(hex.slice(1), 16);
+    const r = (num >> 16) & 255;
+    const g = (num >> 8) & 255;
+    const b = num & 255;
+    const adjust = (c) => {
+      if (amount >= 0) {
+        return Math.round(c + (255 - c) * amount);
+      }
+      return Math.round(c * (1 + amount));
+    };
+    const nr = adjust(r);
+    const ng = adjust(g);
+    const nb = adjust(b);
+    return `#${((1 << 24) + (nr << 16) + (ng << 8) + nb).toString(16).slice(1)}`;
+  }
+  function makeLightGradient(x, y, w, h, base, lightAmt = 0.22, darkAmt = -0.22) {
+    const cx = x + w / 2;
+    const cy = y + h / 2;
+    const span = Math.max(w, h) * 0.9;
+    const sx = cx - LIGHT_NORM.x * span;
+    const sy = cy - LIGHT_NORM.y * span;
+    const ex = cx + LIGHT_NORM.x * span;
+    const ey = cy + LIGHT_NORM.y * span;
+    const grad = ctx.createLinearGradient(sx, sy, ex, ey);
+    grad.addColorStop(0, shadeColor(base, lightAmt));
+    grad.addColorStop(1, shadeColor(base, darkAmt));
+    return grad;
+  }
+  function lightSideX(x, w, inset = 4) {
+    return LIGHT_DIR.x < 0 ? x + inset : x + w - inset;
+  }
+  function lightSideY(y, h, inset = 4) {
+    return LIGHT_DIR.y < 0 ? y + inset : y + h - inset;
+  }
+  function drawGround() {
+    const pal = palette();
+    // sky
+    const grd = ctx.createLinearGradient(0,0,0,H);
+    grd.addColorStop(0, pal.skyTop || '#6ec6ff');
+    grd.addColorStop(1, pal.skyBottom || '#bfeaff');
+    ctx.fillStyle = grd;
+    ctx.fillRect(0,0,W,H);
+
+    // far hills
+    const fogColor = pal.skyBottom || '#bfeaff';
+    ctx.save();
+    ctx.translate(-camX*0.3,0);
+    ctx.fillStyle = mixHex(pal.hillColor || '#9ed39b', fogColor, 0.35);
+    ctx.globalAlpha = 0.85;
+    const hillSpacing = 500;
+    const hillCount = Math.ceil((levelLength + W) / hillSpacing);
+    for (let i=0;i<hillCount;i++){
+      const x = i*hillSpacing;
+      ctx.beginPath();
+      ctx.moveTo(x, 380);
+      ctx.quadraticCurveTo(x+120,330,x+240,380);
+      ctx.quadraticCurveTo(x+360,330,x+480,380);
+      ctx.lineTo(x+480,H);
+      ctx.lineTo(x,H);
+      ctx.closePath();
+      ctx.fill();
+    }
+    ctx.restore();
+
+    // ground band
+    ctx.save();
+    ctx.translate(-camX,0);
+    const turfTop = GROUND_Y - GROUND_SURFACE;
+    const turfGrad = ctx.createLinearGradient(0, turfTop, 0, GROUND_Y + 4);
+    turfGrad.addColorStop(0, pal.turfTop || '#90e084');
+    turfGrad.addColorStop(0.45, pal.turfMid || '#66ba5d');
+    turfGrad.addColorStop(1, pal.turfBottom || '#447d3d');
+    ctx.fillStyle = turfGrad;
+    ctx.fillRect(0, turfTop, levelLength, GROUND_SURFACE + 4);
+    const highlightTop = LIGHT_DIR.y < 0;
+    ctx.save();
+    ctx.globalAlpha = 0.35;
+    ctx.fillStyle = '#fff';
+    if (highlightTop) {
+      ctx.fillRect(0, turfTop, levelLength, 1);
+    } else {
+      ctx.fillRect(0, turfTop + GROUND_SURFACE + 3, levelLength, 1);
+    }
+    ctx.globalAlpha = 0.25;
+    ctx.fillStyle = '#000';
+    if (highlightTop) {
+      ctx.fillRect(0, GROUND_Y + 2, levelLength, 1);
+    } else {
+      ctx.fillRect(0, turfTop, levelLength, 1);
+    }
+    ctx.restore();
+    ctx.fillStyle = pal.edge || '#2f4f2d';
+    ctx.fillRect(0, GROUND_Y - 2, levelLength, 2);
+    ctx.fillStyle = '#0003';
+    ctx.fillRect(0, GROUND_Y, levelLength, 2);
+
+    const frontGrad = ctx.createLinearGradient(0, GROUND_Y, 0, H);
+    frontGrad.addColorStop(0, pal.frontTop || '#4b3a25');
+    frontGrad.addColorStop(0.5, pal.frontMid || '#3a2718');
+    frontGrad.addColorStop(1, pal.frontBottom || '#1f140b');
+    ctx.fillStyle = frontGrad;
+    ctx.fillRect(0, GROUND_Y, levelLength, H-GROUND_Y);
+    ctx.globalAlpha = 0.25;
+    ctx.fillStyle = makeLightGradient(0, GROUND_Y, levelLength, H - GROUND_Y, pal.frontMid || '#3a2718', 0.16, -0.22);
+    ctx.fillRect(0, GROUND_Y, levelLength, H-GROUND_Y);
+    ctx.globalAlpha = 1;
+
+    // subtle stratified dirt lines
+    ctx.fillStyle = pal.strata || '#0002';
+    for (let y = GROUND_Y + 18; y < H; y += 26) {
+      ctx.fillRect(0, y, levelLength, 4);
+    }
+
+    // grass blades
+    ctx.strokeStyle = pal.blade || '#9ef79a';
+    ctx.lineWidth = 1;
+    for (let x=0; x<levelLength; x+=8) {
+      const gx = x + Math.sin((x+performance.now()*0.002)*0.1)*1.2;
+      ctx.beginPath();
+      ctx.moveTo(gx, turfTop);
+      ctx.lineTo(gx, turfTop - (x%16<8?5:7));
+      ctx.stroke();
+    }
+    // goal flag
+    ctx.fillStyle = '#333';
+    ctx.fillRect(goalX, GROUND_Y-60, 4, 60);
+    ctx.fillStyle = pal.goalFlag || '#ffd166';
+    ctx.beginPath();
+    ctx.moveTo(goalX+4, GROUND_Y-56);
+    ctx.lineTo(goalX+54, GROUND_Y-46);
+    ctx.lineTo(goalX+4, GROUND_Y-36);
+    ctx.closePath();
+    ctx.fill();
+    ctx.restore();
+  }
+
+  function drawBackdrop() {
+    const pal = palette();
+    ctx.save(); ctx.translate(-camX*0.6,0);
+    const fogColor = pal.skyBottom || '#bfeaff';
+    const silhouetteBase = pal.silhouetteColor || '#2f6130';
+    const silhouetteColor = mixHex(silhouetteBase, fogColor, 0.5);
+    ctx.fillStyle = silhouetteColor;
+    const silhouetteType = pal.silhouetteType || 'trees';
+
+    if (silhouetteType === 'craters') {
+      const planetSpacing = 320;
+      const planetCount = Math.ceil((levelLength + W) / planetSpacing);
+      for (let i=0; i<planetCount; i++) {
+        const px = i * planetSpacing + 160;
+        const py = 110 + (i % 3) * 24;
+        const r = 18 + (i % 3) * 6;
+        const grad = ctx.createRadialGradient(px - 6, py - 6, 6, px, py, r);
+        grad.addColorStop(0, pal.skyBottom || '#c5d4e8');
+        grad.addColorStop(1, pal.skyTop || '#1e1236');
+        ctx.fillStyle = grad;
+        ctx.beginPath();
+        ctx.arc(px, py, r, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = `${(pal.blade || '#ccb9f8')}88`;
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.arc(px, py, r + 6, 0, Math.PI * 2);
+        ctx.stroke();
+      }
+      ctx.fillStyle = silhouetteColor;
+    }
+    const silhouetteSpacing = 220;
+    const silhouetteCount = Math.ceil((levelLength + W) / silhouetteSpacing);
+    for (let i=0;i<silhouetteCount;i++){
+      const x = i*silhouetteSpacing + 100;
+      const type = silhouetteType;
+      if (type === 'city') {
+        const base = GROUND_Y;
+        const widths = [50, 36, 28];
+        widths.forEach((w, idx) => {
+          const h = 60 + (idx * 18) + (i % 2 === 0 ? 12 : 0);
+          ctx.fillRect(x + idx * 26, base - h, w, h);
+        });
+      } else if (type === 'ice') {
+        ctx.beginPath();
+        ctx.moveTo(x, GROUND_Y);
+        ctx.lineTo(x + 24, GROUND_Y - 80);
+        ctx.lineTo(x + 48, GROUND_Y);
+        ctx.closePath();
+        ctx.fill();
+        ctx.fillRect(x + 18, GROUND_Y - 50, 12, 50);
+      } else if (type === 'dunes') {
+        ctx.beginPath();
+        ctx.moveTo(x - 40, GROUND_Y);
+        ctx.quadraticCurveTo(x + 20, GROUND_Y - 40, x + 80, GROUND_Y);
+        ctx.lineTo(x + 80, GROUND_Y + 30);
+        ctx.lineTo(x - 40, GROUND_Y + 30);
+        ctx.closePath();
+        ctx.fill();
+      } else if (type === 'kelp') {
+        const stemH = 90;
+        ctx.beginPath();
+        ctx.moveTo(x, GROUND_Y);
+        ctx.quadraticCurveTo(x + 12, GROUND_Y - stemH * 0.4, x - 6, GROUND_Y - stemH);
+        ctx.quadraticCurveTo(x + 10, GROUND_Y - stemH * 0.6, x + 4, GROUND_Y - stemH * 0.2);
+        ctx.lineTo(x + 8, GROUND_Y);
+        ctx.closePath();
+        ctx.fill();
+      } else if (type === 'craters') {
+        ctx.beginPath();
+        ctx.ellipse(x + 24, GROUND_Y - 12, 46, 22, 0, 0, Math.PI*2);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.ellipse(x + 18, GROUND_Y - 22, 18, 10, 0, 0, Math.PI*2);
+        ctx.fill();
+        ctx.globalAlpha = 0.6;
+        ctx.fillRect(x + 8, GROUND_Y - 140, 3, 3);
+        ctx.fillRect(x + 42, GROUND_Y - 120, 2, 2);
+        ctx.fillRect(x - 12, GROUND_Y - 100, 2, 2);
+        ctx.globalAlpha = 1;
+      } else {
+        ctx.fillRect(x+14, GROUND_Y-70, 12, 70);
+        ctx.beginPath();
+        ctx.roundRect(x, GROUND_Y-110, 40, 30, 10); ctx.fill();
+        ctx.beginPath();
+        ctx.roundRect(x-6, GROUND_Y-90, 52, 34, 12); ctx.fill();
+      }
+    }
+    ctx.restore();
+    ctx.save();
+    const fogTop = mixHex(fogColor, '#000000', 0.15);
+    const fogNear = mixHex(fogColor, '#ffffff', 0.2);
+    const fogGrad = ctx.createLinearGradient(0, 0, 0, GROUND_Y);
+    fogGrad.addColorStop(0, hexToRgba(fogTop, 0.1));
+    fogGrad.addColorStop(0.65, hexToRgba(fogNear, 0.16));
+    fogGrad.addColorStop(1, hexToRgba(fogNear, 0.2));
+    ctx.fillStyle = fogGrad;
+    ctx.fillRect(0, 0, W, GROUND_Y);
+    ctx.restore();
+  }
+
+  function drawVolcano(v) {
+    if (!v) return;
+    ctx.save();
+    ctx.translate(-camX,0);
+
+    const baseY = GROUND_Y;
+    const rimY = v.rimY;
+    const smokeSeed = performance.now() * 0.0015;
+    const pal = (v.biome && v.biome.palette) ? v.biome.palette : palette();
+
+    const bodyGrad = ctx.createLinearGradient(0, rimY, 0, baseY + 80);
+    bodyGrad.addColorStop(0, pal.hazardBodyLight || '#6d3e2c');
+    bodyGrad.addColorStop(0.5, pal.hazardBodyMid || '#543121');
+    bodyGrad.addColorStop(1, pal.hazardBodyDark || '#2d1c14');
+    ctx.fillStyle = bodyGrad;
+    ctx.beginPath();
+    ctx.moveTo(v.x, baseY);
+    ctx.lineTo(v.lipLeft, rimY);
+    ctx.lineTo(v.lipRight, rimY);
+    ctx.lineTo(v.x + v.width, baseY);
+    ctx.closePath();
+    ctx.fill();
+
+    ctx.fillStyle = pal.hazardSide || '#4a2b1e';
+    ctx.beginPath();
+    ctx.moveTo(v.x, baseY);
+    ctx.lineTo(v.lipLeft, rimY);
+    ctx.lineTo(v.lipLeft, baseY);
+    ctx.closePath();
+    ctx.fill();
+    ctx.beginPath();
+    ctx.moveTo(v.x + v.width, baseY);
+    ctx.lineTo(v.lipRight, rimY);
+    ctx.lineTo(v.lipRight, baseY);
+    ctx.closePath();
+    ctx.fill();
+
+    const cavityBottom = baseY + v.lava.depth + 40;
+    const cavityGrad = ctx.createLinearGradient(0, rimY, 0, cavityBottom);
+    cavityGrad.addColorStop(0, pal.hazardCavityTop || '#361f15');
+    cavityGrad.addColorStop(1, pal.hazardCavityBottom || '#120805');
+    ctx.fillStyle = cavityGrad;
+    ctx.fillRect(v.craterX, rimY, v.craterWidth, cavityBottom - rimY);
+
+    ctx.fillStyle = pal.hazardLipLight || '#8f5539';
+    ctx.fillRect(v.lipLeft - 6, rimY - 6, (v.lipRight - v.lipLeft) + 12, 6);
+    ctx.fillStyle = pal.hazardLipDark || '#2c1a12';
+    ctx.fillRect(v.lipLeft - 4, rimY - 2, (v.lipRight - v.lipLeft) + 8, 4);
+
+    if (v.isErupting || v.explosionPulse > 0.01) {
+      const intensity = v.isErupting ? 1 : v.explosionPulse;
+      const glowTone = pal.hazardGlow || '#ff842c';
+      const rimTone = pal.hazardRimGlow || '#ffd65e';
+      ctx.fillStyle = `${glowTone}${Math.round(0.3 * intensity * 255).toString(16).padStart(2,'0')}`;
+      ctx.beginPath();
+      ctx.ellipse(v.craterX + v.craterWidth/2, rimY - 40, 120, 60, 0, 0, Math.PI*2);
+      ctx.fill();
+      ctx.fillStyle = `${rimTone}${Math.round(0.4 * intensity * 255).toString(16).padStart(2,'0')}`;
+      ctx.fillRect(v.craterX, rimY - 6, v.craterWidth, 6);
+    }
+
+    ctx.strokeStyle = pal.hazardSide || '#3b2419';
+    ctx.lineWidth = 2;
+    for (let i=1; i<=VOLCANO_STEPS; i++) {
+      const t = i / VOLCANO_STEPS;
+      const y = baseY - t * v.height;
+      const leftX = v.x + (v.lipLeft - v.x) * t;
+      const rightX = v.x + v.width - (v.x + v.width - v.lipRight) * t;
+      ctx.beginPath();
+      ctx.moveTo(leftX, y);
+      ctx.lineTo(rightX, y);
+      ctx.stroke();
+    }
+
+    ctx.save();
+    for (let i=0; i<5; i++) {
+      const alpha = 0.15 - i * 0.02;
+      if (alpha <= 0) break;
+      ctx.globalAlpha = alpha;
+      const sx = v.craterX + v.craterWidth/2 + Math.sin(smokeSeed + i*0.6) * 20;
+      const sy = rimY - 24 - i * 20 - Math.cos(smokeSeed*1.3 + i) * 6;
+      ctx.fillStyle = pal.hazardSmoke || '#f3ede4';
+      ctx.beginPath();
+      ctx.ellipse(sx, sy, 28 - i*3, 14 - i*2, 0, 0, Math.PI*2);
+      ctx.fill();
+    }
+    ctx.restore();
+
+    if (debugShowHit) {
+      ctx.strokeStyle = '#ff00ff55';
+      ctx.strokeRect(v.x, rimY, v.width, 2);
+    }
+
+    ctx.restore();
+  }
+
+  function drawTree(tr) {
+    if (tr.dead) return;
+    ctx.save();
+    ctx.translate(-camX,0);
+    const pal = palette();
+    const trunk = pal.resourceTrunk || '#7c4f2a';
+    const canopy = pal.resourceCanopy || '#3a7d3a';
+    const accent = pal.resourceAccent || canopy;
+    const type = tr.variant || 'default';
+    const groundY = tr.baseY + tr.h;
+    drawShadow(tr.x - 6, groundY + 2, tr.w + 12, Math.max(8, tr.w * 0.35), 0.28, -10);
+
+    if (type === 'ice') {
+      ctx.fillStyle = canopyFill;
+      ctx.beginPath();
+      ctx.moveTo(tr.x + tr.w/2, tr.baseY - 30);
+      ctx.lineTo(tr.x + tr.w - 4, tr.baseY + 40);
+      ctx.lineTo(tr.x + 4, tr.baseY + 40);
+      ctx.closePath();
+      ctx.fill();
+      ctx.fillStyle = accentFill;
+      ctx.beginPath();
+      ctx.moveTo(tr.x + tr.w/2, tr.baseY - 10);
+      ctx.lineTo(tr.x + tr.w - 10, tr.baseY + 32);
+      ctx.lineTo(tr.x + 10, tr.baseY + 32);
+      ctx.closePath();
+      ctx.fill();
+      ctx.fillStyle = trunkFill;
+      ctx.fillRect(tr.x + tr.w/2 - 6, tr.baseY + 32, 12, tr.h - 32);
+    } else if (type === 'city') {
+      ctx.fillStyle = trunkFill;
+      ctx.fillRect(tr.x, tr.baseY + tr.h - 40, tr.w, 40);
+      ctx.fillStyle = canopyFill;
+      ctx.fillRect(tr.x + 4, tr.baseY + 10, tr.w - 8, tr.h - 30);
+      ctx.fillStyle = accentFill;
+      for (let i=0; i<3; i++) {
+        ctx.fillRect(tr.x + 6 + accentShift, tr.baseY + 18 + i*20, tr.w - 12, 6);
+      }
+    } else if (type === 'sand') {
+      ctx.fillStyle = canopyFill;
+      ctx.fillRect(tr.x, tr.baseY + 20, tr.w, tr.h - 20);
+      ctx.fillStyle = accentFill;
+      for (let i=0; i<3; i++) {
+        const barX = lightSideX(tr.x + 6 + i * 8, 6, 0);
+        ctx.fillRect(barX, tr.baseY, 6, 20);
+      }
+      ctx.beginPath();
+      ctx.moveTo(tr.x, tr.baseY + 20);
+      ctx.lineTo(tr.x + tr.w/2, tr.baseY - 6);
+      ctx.lineTo(tr.x + tr.w, tr.baseY + 20);
+      ctx.closePath();
+      ctx.fill();
+    } else if (type === 'water') {
+      ctx.fillStyle = canopyFill;
+      ctx.beginPath();
+      ctx.roundRect(tr.x, tr.baseY + 20, tr.w, tr.h - 20, 8);
+      ctx.fill();
+      ctx.fillStyle = accentFill;
+      ctx.beginPath();
+      ctx.roundRect(tr.x + 6 + accentShift, tr.baseY + 8, tr.w - 12, 22, 10);
+      ctx.fill();
+      ctx.fillStyle = trunkFill;
+      ctx.fillRect(tr.x + tr.w/2 - 8, tr.baseY + tr.h - 28, 16, 28);
+    } else if (type === 'space') {
+      ctx.fillStyle = canopyFill;
+      ctx.beginPath();
+      ctx.roundRect(tr.x, tr.baseY + 16, tr.w, tr.h - 16, 12);
+      ctx.fill();
+      ctx.fillStyle = accentFill;
+      ctx.beginPath();
+      ctx.ellipse(tr.x + tr.w/2, tr.baseY + 26, tr.w/2, 12, 0, 0, Math.PI*2);
+      ctx.fill();
+      ctx.fillStyle = trunkFill;
+      ctx.fillRect(tr.x + tr.w/2 - 10, tr.baseY + tr.h - 30, 20, 30);
+    } else {
+      ctx.fillStyle = trunkFill;
+      ctx.fillRect(tr.x + 10, tr.baseY + 30, 10, tr.h - 30);
+      ctx.fillStyle = canopyFill;
+      ctx.beginPath();
+      ctx.roundRect(tr.x, tr.baseY, tr.w, 40, 10);
+      ctx.fill();
+      ctx.beginPath();
+      ctx.roundRect(tr.x-6, tr.baseY+18, tr.w+12, 34, 12);
+      ctx.fill();
+    }
+
+    // chop progress bar if nearby / active
+    const near = players.some(p => Math.abs((tr.x + tr.w/2) - p.centerX()) < 38 && Math.abs((tr.baseY + tr.h) - p.bottom()) < 50);
+    if (near && !finished) {
+      ctx.fillStyle = '#0008';
+      ctx.fillRect(tr.x-6, tr.baseY-16, tr.w+12, 8);
+      ctx.fillStyle = '#9ef79a';
+      ctx.fillRect(tr.x-6, tr.baseY-16, (tr.w+12) * (tr.progress), 8);
+      // HP pips
+      ctx.fillStyle = '#ffd166';
+      for (let i=0;i<tr.hp;i++){
+        ctx.fillRect(tr.x + 4 + i*8, tr.baseY-28, 6, 6);
+      }
+    }
+
+    if (debugShowHit) {
+      const a=tr.aabb();
+      ctx.strokeStyle='#fff8'; ctx.strokeRect(a.x, a.y, a.w, a.h);
+    }
+    ctx.restore();
+  }
+
+  function drawWall(w) {
+    ctx.save(); ctx.translate(-camX,0);
+    const pal = palette();
+    const shadowY = w.y + w.h + 2;
+    drawShadow(w.x - 4, shadowY, w.w + 8, Math.max(6, w.w * 0.18), 0.22, -8);
+    ctx.fillStyle = pal.wallPrimary || '#9399a3';
+    ctx.fillRect(w.x, w.y, w.w, w.h);
+    const highlightTop = LIGHT_DIR.y < 0;
+    ctx.save();
+    ctx.globalAlpha = 0.35;
+    ctx.fillStyle = '#fff';
+    ctx.fillRect(w.x, highlightTop ? w.y : w.y + w.h - 1, w.w, 1);
+    ctx.globalAlpha = 0.25;
+    ctx.fillStyle = '#000';
+    ctx.fillRect(w.x, highlightTop ? w.y + w.h - 1 : w.y, w.w, 1);
+    ctx.restore();
+    // fake brick lines
+    ctx.strokeStyle = shadeColor(pal.wallStroke || '#747b85', -0.1);
+    ctx.lineWidth = 1;
+    for (let y=0; y<w.h; y+=10) {
+      ctx.beginPath(); ctx.moveTo(w.x, w.y+y); ctx.lineTo(w.x+w.w, w.y+y); ctx.stroke();
+    }
+    ctx.restore();
+    if (debugShowHit) {
+      const a=w.aabb();
+      ctx.save(); ctx.translate(-camX,0); ctx.strokeStyle='#fff8'; ctx.strokeRect(a.x, a.y, a.w, a.h); ctx.restore();
+    }
+  }
+
+  function drawLava(l) {
+    ctx.save(); ctx.translate(-camX,0);
+    const pitTop = GROUND_Y;
+    const pitBottom = pitTop + l.depth;
+    const lavaTop = l.y;
+    const pal = l.palette || palette();
+
+    if (l.variant === 'hazard') {
+      const hazardWall = pal.lavaWallDark || '#2a1811';
+      ctx.fillStyle = makeLightGradient(l.x - 10, pitTop, l.w + 20, l.depth + 40, hazardWall, 0.16, -0.28);
+      ctx.fillRect(l.x - 10, pitTop, l.w + 20, l.depth + 40);
+      const hazardRim = pal.lavaWallMid || '#4d2c1c';
+      ctx.fillStyle = makeLightGradient(l.x - 6, pitTop - 8, l.w + 12, 8, hazardRim, 0.18, -0.2);
+      ctx.fillRect(l.x - 6, pitTop - 8, l.w + 12, 8);
+    } else {
+      const rimTop = GROUND_Y - l.rim;
+      const rimGrad = ctx.createLinearGradient(0, rimTop, 0, pitTop);
+      rimGrad.addColorStop(0, pal.lavaRimTop || '#6fa95c');
+      rimGrad.addColorStop(1, pal.lavaRimBottom || '#35592d');
+      ctx.fillStyle = rimGrad;
+      ctx.fillRect(l.x - 8, rimTop, l.w + 16, l.rim);
+      ctx.globalAlpha = 0.3;
+      ctx.fillStyle = makeLightGradient(l.x - 8, rimTop, l.w + 16, l.rim, pal.lavaRimTop || '#6fa95c', 0.2, -0.22);
+      ctx.fillRect(l.x - 8, rimTop, l.w + 16, l.rim);
+      ctx.globalAlpha = 1;
+
+      const wallGrad = ctx.createLinearGradient(l.x - 8, pitTop, l.x + l.w + 8, pitTop);
+      wallGrad.addColorStop(0, pal.lavaWallDark || '#1c2b16');
+      wallGrad.addColorStop(0.12, pal.lavaWallMid || '#3f5a29');
+      wallGrad.addColorStop(0.88, pal.lavaWallMid || '#3f5a29');
+      wallGrad.addColorStop(1, pal.lavaWallDark || '#1c2b16');
+      ctx.fillStyle = wallGrad;
+      ctx.fillRect(l.x - 8, pitTop, l.w + 16, l.depth);
+      ctx.globalAlpha = 0.25;
+      ctx.fillStyle = makeLightGradient(l.x - 8, pitTop, l.w + 16, l.depth, pal.lavaWallMid || '#3f5a29', 0.2, -0.26);
+      ctx.fillRect(l.x - 8, pitTop, l.w + 16, l.depth);
+      ctx.globalAlpha = 1;
+
+      const cavityGrad = ctx.createLinearGradient(0, pitTop, 0, pitBottom);
+      cavityGrad.addColorStop(0, pal.lavaCavityTop || '#331b11');
+      cavityGrad.addColorStop(1, pal.lavaCavityBottom || '#0f0603');
+      ctx.fillStyle = cavityGrad;
+      ctx.fillRect(l.x, pitTop, l.w, l.depth);
+    }
+
+    const lavaGrad = ctx.createLinearGradient(0, lavaTop, 0, pitBottom);
+    lavaGrad.addColorStop(0, pal.lavaFillLight || '#ffb56b');
+    lavaGrad.addColorStop(0.45, pal.lavaFillMid || '#ff6b3a');
+    lavaGrad.addColorStop(1, pal.lavaFillDark || '#d62020');
+    ctx.fillStyle = lavaGrad;
+    ctx.fillRect(l.x, lavaTop, l.w, pitBottom - lavaTop);
+    ctx.globalAlpha = 0.28;
+    ctx.fillStyle = makeLightGradient(l.x, lavaTop, l.w, pitBottom - lavaTop, pal.lavaFillMid || '#ff6b3a', 0.26, -0.3);
+    ctx.fillRect(l.x, lavaTop, l.w, pitBottom - lavaTop);
+    ctx.globalAlpha = 1;
+
+    ctx.strokeStyle = pal.lavaStroke || '#ffd166';
+    ctx.lineWidth = 2;
+    const t = performance.now()*0.003 + l.phase;
+    ctx.beginPath();
+    for (let i=0; i<=l.w; i+=4) {
+      const y = lavaTop + 4 + Math.sin(t + i*0.2) * 2;
+      if (i===0) ctx.moveTo(l.x+i, y); else ctx.lineTo(l.x+i, y);
+    }
+    ctx.stroke();
+
+    const glow = ctx.createRadialGradient(l.x + l.w/2, lavaTop + (pitBottom - lavaTop)/2, 0, l.x + l.w/2, lavaTop + (pitBottom - lavaTop)/2, l.w * 1.2);
+    glow.addColorStop(0, pal.lavaGlow || '#ff6b3a55');
+    glow.addColorStop(1, '#00000000');
+    ctx.fillStyle = glow;
+    ctx.globalCompositeOperation = 'lighter';
+    ctx.fillRect(l.x - 24, lavaTop - 16, l.w + 48, pitBottom - lavaTop + 32);
+    ctx.globalCompositeOperation = 'source-over';
+    ctx.restore();
+
+    if (debugShowHit) {
+      const a=l.aabb();
+      ctx.save(); ctx.translate(-camX,0); ctx.strokeStyle='#fff8'; ctx.strokeRect(a.x, a.y, a.w, a.h); ctx.restore();
+    }
+  }
+
+  function drawCoin(c) {
+    if (c.collected) return;
+    ctx.save(); ctx.translate(-camX,0);
+    const pal = palette();
+    const bob = Math.sin(c.t*4) * 3;
+    const groundY = groundHeightAt(c.x);
+    const lift = clamp((groundY - (c.y + bob)) / 30, 0, 1);
+    drawShadow(c.x - c.r * 1.1, groundY + 1, c.r * 2.2, c.r * 0.7, 0.3 * (1 - lift * 0.7), -5);
+    ctx.beginPath();
+    ctx.arc(c.x, c.y + bob, c.r, 0, Math.PI*2);
+    ctx.fillStyle = coinFill;
+    ctx.fill();
+    ctx.strokeStyle = makeLightGradient(c.x - c.r, c.y + bob - c.r, c.r * 2, c.r * 2, pal.coinEdge || '#c9a44f', 0.12, -0.3);
+    ctx.lineWidth = 2;
+    ctx.stroke();
+    // inner shine
+    ctx.fillStyle = '#fff8';
+    ctx.beginPath();
+    ctx.arc(c.x + LIGHT_DIR.x * 4, c.y + bob + LIGHT_DIR.y * 4, 4, 0, Math.PI*2);
+    ctx.fill();
+    const shadowAngle = Math.atan2(-LIGHT_DIR.y, -LIGHT_DIR.x);
+    ctx.save();
+    ctx.globalAlpha = 0.35;
+    ctx.strokeStyle = '#000';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(c.x, c.y + bob, c.r - 2, shadowAngle - Math.PI * 0.4, shadowAngle + Math.PI * 0.4);
+    ctx.stroke();
+    ctx.restore();
+    ctx.restore();
+  }
+
+  function drawBoss(enemy) {
+    if (enemy.dead) return;
+    ctx.save(); ctx.translate(-camX,0);
+    const pal = palette();
+    const variant = enemy.variant || 'dino';
+    const groundUnder = groundHeightAt(enemy.centerX());
+    ctx.fillStyle = '#0005';
+    ctx.beginPath();
+    ctx.ellipse(enemy.centerX(), groundUnder - 2, 26, 6, 0, 0, Math.PI*2);
+    ctx.fill();
+
+    const bodyHeight = enemy.h * 0.7;
+    const bodyY = enemy.y + enemy.h - bodyHeight;
+    const accentShift = LIGHT_DIR.x < 0 ? -2 : 2;
+
+    if (variant === 'camel') {
+      const bodyBase = pal.bossBody || '#32713b';
+      ctx.fillStyle = makeLightGradient(enemy.x, bodyY, enemy.w, bodyHeight, bodyBase, 0.2, -0.24);
+      ctx.beginPath();
+      ctx.roundRect(enemy.x, bodyY, enemy.w, bodyHeight, 22);
+      ctx.fill();
+      const bellyBase = pal.bossBelly || '#4ca254';
+      ctx.fillStyle = makeLightGradient(enemy.x + 12 + accentShift, bodyY + 10, enemy.w - 24, bodyHeight - 18, bellyBase, 0.2, -0.22);
+      ctx.beginPath();
+      ctx.roundRect(enemy.x + 12 + accentShift, bodyY + 10, enemy.w - 24, bodyHeight - 18, 16);
+      ctx.fill();
+      const headBase = pal.bossHead || '#3c8f48';
+      const headX = enemy.facing > 0 ? enemy.x + enemy.w - 20 : enemy.x + 4;
+      ctx.fillStyle = makeLightGradient(headX, enemy.y - 4, 18, 16, headBase, 0.22, -0.2);
+      ctx.beginPath();
+      ctx.roundRect(headX, enemy.y - 4, 18, 16, 6);
+      ctx.fill();
+      ctx.fillStyle = pal.bossEyeDark || '#1c2b16';
+      ctx.fillRect(headX + (enemy.facing > 0 ? 8 : 4), enemy.y + 2, 6, 4);
+      const tailBase = pal.bossTail || '#28652f';
+      ctx.fillStyle = makeLightGradient(enemy.x - 10, bodyY + bodyHeight * 0.6, 18, 10, tailBase, 0.18, -0.22);
+      ctx.beginPath();
+      ctx.roundRect(enemy.x + (enemy.facing > 0 ? -10 : enemy.w - 8), bodyY + bodyHeight * 0.6, 18, 10, 6);
+      ctx.fill();
+    } else if (variant === 'monkey') {
+      const bodyBase = pal.bossBody || '#32713b';
+      ctx.fillStyle = makeLightGradient(enemy.x + 8, bodyY + 6, enemy.w - 16, bodyHeight - 8, bodyBase, 0.2, -0.24);
+      ctx.beginPath();
+      ctx.roundRect(enemy.x + 8, bodyY + 6, enemy.w - 16, bodyHeight - 8, 20);
+      ctx.fill();
+      const bellyBase = pal.bossBelly || '#4ca254';
+      ctx.fillStyle = makeLightGradient(enemy.x + 18 + accentShift, bodyY + 16, enemy.w - 36, bodyHeight - 28, bellyBase, 0.2, -0.22);
+      ctx.beginPath();
+      ctx.roundRect(enemy.x + 18 + accentShift, bodyY + 16, enemy.w - 36, bodyHeight - 28, 14);
+      ctx.fill();
+      const headBase = pal.bossHead || '#3c8f48';
+      const headX = enemy.facing > 0 ? enemy.x + enemy.w - 42 : enemy.x + 6;
+      ctx.fillStyle = makeLightGradient(headX, enemy.y - 2, 36, 32, headBase, 0.22, -0.2);
+      ctx.beginPath();
+      ctx.roundRect(headX, enemy.y - 2, 36, 32, 14);
+      ctx.fill();
+      ctx.fillStyle = pal.bossEyeDark || '#1c2b16';
+      ctx.fillRect(headX + 10, enemy.y + 12, 6, 6);
+      ctx.fillRect(headX + 20, enemy.y + 12, 6, 6);
+      ctx.fillStyle = pal.bossEyeLight || '#f6f1ce';
+      ctx.fillRect(headX + 12, enemy.y + 12, 3, 3);
+      ctx.fillRect(headX + 22, enemy.y + 12, 3, 3);
+      const tailBase = pal.bossTail || '#28652f';
+      ctx.beginPath();
+      ctx.arc(enemy.x + (enemy.facing > 0 ? enemy.w : 0), bodyY + bodyHeight * 0.6, 14, 0, Math.PI, enemy.facing > 0);
+      ctx.strokeStyle = makeLightGradient(enemy.x - 14, bodyY + bodyHeight * 0.6 - 14, 28, 28, tailBase, 0.18, -0.22);
+      ctx.lineWidth = 8;
+      ctx.stroke();
+    } else if (variant === 'polar-bear') {
+      const bodyBase = pal.bossBody || '#32713b';
+      ctx.fillStyle = makeLightGradient(enemy.x, bodyY, enemy.w, bodyHeight, bodyBase, 0.2, -0.24);
+      ctx.beginPath();
+      ctx.roundRect(enemy.x, bodyY, enemy.w, bodyHeight, 18);
+      ctx.fill();
+      const bellyBase = pal.bossBelly || '#4ca254';
+      ctx.fillStyle = makeLightGradient(enemy.x + 14 + accentShift, bodyY + 10, enemy.w - 28, bodyHeight - 18, bellyBase, 0.2, -0.22);
+      ctx.beginPath();
+      ctx.roundRect(enemy.x + 14 + accentShift, bodyY + 10, enemy.w - 28, bodyHeight - 18, 14);
+      ctx.fill();
+      const headBase = pal.bossHead || '#3c8f48';
+      const headX = enemy.facing > 0 ? enemy.x + enemy.w - 34 : enemy.x + 6;
+      ctx.fillStyle = makeLightGradient(headX, enemy.y + 2, 30, 26, headBase, 0.22, -0.2);
+      ctx.beginPath();
+      ctx.roundRect(headX, enemy.y + 2, 30, 26, 10);
+      ctx.fill();
+      ctx.fillStyle = pal.bossEyeDark || '#1c2b16';
+      ctx.fillRect(headX + 8, enemy.y + 12, 6, 4);
+      ctx.fillStyle = pal.bossEyeLight || '#f6f1ce';
+      ctx.fillRect(headX + 9, enemy.y + 12, 3, 2);
+      const tailBase = pal.bossTail || '#28652f';
+      ctx.fillStyle = makeLightGradient(enemy.x + enemy.w - 18, bodyY + bodyHeight - 18, 10, 14, tailBase, 0.18, -0.22);
+      ctx.fillRect(enemy.x + enemy.w - 18, bodyY + bodyHeight - 18, 10, 14);
+    } else if (variant === 'fish') {
+      const bodyBase = pal.bossBody || '#32713b';
+      ctx.fillStyle = makeLightGradient(enemy.x, enemy.y, enemy.w, enemy.h, bodyBase, 0.2, -0.24);
+      ctx.beginPath();
+      ctx.ellipse(enemy.x + enemy.w / 2, enemy.y + enemy.h / 2, enemy.w / 2, enemy.h / 2.4, 0, 0, Math.PI*2);
+      ctx.fill();
+      const bellyBase = pal.bossBelly || '#4ca254';
+      ctx.fillStyle = makeLightGradient(enemy.x, enemy.y, enemy.w, enemy.h, bellyBase, 0.2, -0.22);
+      ctx.beginPath();
+      ctx.ellipse(enemy.x + enemy.w / 2, enemy.y + enemy.h / 2 + 4, enemy.w / 2.6, enemy.h / 3, 0, 0, Math.PI*2);
+      ctx.fill();
+      const tailBase = pal.bossTail || '#28652f';
+      ctx.fillStyle = makeLightGradient(enemy.x - 20, enemy.y + enemy.h / 2 - 18, 20, 36, tailBase, 0.18, -0.22);
+      ctx.beginPath();
+      ctx.moveTo(enemy.x, enemy.y + enemy.h / 2);
+      ctx.lineTo(enemy.x - 20, enemy.y + enemy.h / 2 - 18);
+      ctx.lineTo(enemy.x - 20, enemy.y + enemy.h / 2 + 18);
+      ctx.closePath();
+      ctx.fill();
+      const headBase = pal.bossHead || '#3c8f48';
+      ctx.fillStyle = makeLightGradient(enemy.x + enemy.w - 34, enemy.y + enemy.h / 2 - 16, 32, 32, headBase, 0.22, -0.2);
+      ctx.beginPath();
+      ctx.arc(enemy.x + enemy.w - 18, enemy.y + enemy.h / 2, 16, 0, Math.PI*2);
+      ctx.fill();
+      ctx.fillStyle = pal.bossEyeDark || '#1c2b16';
+      ctx.fillRect(enemy.x + enemy.w - 22, enemy.y + enemy.h / 2 - 3, 6, 4);
+      ctx.fillStyle = pal.bossEyeLight || '#f6f1ce';
+      ctx.fillRect(enemy.x + enemy.w - 20, enemy.y + enemy.h / 2 - 2, 3, 2);
+    } else if (variant === 'alien') {
+      const bodyBase = pal.bossBody || '#32713b';
+      ctx.fillStyle = makeLightGradient(enemy.x + 8, bodyY + 4, enemy.w - 16, bodyHeight - 12, bodyBase, 0.2, -0.24);
+      ctx.beginPath();
+      ctx.roundRect(enemy.x + 8, bodyY + 4, enemy.w - 16, bodyHeight - 12, 18);
+      ctx.fill();
+      const bellyBase = pal.bossBelly || '#4ca254';
+      ctx.fillStyle = makeLightGradient(enemy.x + 18 + accentShift, bodyY + 14, enemy.w - 36, bodyHeight - 32, bellyBase, 0.2, -0.22);
+      ctx.beginPath();
+      ctx.roundRect(enemy.x + 18 + accentShift, bodyY + 14, enemy.w - 36, bodyHeight - 32, 12);
+      ctx.fill();
+      const headBase = pal.bossHead || '#3c8f48';
+      const headX = enemy.x + enemy.w / 2 - 18;
+      ctx.fillStyle = makeLightGradient(headX, enemy.y - 6, 36, 32, headBase, 0.22, -0.2);
+      ctx.beginPath();
+      ctx.roundRect(headX, enemy.y - 6, 36, 32, 16);
+      ctx.fill();
+      ctx.fillStyle = pal.bossEyeDark || '#1c2b16';
+      ctx.fillRect(headX + 10, enemy.y + 8, 6, 8);
+      ctx.fillRect(headX + 20, enemy.y + 8, 6, 8);
+      ctx.fillStyle = pal.bossEyeLight || '#f6f1ce';
+      ctx.fillRect(headX + 12, enemy.y + 10, 3, 4);
+      ctx.fillRect(headX + 22, enemy.y + 10, 3, 4);
+      ctx.strokeStyle = pal.bossEyeLight || '#f6f1ce';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.moveTo(headX + 18, enemy.y - 6);
+      ctx.lineTo(headX + 18, enemy.y - 14);
+      ctx.stroke();
+    } else {
+      const bodyBase = pal.bossBody || '#32713b';
+      ctx.fillStyle = makeLightGradient(enemy.x, bodyY, enemy.w, bodyHeight, bodyBase, 0.2, -0.24);
+      ctx.beginPath();
+      ctx.roundRect(enemy.x, bodyY, enemy.w, bodyHeight, 24);
+      ctx.fill();
+
+      const bellyBase = pal.bossBelly || '#4ca254';
+      ctx.fillStyle = makeLightGradient(enemy.x + 16 + accentShift, bodyY + 12, enemy.w - 32, bodyHeight - 20, bellyBase, 0.2, -0.22);
+      ctx.beginPath();
+      ctx.roundRect(enemy.x + 16 + accentShift, bodyY + 12, enemy.w - 32, bodyHeight - 20, 18);
+      ctx.fill();
+
+      const tailBase = pal.bossTail || '#28652f';
+      const tailDir = enemy.facing > 0 ? -1 : 1;
+      ctx.fillStyle = makeLightGradient(enemy.x - 40, bodyY + bodyHeight * 0.65 - 14, 80, 28, tailBase, 0.18, -0.22);
+      ctx.beginPath();
+      ctx.ellipse(enemy.x + (tailDir > 0 ? enemy.w + 30 : -30), bodyY + bodyHeight * 0.65, 40, 14, 0, 0, Math.PI*2);
+      ctx.fill();
+
+      const headWidth = 46;
+      const headHeight = 32;
+      const headX = enemy.facing > 0 ? enemy.x + enemy.w - headWidth : enemy.x;
+      const headBase = pal.bossHead || '#3c8f48';
+      ctx.fillStyle = makeLightGradient(headX, enemy.y + 6, headWidth, headHeight, headBase, 0.22, -0.2);
+      ctx.beginPath();
+      ctx.roundRect(headX, enemy.y + 6, headWidth, headHeight, 16);
+      ctx.fill();
+      ctx.fillStyle = pal.bossEyeDark || '#1c2b16';
+      const eyeX = enemy.facing > 0 ? headX + headWidth - 16 : headX + 8;
+      ctx.fillRect(eyeX, enemy.y + 14, 10, 6);
+      ctx.fillStyle = pal.bossEyeLight || '#f6f1ce';
+      ctx.fillRect(eyeX + (enemy.facing > 0 ? 2 : -2), enemy.y + 14, 6, 4);
+
+      ctx.fillStyle = pal.bossTooth || '#fef9d6';
+      for (let i=0; i<4; i++) {
+        const toothX = headX + 6 + i * 8;
+        ctx.fillRect(toothX, enemy.y + headHeight + 4, 4, 6);
+      }
+
+      const legBase = pal.bossLeg || '#215929';
+      ctx.fillStyle = makeLightGradient(enemy.x + 14, bodyY + bodyHeight - 14, 14, 24, legBase, 0.18, -0.22);
+      ctx.fillRect(enemy.x + 14, bodyY + bodyHeight - 14, 14, 24);
+      ctx.fillStyle = makeLightGradient(enemy.x + enemy.w - 28, bodyY + bodyHeight - 14, 14, 24, legBase, 0.18, -0.22);
+      ctx.fillRect(enemy.x + enemy.w - 28, bodyY + bodyHeight - 14, 14, 24);
+    }
+
+    const hpRatio = clamp(enemy.hp / (enemy.maxHp || BOSS_HITS_TO_DEFEAT), 0, 1);
+    ctx.fillStyle = '#0009';
+    ctx.fillRect(enemy.x - 16, enemy.y - 24, enemy.w + 32, 10);
+    ctx.fillStyle = pal.hpFill || '#9ef79a';
+    ctx.fillRect(enemy.x - 16, enemy.y - 24, (enemy.w + 32) * hpRatio, 10);
+
+    if (enemy.hitFlash > 0) {
+      const flash = clamp(enemy.hitFlash / 18, 0, 1);
+      ctx.fillStyle = `rgba(255, 255, 255, ${0.25 * flash})`;
+      ctx.fillRect(enemy.x - 4, enemy.y - 10, enemy.w + 8, enemy.h + 16);
+    }
+
+    ctx.restore();
+
+    if (debugShowHit) {
+      const a=enemy.aabb();
+      ctx.save(); ctx.translate(-camX,0); ctx.strokeStyle='#fff8'; ctx.strokeRect(a.x, a.y, a.w, a.h); ctx.restore();
+    }
+  }
+
+  function drawShadow(x, y, w, h, intensity, skew) {
+    const camCenter = camX + W / 2;
+    const shadowCenter = x + w / 2;
+    const dist = Math.abs(shadowCenter - camCenter);
+    const cameraFade = clamp(1 - dist / (W * 0.9), 0.15, 1);
+    const scaleFade = clamp(h / 14, 0.35, 1);
+    const opacity = clamp(intensity * cameraFade * scaleFade, 0, 0.5);
+    if (opacity <= 0) return;
+    ctx.save();
+    ctx.globalAlpha = opacity;
+    ctx.fillStyle = '#000000';
+    ctx.beginPath();
+    ctx.ellipse(shadowCenter + skew, y, w / 2, h / 2, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  }
+
+  function drawEnemy(enemy) {
+    if (enemy.dead) return;
+    if (enemy.isBoss) {
+      drawBoss(enemy);
+      return;
+    }
+    ctx.save(); ctx.translate(-camX,0);
+    const pal = palette();
+    const variant = enemy.variant || 'dino';
+    const groundUnder = groundHeightAt(enemy.centerX());
+    drawShadow(enemy.centerX() - 14, groundUnder + 1, 28, 8, 0.32, -6);
+
+    if (variant === 'camel') {
+      const bodyY = enemy.y + 12;
+      const bodyBase = pal.enemyPrimary || '#7f3232';
+      ctx.fillStyle = makeLightGradient(enemy.x, bodyY, enemy.w, enemy.h - 18, bodyBase, 0.2, -0.24);
+      ctx.beginPath();
+      ctx.roundRect(enemy.x, bodyY, enemy.w, enemy.h - 18, 10);
+      ctx.fill();
+      const bellyBase = pal.enemySecondary || '#c54c4c';
+      ctx.fillStyle = makeLightGradient(enemy.x + 6 + accentShift, bodyY - 8, enemy.w - 12, enemy.h - 20, bellyBase, 0.2, -0.2);
+      ctx.beginPath();
+      ctx.roundRect(enemy.x + 6 + accentShift, bodyY - 8, enemy.w - 12, enemy.h - 20, 12);
+      ctx.fill();
+      const accentBase = pal.enemyAccent || '#532626';
+      ctx.fillStyle = makeLightGradient(enemy.x + enemy.w - 12, enemy.y + 6, 10, 16, accentBase, 0.16, -0.24);
+      ctx.beginPath();
+      ctx.roundRect(enemy.x + enemy.w - 12, enemy.y + 6, 10, 16, 6);
+      ctx.fill();
+      const headBase = pal.enemyHead || '#ffb27d';
+      const headX = enemy.facing > 0 ? enemy.x + enemy.w - 18 : enemy.x + 6;
+      ctx.fillStyle = makeLightGradient(headX, enemy.y, 16, 12, headBase, 0.22, -0.18);
+      ctx.beginPath();
+      ctx.roundRect(headX, enemy.y, 16, 12, 6);
+      ctx.fill();
+      ctx.fillStyle = pal.enemyEyeDark || '#2b1a1a';
+      ctx.fillRect(headX + (enemy.facing > 0 ? 10 : 2), enemy.y + 4, 4, 3);
+    } else if (variant === 'car') {
+      const bodyBase = pal.enemySecondary || '#c54c4c';
+      ctx.fillStyle = makeLightGradient(enemy.x, enemy.y + 18, enemy.w, enemy.h - 26, bodyBase, 0.2, -0.24);
+      ctx.fillRect(enemy.x, enemy.y + 18, enemy.w, enemy.h - 26);
+      const roofBase = pal.enemyPrimary || '#7f3232';
+      ctx.fillStyle = makeLightGradient(enemy.x + 4, enemy.y + 12, enemy.w - 8, 14, roofBase, 0.2, -0.2);
+      ctx.fillRect(enemy.x + 4, enemy.y + 12, enemy.w - 8, 14);
+      const accentBase = pal.enemyAccent || '#532626';
+      ctx.fillStyle = makeLightGradient(enemy.x + 8 + accentShift, enemy.y + 8, enemy.w - 16, 8, accentBase, 0.16, -0.24);
+      ctx.fillRect(enemy.x + 8 + accentShift, enemy.y + 8, enemy.w - 16, 8);
+      ctx.fillStyle = '#111';
+      ctx.beginPath();
+      ctx.arc(enemy.x + 8, enemy.y + enemy.h - 6, 6, 0, Math.PI*2);
+      ctx.arc(enemy.x + enemy.w - 8, enemy.y + enemy.h - 6, 6, 0, Math.PI*2);
+      ctx.fill();
+    } else if (variant === 'polar-bear') {
+      const bodyBase = pal.enemyPrimary || '#7f3232';
+      ctx.fillStyle = makeLightGradient(enemy.x, enemy.y + 8, enemy.w, enemy.h - 12, bodyBase, 0.2, -0.24);
+      ctx.beginPath();
+      ctx.roundRect(enemy.x, enemy.y + 8, enemy.w, enemy.h - 12, 8);
+      ctx.fill();
+      const headBase = pal.enemyHead || '#ffb27d';
+      ctx.fillStyle = makeLightGradient(enemy.x + 6, enemy.y, enemy.w - 12, 14, headBase, 0.22, -0.18);
+      ctx.beginPath();
+      ctx.roundRect(enemy.x + 6, enemy.y, enemy.w - 12, 14, 6);
+      ctx.fill();
+      ctx.fillStyle = pal.enemyEyeDark || '#2b1a1a';
+      ctx.fillRect(enemy.x + 10, enemy.y + 4, 6, 4);
+      ctx.fillStyle = pal.enemyEyeLight || '#f6f1ce';
+      ctx.fillRect(enemy.x + 10, enemy.y + 4, 3, 2);
+      const accentBase = pal.enemyAccent || '#532626';
+      ctx.fillStyle = makeLightGradient(enemy.x + 4 + accentShift, enemy.y + enemy.h - 12, enemy.w - 8, 10, accentBase, 0.16, -0.24);
+      ctx.fillRect(enemy.x + 4 + accentShift, enemy.y + enemy.h - 12, enemy.w - 8, 10);
+    } else if (variant === 'fish') {
+      const bodyBase = pal.enemySecondary || '#c54c4c';
+      ctx.fillStyle = makeLightGradient(enemy.x, enemy.y, enemy.w, enemy.h, bodyBase, 0.2, -0.24);
+      ctx.beginPath();
+      ctx.ellipse(enemy.x + enemy.w / 2, enemy.y + enemy.h / 2, enemy.w / 2, enemy.h / 2.4, 0, 0, Math.PI*2);
+      ctx.fill();
+      const tailBase = pal.enemyPrimary || '#7f3232';
+      ctx.fillStyle = makeLightGradient(enemy.x - 10, enemy.y + enemy.h / 2 - 10, 10, 20, tailBase, 0.2, -0.24);
+      ctx.beginPath();
+      ctx.moveTo(enemy.x, enemy.y + enemy.h / 2);
+      ctx.lineTo(enemy.x - 10, enemy.y + enemy.h / 2 - 10);
+      ctx.lineTo(enemy.x - 10, enemy.y + enemy.h / 2 + 10);
+      ctx.closePath();
+      ctx.fill();
+      const headBase = pal.enemyHead || '#ffb27d';
+      ctx.fillStyle = makeLightGradient(enemy.x + enemy.w - 18, enemy.y + enemy.h / 2 - 8, 16, 16, headBase, 0.22, -0.18);
+      ctx.beginPath();
+      ctx.arc(enemy.x + enemy.w - 10, enemy.y + enemy.h / 2, 8, 0, Math.PI*2);
+      ctx.fill();
+      ctx.fillStyle = pal.enemyEyeDark || '#2b1a1a';
+      ctx.fillRect(enemy.x + enemy.w - 12, enemy.y + enemy.h / 2 - 2, 3, 3);
+    } else {
+      const accentBase = pal.enemyAccent || '#532626';
+      ctx.fillStyle = makeLightGradient(enemy.x + 2 + accentShift, enemy.y + 14, enemy.w - 4, enemy.h - 14, accentBase, 0.16, -0.24);
+      ctx.fillRect(enemy.x + 2 + accentShift, enemy.y + 14, enemy.w - 4, enemy.h - 14);
+      const bodyBase = pal.enemyPrimary || '#7f3232';
+      ctx.fillStyle = makeLightGradient(enemy.x, enemy.y + 6, enemy.w, enemy.h - 16, bodyBase, 0.2, -0.24);
+      ctx.fillRect(enemy.x, enemy.y + 6, enemy.w, enemy.h - 16);
+      const bellyBase = pal.enemySecondary || '#c54c4c';
+      ctx.fillStyle = makeLightGradient(enemy.x + 4 + accentShift, enemy.y + 8, enemy.w - 8, enemy.h - 20, bellyBase, 0.2, -0.2);
+      ctx.fillRect(enemy.x + 4 + accentShift, enemy.y + 8, enemy.w - 8, enemy.h - 20);
+
+      const headSize = 16;
+      const headX = enemy.x + (enemy.w - headSize) / 2;
+      const headY = enemy.y - headSize + 6;
+      const headBase = pal.enemyHead || '#ffb27d';
+      ctx.fillStyle = makeLightGradient(headX, headY, headSize, headSize, headBase, 0.22, -0.18);
+      ctx.fillRect(headX, headY, headSize, headSize);
+      ctx.fillStyle = pal.enemyEyeDark || '#2b1a1a';
+      ctx.fillRect(headX + 4, headY + 8, 8, 3);
+      ctx.fillRect(headX + (enemy.facing > 0 ? 8 : 2), headY + 4, 3, 3);
+      ctx.fillRect(headX + (enemy.facing > 0 ? 4 : 10), headY + 4, 3, 3);
+
+      const gunLength = 16;
+      const gunHeight = 6;
+      const gunX = enemy.facing > 0 ? enemy.x + enemy.w - 6 : enemy.x - gunLength + 6;
+      ctx.fillStyle = '#1e1f24';
+      ctx.fillRect(gunX, enemy.y + 14, gunLength, gunHeight);
+      ctx.fillStyle = '#5a5d68';
+      ctx.fillRect(gunX + (enemy.facing > 0 ? gunLength - 4 : 0), enemy.y + 14, 4, gunHeight);
+    }
+
+    if (enemy.hitFlash > 0) {
+      const flash = clamp(enemy.hitFlash / 12, 0, 1);
+      ctx.fillStyle = `rgba(255, 236, 189, ${0.35 * flash})`;
+      ctx.fillRect(enemy.x - 2, enemy.y - 6, enemy.w + 4, enemy.h + 16);
+    }
+
+    if (debugShowHit) {
+      const a = enemy.aabb();
+      ctx.strokeStyle = '#ff00ff55';
+      ctx.strokeRect(a.x, a.y, a.w, a.h);
+    }
+
+    ctx.restore();
+  }
+
+  function drawBullet(bullet) {
+    if (bullet.dead) return;
+    ctx.save(); ctx.translate(-camX,0);
+    const pal = palette();
+    const rect = bullet.aabb();
+    ctx.fillStyle = pal.bulletPrimary || '#ff9e64';
+    ctx.fillRect(rect.x, rect.y, rect.w, rect.h);
+    const highlightOnLeft = LIGHT_DIR.x < 0;
+    ctx.fillStyle = pal.bulletHighlight || '#ffd8b2';
+    ctx.save();
+    ctx.globalAlpha = 0.7;
+    ctx.fillRect(highlightOnLeft ? rect.x : rect.x + rect.w - 3, rect.y, 3, rect.h);
+    ctx.globalAlpha = 0.35;
+    ctx.fillStyle = '#000';
+    ctx.fillRect(highlightOnLeft ? rect.x + rect.w - 2 : rect.x + 1, rect.y + 1, 1, rect.h - 2);
+    ctx.restore();
+    if (debugShowHit) {
+      ctx.strokeStyle = '#ffffff55';
+      ctx.strokeRect(rect.x, rect.y, rect.w, rect.h);
+    }
+    ctx.restore();
+  }
+
+  function drawPlayer(player) {
+    ctx.save(); ctx.translate(-camX,0);
+
+    const groundUnder = volcano ? Math.min(GROUND_Y, volcano.groundAt(player.centerX())) : GROUND_Y;
+    drawShadow(player.centerX() - 14, groundUnder + 1, 28, 8, 0.34, -6);
+
+    const speedRatio = clamp(Math.abs(player.vx) / MAX_RUN, 0, 1);
+    const swing = Math.sin(performance.now() * 0.012 + player.centerX() * 0.045) * 4.5 * speedRatio;
+    const legHeight = 18;
+    const legWidth = 6;
+    const legTop = player.y + player.h - legHeight;
+    const armHeight = 16;
+    const armWidth = 5;
+    const armTop = player.y + 10;
+
+    // rear limb pass
+    ctx.fillStyle = makeLightGradient(player.x + 4 - swing * 0.35, legTop, legWidth, legHeight, '#1a2331', 0.1, -0.2);
+    ctx.fillRect(player.x + 4 - swing * 0.35, legTop, legWidth, legHeight);
+    ctx.fillStyle = makeLightGradient(player.x - 4 - swing * 0.25, armTop, armWidth, armHeight, '#23344d', 0.1, -0.2);
+    ctx.fillRect(player.x - 4 - swing * 0.25, armTop, armWidth, armHeight);
+
+    // torso
+    ctx.fillStyle = makeLightGradient(player.x, player.y, player.w, player.h, player.bodyColor, 0.22, -0.24);
+    ctx.fillRect(player.x, player.y, player.w, player.h);
+    ctx.fillStyle = '#ffffff12';
+    const highlightW = Math.max(6, player.w * 0.45);
+    const highlightX = LIGHT_DIR.x < 0 ? player.x + 4 : player.x + player.w - 4 - highlightW;
+    const highlightY = LIGHT_DIR.y < 0 ? player.y + 6 : player.y + player.h - 16;
+    ctx.fillRect(highlightX, highlightY, highlightW, 10);
+
+    // front limbs
+    ctx.fillStyle = makeLightGradient(player.x + player.w - armWidth + 2 + swing * 0.25, armTop + 1, armWidth, armHeight, '#314567', 0.14, -0.22);
+    ctx.fillRect(player.x + player.w - armWidth + 2 + swing * 0.25, armTop + 1, armWidth, armHeight);
+    ctx.fillStyle = makeLightGradient(player.x + player.w - legWidth - 4 + swing * 0.35, legTop, legWidth, legHeight, '#233047', 0.14, -0.22);
+    ctx.fillRect(player.x + player.w - legWidth - 4 + swing * 0.35, legTop, legWidth, legHeight);
+
+    // head
+    const head = {x: player.x + (player.w-16)/2, y: player.y - 16, s:16};
+    ctx.fillStyle = makeLightGradient(head.x, head.y, head.s, head.s, player.headColor, 0.24, -0.2);
+    ctx.fillRect(head.x, head.y, head.s, head.s);
+    ctx.fillStyle = '#1b1b1b';
+    ctx.fillRect(head.x+4 + (player.facing>0?2:0), head.y+5, 3, 3);
+    ctx.fillRect(head.x+9 + (player.facing>0?2:0), head.y+5, 3, 3);
+    ctx.fillRect(head.x+5, head.y+10, 6, 2);
+
+    if (!player.finished) {
+      ctx.fillStyle = '#ffffff33';
+      ctx.fillRect(player.centerX() + player.facing*14, player.y+6, 10, 2);
+    }
+
+    if (player.invuln > 0) {
+      ctx.fillStyle = '#ffffff55';
+      ctx.fillRect(player.x-2, player.y-18, player.w+4, player.h+20);
+    }
+
+    const chat = chatState[player.label.toLowerCase()];
+    if (chat && chat.text) {
+      const now = performance.now();
+      if (chat.expiresAt > now) {
+        const remaining = chat.expiresAt - now;
+        const opacity = clamp(remaining / CHAT_LIFETIME_MS, 0, 1);
+        const padding = 7;
+        ctx.font = '600 12px system-ui';
+        const text = chat.text;
+        const textWidth = ctx.measureText(text).width;
+        const boxW = textWidth + padding * 2;
+        const boxH = 22;
+        const boxX = player.centerX() - boxW / 2;
+        const boxY = head.y - boxH - 6;
+        ctx.fillStyle = `rgba(31, 35, 42, ${0.8 * opacity})`;
+        ctx.strokeStyle = `rgba(58, 63, 71, ${0.9 * opacity})`;
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.roundRect(boxX, boxY, boxW, boxH, 8);
+        ctx.fill();
+        ctx.stroke();
+        ctx.fillStyle = `rgba(234, 234, 234, ${opacity})`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(text, player.centerX(), boxY + boxH / 2);
+      } else {
+        chat.text = '';
+        chat.expiresAt = 0;
+      }
+    }
+
+    ctx.fillStyle = '#ffffffdd';
+    ctx.font = '600 12px system-ui';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'bottom';
+    ctx.fillText(player.label, player.centerX(), player.y - 20);
+
+    if (debugShowHit) {
+      const a=player.aabb();
+      ctx.strokeStyle='#fff8'; ctx.strokeRect(a.x, a.y, a.w, a.h);
+      ctx.strokeStyle='#0f08'; ctx.strokeRect(head.x, head.y, head.s, head.s);
+    }
+
+    ctx.restore();
+  }
+
+  function draw() {
+    ctx.clearRect(0,0,W,H);
+    drawGround();
+
+    drawBackdrop();
+
+    // midground: volcano, trees, walls, lava, coins, player
+    drawVolcano(volcano);
+    for (const tr of trees) drawTree(tr);
+    for (const w of walls) drawWall(w);
+    for (const l of lavas) drawLava(l);
+    for (const c of coins) drawCoin(c);
+    for (const enemy of enemies) drawEnemy(enemy);
+    for (const player of players) drawPlayer(player);
+    for (const bullet of bullets) drawBullet(bullet);
+
+    // HUD guide line to goal
+    ctx.save();
+    ctx.translate(-camX,0);
+    ctx.strokeStyle = '#ffffff20';
+    ctx.setLineDash([6,6]);
+    ctx.beginPath(); ctx.moveTo(goalX, 0); ctx.lineTo(goalX, H); ctx.stroke();
+    ctx.restore();
+  }
+
+  // ===== polyfills =====
+  if (!CanvasRenderingContext2D.prototype.roundRect) {
+    CanvasRenderingContext2D.prototype.roundRect = function(x,y,w,h,r) {
+      const rr = Math.min(r, w/2, h/2) || 0;
+      this.beginPath();
+      this.moveTo(x+rr,y);
+      this.arcTo(x+w,y,x+w,y+h,rr);
+      this.arcTo(x+w,y+h,x,y+h,rr);
+      this.arcTo(x,y+h,x,y,rr);
+      this.arcTo(x,y,x+w,y,rr);
+      this.closePath();
+      return this;
+    }
+  }
+
+  // boot
+  if (!initFailed) {
+    try {
+      if (uiTimer) uiTimer.textContent = formatTime(0);
+      hideDeathScreen(true);
+      if (ctx) requestAnimationFrame(loop);
+    } catch (error) {
+      failInit('Game failed to start. You can still choose a mode.', error);
+    }
+  }
+};
