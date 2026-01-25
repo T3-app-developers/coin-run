@@ -4,8 +4,13 @@ a cool platform game that everyone will enjoy.
 
 ## Getting Started
 
-1. Open `index.html` in your browser (double-click the file or use `File > Open...`).
-2. Share the same file with friends for local play, or use the remote controller setup below.
+1. Run a local web server in this folder (ES module scripts are blocked when opening files directly):
+   - `python3 -m http.server 8080`
+   - or `npx serve .`
+2. Open `http://localhost:8080/index.html` in your browser.
+3. Share the same URL with friends for local play, or use the remote controller setup below.
+
+> **Note:** Most browsers block ES module imports from `file://` URLs. If you open `index.html` directly, the game scripts (including the Play and on-screen buttons) will not load.
 
 ### Controls
 
