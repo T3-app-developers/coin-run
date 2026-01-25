@@ -1,4 +1,7 @@
-import { VIRTUAL_KEY_ALIASES, REMOTE_CHANNEL_PREFIX, REMOTE_WS_BASE, REMOTE_WS_KEY } from './config.js';
+const VIRTUAL_KEY_ALIASES = {
+  space: ' ',
+  Space: ' ',
+};
 
 export const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 export const rand = (a, b) => Math.random() * (b - a) + a;
@@ -42,9 +45,4 @@ export const formatTime = (sec) => {
 export const resolveVirtualKey = (raw) => {
   if (!raw) return raw;
   return Object.prototype.hasOwnProperty.call(VIRTUAL_KEY_ALIASES, raw) ? VIRTUAL_KEY_ALIASES[raw] : raw;
-};
-
-export const remoteSocketUrl = (code) => {
-  const channel = `${REMOTE_CHANNEL_PREFIX}${code}`;
-  return `${REMOTE_WS_BASE}/${encodeURIComponent(channel)}?api_key=${encodeURIComponent(REMOTE_WS_KEY)}&notify_self=1`;
 };
