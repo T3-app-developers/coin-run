@@ -57,15 +57,11 @@ export const setupInput = ({
     if (!state.platformMode) return;
     if (isTypingTarget(e.target)) return;
     if (e.key === '1') {
-      actions.applyAddonsState({ localMultiplayerEnabled: false, remoteEnabled: false }, { showBiome: true });
+      actions.applyAddonsState({ localMultiplayerEnabled: false }, { showBiome: true });
       return;
     }
     if (e.key === '2') {
       actions.applyAddonsState({ localMultiplayerEnabled: true }, { showBiome: true });
-      return;
-    }
-    if (e.key === '3') {
-      actions.applyAddonsState({ remoteEnabled: true }, { showBiome: true });
       return;
     }
     const chatTarget = Object.values(ui.chatLanes).some(({ input }) => input && input === e.target);

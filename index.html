@@ -15,7 +15,7 @@
   <div class="card">
     <h1>Green-Head Coin Run</h1>
     <p>Dash through stacked ramps, mine resources, and outpace erupting hazards on every run.</p>
-    <p>Start in solo mode, then open add-ons to tweak player count, remote co-op, or touch controls.</p>
+    <p>Start in solo mode, then open add-ons to tweak player count or touch controls.</p>
     <div class="welcome-actions">
       <button class="play-btn" id="welcome-play" type="button">Play</button>
       <button class="secondary-btn" id="welcome-settings" type="button">Add-ons</button>
@@ -77,10 +77,6 @@
         <input id="addon-local" type="checkbox" />
         Local multiplayer
       </label>
-      <label class="addon-item" for="addon-remote">
-        <input id="addon-remote" type="checkbox" />
-        Remote mode
-      </label>
       <label class="addon-item" for="addon-display">
         <input id="addon-display" type="checkbox" />
         App display
@@ -98,11 +94,10 @@
     </div>
     <div id="mode-select" class="addons-section">
       <h3>Game Mode</h3>
-      <p>Switch between solo, couch co-op, or remote play while you run.</p>
+      <p>Switch between solo or couch co-op while you run.</p>
       <div class="mode-buttons">
         <button class="mode-btn" data-mode="1" type="button">One Player</button>
         <button class="mode-btn" data-mode="2" type="button">Two Players</button>
-        <button class="mode-btn" data-mode="remote" type="button">Remote Co-Op</button>
       </div>
       <p style="margin-top:10px; font-size:13px; opacity:0.7;">Press <b>R</b> anytime during a run to restart the current mode.</p>
     </div>
@@ -118,38 +113,6 @@
     <span id="help-p2"><b>Player 2</b> – Move: <b>←/→</b> · Jump: <b>↑</b> · Mine: <b>/</b> (hold) · Attack: <b>.</b> (laser: 3 hits for grunts, 10 for the boss) · Wall: <b>[</b> · Lava: <b>]</b><br></span>
     <span id="biome-tip" style="display:block; margin-top:8px; opacity:0.75;">Tip: the volcano erupts every 20 seconds and you can only finish a stage after the boss health bar is empty &mdash; taking it down awards a jump boost and a 3s spawn shield for the next level.</span>
     Restart: <b>R</b> &nbsp;|&nbsp; Toggle Hitboxes: <b>H</b>
-  </div>
-</div>
-
-<div id="remote-share" class="hidden">
-  <div class="remote-header">
-    <h3>Remote Share</h3>
-    <button class="panel-toggle" id="remote-toggle" type="button">Hide QR</button>
-  </div>
-  <div class="remote-body">
-    <div class="remote-row">
-      Status: <span id="remote-status" class="remote-status remote-status-display offline">Not connected</span>
-    </div>
-    <div class="remote-row">
-      <span>Session code</span>
-      <code id="remote-code">----</code>
-      <button id="remote-refresh" type="button">New code</button>
-    </div>
-    <div class="remote-row">
-      <span>Controller link</span>
-      <a id="remote-link" href="#" target="_blank" rel="noopener">Generate link</a>
-    </div>
-    <div class="remote-row">
-      <img id="remote-qr" alt="Remote controller QR code" />
-    </div>
-    <div class="remote-chat">
-      <h4>Remote Chat</h4>
-      <div id="remote-messages" class="remote-messages"></div>
-      <form id="remote-chat-form">
-        <input id="remote-chat-input" type="text" autocomplete="off" placeholder="Send a message" />
-        <button type="submit">Send</button>
-      </form>
-    </div>
   </div>
 </div>
 

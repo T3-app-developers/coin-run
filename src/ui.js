@@ -40,23 +40,11 @@ export const createUI = () => {
   const helpToggle = document.getElementById('help-toggle');
   const p2Pills = Array.from(document.querySelectorAll('.p2-pill'));
   const biomeTip = document.getElementById('biome-tip');
-  const remoteTip = document.getElementById('remote-tip');
-  const remoteCard = document.getElementById('remote-share');
-  const remoteToggle = document.getElementById('remote-toggle');
-  const remoteCodeEl = document.getElementById('remote-code');
-  const remoteLinkEl = document.getElementById('remote-link');
-  const remoteQrEl = document.getElementById('remote-qr');
-  const remoteStatusEl = document.getElementById('remote-status');
-  const remoteRefreshBtn = document.getElementById('remote-refresh');
-  const remoteMessagesEl = document.getElementById('remote-messages');
-  const remoteChatForm = document.getElementById('remote-chat-form');
-  const remoteChatInput = document.getElementById('remote-chat-input');
   const addonsButton = document.getElementById('addons-button');
   const addonsPanel = document.getElementById('addons-panel');
   const addonsClose = document.getElementById('addons-close');
   const addonsChatToggle = document.getElementById('addon-chat');
   const addonsLocalToggle = document.getElementById('addon-local');
-  const addonsRemoteToggle = document.getElementById('addon-remote');
   const addonsDisplayToggle = document.getElementById('addon-display');
   const resourceLabels = {
     p1: document.getElementById('p1-resource-label'),
@@ -91,8 +79,6 @@ export const createUI = () => {
   const addonsToggle = document.getElementById('addons-toggle');
   const ovTitle = document.getElementById('ov-title');
   const ovBody = document.getElementById('ov-body');
-  const remoteStatusDisplays = Array.from(document.querySelectorAll('.remote-status-display'));
-
   if (wahAudio) wahAudio.volume = 0.55;
 
   return {
@@ -124,23 +110,11 @@ export const createUI = () => {
     helpToggle,
     p2Pills,
     biomeTip,
-    remoteTip,
-    remoteCard,
-    remoteToggle,
-    remoteCodeEl,
-    remoteLinkEl,
-    remoteQrEl,
-    remoteStatusEl,
-    remoteRefreshBtn,
-    remoteMessagesEl,
-    remoteChatForm,
-    remoteChatInput,
     addonsButton,
     addonsPanel,
     addonsClose,
     addonsChatToggle,
     addonsLocalToggle,
-    addonsRemoteToggle,
     addonsDisplayToggle,
     resourceLabels,
     chatUi,
@@ -161,6 +135,5 @@ export const createUI = () => {
     addonsToggle,
     ovTitle,
     ovBody,
-    remoteStatusDisplays,
   };
 };

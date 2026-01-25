@@ -9,7 +9,6 @@ import {
   hexToRgba,
   formatTime,
   resolveVirtualKey,
-  remoteSocketUrl,
 } from './utils.js';
 
 export const initGame = () => {
@@ -44,23 +43,11 @@ export const initGame = () => {
     helpToggle,
     p2Pills,
     biomeTip,
-    remoteTip,
-    remoteCard,
-    remoteToggle,
-    remoteCodeEl,
-    remoteLinkEl,
-    remoteQrEl,
-    remoteStatusEl,
-    remoteRefreshBtn,
-    remoteMessagesEl,
-    remoteChatForm,
-    remoteChatInput,
     addonsButton,
     addonsPanel,
     addonsClose,
     addonsChatToggle,
     addonsLocalToggle,
-    addonsRemoteToggle,
     addonsDisplayToggle,
     resourceLabels,
     chatUi,
@@ -81,7 +68,6 @@ export const initGame = () => {
     addonsToggle,
     ovTitle,
     ovBody,
-    remoteStatusDisplays,
   } = uiElements;
 
   // ===== audio =====
@@ -534,19 +520,10 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
   let activeBiome = null;
   let pendingBiomeReset = false;
   let keys = {};
-  let remoteKeys = {};
-  let remoteSessionCode = '';
-  let remoteSocket = null;
-  let remoteConnected = false;
-  let remoteShareCollapsed = false;
-  let remoteShareAutoCollapsed = false;
   const inputSources = {
     keyboard: new Set(),
     virtual: new Set(),
-    remote: new Set(),
   };
-  let remoteMode = false;
-  let remoteReconnectTimer = null;
   let debugShowHit = false;
   let finished = false;
   let runStartTime = 0;
@@ -563,11 +540,8 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
   const addonsState = {
     chatEnabled: false,
     localMultiplayerEnabled: false,
-    remoteEnabled: false,
     appDisplayEnabled: true,
   };
-
-  const REMOTE_ACTION_HINT = 'Buttons map to Player 2: ← → ↑ / . [ ]';
 
   function failInit(message, error) {
     initFailed = true;
@@ -674,7 +648,7 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
   }
 
   function shouldShowSecondPlayer() {
-    return addonsState.localMultiplayerEnabled || addonsState.remoteEnabled;
+    return addonsState.localMultiplayerEnabled;
   }
 
   function isChatActive() {
@@ -700,10 +674,7 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
   function updateAddonsControls() {
     if (addonsChatToggle) addonsChatToggle.checked = addonsState.chatEnabled;
     if (addonsLocalToggle) addonsLocalToggle.checked = addonsState.localMultiplayerEnabled;
-    if (addonsRemoteToggle) addonsRemoteToggle.checked = addonsState.remoteEnabled;
     if (addonsDisplayToggle) addonsDisplayToggle.checked = addonsState.appDisplayEnabled;
-    if (addonsLocalToggle) addonsLocalToggle.disabled = addonsState.remoteEnabled;
-    if (addonsRemoteToggle) addonsRemoteToggle.disabled = addonsState.localMultiplayerEnabled;
   }
 
   function updateAppDisplay() {
@@ -711,26 +682,19 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
   }
 
   function syncModeFromAddons({ showBiome = false } = {}) {
-    const nextRemoteMode = addonsState.remoteEnabled;
-    const nextGameMode = nextRemoteMode || addonsState.localMultiplayerEnabled ? 2 : 1;
-    const modeChanged = nextRemoteMode !== remoteMode || nextGameMode !== gameMode;
-    remoteMode = nextRemoteMode;
+    const nextGameMode = addonsState.localMultiplayerEnabled ? 2 : 1;
+    const modeChanged = nextGameMode !== gameMode;
     gameMode = nextGameMode;
     if (modeChanged) {
       levelIndex = 0;
-      if (remoteMode) startRemoteSession();
-      else stopRemoteSession();
     }
     updateModeHud();
-    updateRemoteShareUi();
     if (modeChanged && showBiome) showBiomeSelect();
     return modeChanged;
   }
 
   function applyAddonsState(next = {}, options = {}) {
     Object.assign(addonsState, next);
-    if (addonsState.remoteEnabled) addonsState.localMultiplayerEnabled = false;
-    if (addonsState.localMultiplayerEnabled) addonsState.remoteEnabled = false;
     updateAddonsControls();
     updateAppDisplay();
     syncModeFromAddons(options);
@@ -768,21 +732,9 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
       });
     }
 
-    if (addonsRemoteToggle) {
-      addonsRemoteToggle.addEventListener('change', (event) => {
-        applyAddonsState({ remoteEnabled: event.target.checked }, { showBiome: true });
-      });
-    }
-
     if (addonsDisplayToggle) {
       addonsDisplayToggle.addEventListener('change', (event) => {
         applyAddonsState({ appDisplayEnabled: event.target.checked });
-      });
-    }
-
-    if (remoteToggle) {
-      remoteToggle.addEventListener('click', () => {
-        setRemoteShareCollapsed(!remoteShareCollapsed, true);
       });
     }
 
@@ -814,9 +766,6 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
         const text = (input.value || '').trim();
         if (!text) return;
         setPlayerChat(target, text);
-        if (remoteMode && target === 'p2') {
-          sendRemoteChat(text, 'Host');
-        }
         input.value = '';
       });
     });
@@ -1027,43 +976,7 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
   function isKeyActiveForPlayer(player, key) {
     const resolved = resolveVirtualKey(key);
     if (!resolved) return false;
-    if (player && player.label === 'P2' && remoteKeys[resolved]) return true;
     return !!keys[resolved];
-  }
-
-  function generateRemoteCode() {
-    return Math.random().toString(36).slice(2, 6).toUpperCase();
-  }
-
-  function controllerLink(code) {
-    let basePath = location.pathname.replace(/index\.html$/, '');
-    if (!basePath.endsWith('/')) basePath += '/';
-    return `${location.origin}${basePath}controller.html?code=${encodeURIComponent(code)}`;
-  }
-
-  function clearRemoteMessages() {
-    if (remoteMessagesEl) remoteMessagesEl.innerHTML = '';
-  }
-
-  function addRemoteMessage(text, from = 'Friend') {
-    if (!remoteMessagesEl || !text) return;
-    const row = document.createElement('div');
-    row.className = 'remote-message';
-    row.textContent = `${from}: ${text}`;
-    remoteMessagesEl.appendChild(row);
-    remoteMessagesEl.scrollTop = remoteMessagesEl.scrollHeight;
-  }
-
-  function setRemoteStatus(label, connected = false) {
-    if (!remoteStatusDisplays.length) return;
-    remoteStatusDisplays.forEach(el => {
-      el.textContent = label;
-      el.classList.toggle('offline', !connected);
-    });
-    if (connected && !remoteShareAutoCollapsed) {
-      setRemoteShareCollapsed(true);
-      remoteShareAutoCollapsed = true;
-    }
   }
 
   function setHelpCollapsed(collapsed) {
@@ -1072,120 +985,12 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
     helpToggle.textContent = collapsed ? 'Show' : 'Hide';
   }
 
-  function setRemoteShareCollapsed(collapsed, manual = false) {
-    if (!remoteCard || !remoteToggle) return;
-    remoteShareCollapsed = collapsed;
-    if (manual) remoteShareAutoCollapsed = true;
-    remoteCard.classList.toggle('minimized', collapsed);
-    remoteToggle.textContent = collapsed ? 'Show QR' : 'Hide QR';
-  }
-
   function setAddonsCollapsed(collapsed) {
     if (!addonsPanel || !addonsToggle) return;
     addonsPanel.classList.toggle('minimized', collapsed);
     addonsToggle.textContent = collapsed ? 'Show' : 'Hide';
   }
 
-  function updateRemoteShareUi() {
-    if (!remoteCard) return;
-    const active = addonsState.remoteEnabled;
-    remoteCard.classList.toggle('hidden', !active);
-    if (!active) return;
-    if (!remoteSessionCode) remoteSessionCode = generateRemoteCode();
-    const link = controllerLink(remoteSessionCode);
-    if (remoteCodeEl) remoteCodeEl.textContent = remoteSessionCode;
-    if (remoteLinkEl) {
-      remoteLinkEl.href = link;
-      remoteLinkEl.textContent = link;
-    }
-    if (remoteQrEl) remoteQrEl.src = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(link)}`;
-    setRemoteStatus(remoteConnected ? 'Connected' : 'Not connected', remoteConnected);
-  }
-
-  function closeRemoteSocket() {
-    if (remoteSocket) {
-      try { remoteSocket.close(); } catch (_) { /* ignore */ }
-    }
-    remoteSocket = null;
-    remoteConnected = false;
-  }
-
-  function handleRemotePayload(payload) {
-    if (!payload || payload.code !== remoteSessionCode) return;
-    if (payload.type === 'chat' && payload.text) {
-      addRemoteMessage(payload.text, payload.from || 'Friend');
-      setPlayerChat('p2', payload.text);
-      return;
-    }
-    const action = payload.action;
-    if (!action) return;
-    const resolved = resolveVirtualKey(action);
-    if (!resolved) return;
-    remoteKeys[resolved] = !!payload.pressed;
-    if (payload.pressed) handleKeyDown(resolved);
-    else handleKeyUp(resolved);
-  }
-
-  function sendRemoteChat(text, from = 'You') {
-    if (!text) return;
-    addRemoteMessage(text, from);
-    setPlayerChat('p1', text);
-    if (remoteSocket && remoteSocket.readyState === WebSocket.OPEN) {
-      remoteSocket.send(JSON.stringify({ code: remoteSessionCode, type: 'chat', text, from }));
-    }
-  }
-
-  function connectRemoteSocket() {
-    if (!remoteSessionCode) remoteSessionCode = generateRemoteCode();
-    closeRemoteSocket();
-    if (!remoteStatusDisplays.length) return;
-    setRemoteStatus('Connecting...', false);
-    try {
-      remoteSocket = new WebSocket(remoteSocketUrl(remoteSessionCode));
-    } catch (err) {
-      setRemoteStatus('WebSocket error', false);
-      return;
-    }
-    remoteSocket.onopen = () => {
-      remoteConnected = true;
-      setRemoteStatus('Connected', true);
-    };
-    remoteSocket.onclose = () => {
-      remoteConnected = false;
-      setRemoteStatus('Disconnected', false);
-    };
-    remoteSocket.onerror = () => {
-      remoteConnected = false;
-      setRemoteStatus('WebSocket error', false);
-    };
-    remoteSocket.onmessage = (event) => {
-      let data = null;
-      try {
-        data = JSON.parse(event.data);
-      } catch (_) {
-        return;
-      }
-      handleRemotePayload(data);
-    };
-  }
-
-  function startRemoteSession(forceNewCode = false) {
-    if (!addonsState.remoteEnabled) return;
-    if (forceNewCode || !remoteSessionCode) remoteSessionCode = generateRemoteCode();
-    remoteKeys = {};
-    clearRemoteMessages();
-    addRemoteMessage(REMOTE_ACTION_HINT, 'Tip');
-    remoteShareAutoCollapsed = false;
-    setRemoteShareCollapsed(false);
-    updateRemoteShareUi();
-    connectRemoteSocket();
-  }
-
-  function stopRemoteSession() {
-    remoteKeys = {};
-    closeRemoteSocket();
-    updateRemoteShareUi();
-  }
 
   function clearVirtualInputs() {
     virtualButtons.forEach(({btn, key}) => {
@@ -1286,20 +1091,18 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
   function startDefaultRun() {
     hideWelcomeScreen();
     setAddonsPanelOpen(false);
-    applyAddonsState({ localMultiplayerEnabled: false, remoteEnabled: false });
+    applyAddonsState({ localMultiplayerEnabled: false });
     showBiomeSelect();
   }
 
   modeButtons.forEach(btn => {
     btn.addEventListener('click', () => {
       const raw = btn.dataset.mode;
-      const mode = raw === 'remote' ? 'remote' : parseInt(raw, 10);
-      if (mode === 'remote') {
-        applyAddonsState({ remoteEnabled: true }, { showBiome: true });
-      } else if (mode === 2) {
+      const mode = parseInt(raw, 10);
+      if (mode === 2) {
         applyAddonsState({ localMultiplayerEnabled: true }, { showBiome: true });
       } else {
-        applyAddonsState({ localMultiplayerEnabled: false, remoteEnabled: false }, { showBiome: true });
+        applyAddonsState({ localMultiplayerEnabled: false }, { showBiome: true });
       }
       if (modeSelect) modeSelect.style.display = 'none';
     });
@@ -1315,25 +1118,6 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
     welcomeSettingsBtn.addEventListener('click', () => {
       setAddonsCollapsed(false);
       hideWelcomeScreen();
-    });
-  }
-
-  if (remoteRefreshBtn) {
-    remoteRefreshBtn.addEventListener('click', () => {
-      if (!addonsState.remoteEnabled) {
-        applyAddonsState({ remoteEnabled: true }, { showBiome: true });
-      }
-      startRemoteSession(true);
-    });
-  }
-
-  if (remoteChatForm) {
-    remoteChatForm.addEventListener('submit', (e) => {
-      e.preventDefault();
-      if (!addonsState.remoteEnabled) return;
-      const text = remoteChatInput ? remoteChatInput.value.trim() : '';
-      if (text) sendRemoteChat(text, 'You');
-      if (remoteChatInput) remoteChatInput.value = '';
     });
   }
 
@@ -1917,15 +1701,11 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
     if (!platformMode) return;
     if (isTypingTarget(e.target)) return;
     if (e.key === '1') {
-      applyAddonsState({ localMultiplayerEnabled: false, remoteEnabled: false }, { showBiome: true });
+      applyAddonsState({ localMultiplayerEnabled: false }, { showBiome: true });
       return;
     }
     if (e.key === '2') {
       applyAddonsState({ localMultiplayerEnabled: true }, { showBiome: true });
-      return;
-    }
-    if (e.key === '3') {
-      applyAddonsState({ remoteEnabled: true }, { showBiome: true });
       return;
     }
     const chatTarget = Object.values(chatLanes).some(({ input }) => input && input === e.target);
