@@ -257,26 +257,26 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
   const MS_PER_FRAME = 1000 / 60;
 
   const BASE_BIOME = {
-    id: 'volcano',
-    label: 'Volcano Valley',
-    icon: '🌋',
+    id: 'forest',
+    label: 'Forest Run',
+    icon: '🌲',
     gruntName: 'dino',
     bossName: 'dino',
     enemyVariant: 'dino',
     bossVariant: 'dino',
-    resourceName: 'Wood',
+    resourceName: 'Timber',
     resourceIcon: '🪵',
-    hazardName: 'Volcano',
-    hazardVerb: 'erupts',
-    hazardNoun: 'volcano',
-    minedItem: 'wood',
-    blurb: 'Classic lava slopes and piney trees.',
+    hazardName: 'Wildfire Bloom',
+    hazardVerb: 'flares',
+    hazardNoun: 'wildfire',
+    minedItem: 'timber',
+    blurb: 'Mossy ridgelines, towering pines, and ember-bright clearings.',
     features: [
-      'Crisp teal skies and pine silhouettes wrap around warm lava embers.',
-      'Glowing coins and spruce-green ramps guide the eye toward the summit.',
-      'Resource trees match the slopey rock strata so nothing feels out of place.',
+      'Misty evergreen silhouettes and fern-green turf keep the world cool.',
+      'Golden coins glint like sunbeams cutting through the canopy.',
+      'Resource trees share the same cedar palette as the forested slopes.',
     ],
-    bossGoal: 'A forest-colored dino that blends into the peaks; its amber eyes and molten breath tie back to the erupting rim.',
+    bossGoal: 'A moss-armored dino with amber eyes and smoldering breath guarding the clearing ahead.',
     characters: {
       p1: { head: '#2fd06c', body: '#2f3b52' },
       p2: { head: '#3fb5ff', body: '#233149' },
@@ -299,214 +299,12 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
   };
 
   const BIOMES = {
-    volcano: {
+    forest: {
       ...BASE_BIOME,
-      label: 'Volcano Valley',
-      icon: '🌋',
-      blurb: 'Emerald slopes cut by glowing lava seams and pine crowns.',
-      features: [
-        'Lava channels glow against mossy rock, tying together the hazard and ground.',
-        'Tree resources mirror the pine silhouettes on the distant hills.',
-        'Gold coins and banners pop against the teal sky for a clean goal line.',
-      ],
-      bossGoal: 'A magma-charged dino perched near the caldera whose green armor echoes the hills beneath it.',
-    },
-    ice: {
-      id: 'ice',
-      label: 'Ice',
-      icon: '❄️',
-      gruntName: 'polar bear',
-      bossName: 'polar bear',
-      enemyVariant: 'polar-bear',
-      bossVariant: 'polar-bear',
-      resourceName: 'Ice',
-      resourceIcon: '🧊',
-      hazardName: 'Frost Geyser',
-      hazardVerb: 'erupts',
-      hazardNoun: 'geyser',
-      minedItem: 'ice',
-      blurb: 'Crystalline tundra with freezing vents and frosty loot.',
-      features: [
-        'Pastel skies fade into frosted hills, keeping the whole scene airy.',
-        'Ice bricks and trees share the same glacial gradients for a tidy palette.',
-        'Hazard vents glow cyan so you can read danger against the snow.',
-      ],
-      bossGoal: 'A glacier-backed polar bear with frosted armor plates and claws carved from the same ice you mine.',
-      characters: {
-        p1: { head: '#b8f1ff', body: '#3a5d7f' },
-        p2: { head: '#c3e6ff', body: '#2e4b6a' },
-      },
-      palette: {
-        skyTop: '#8fd3ff', skyBottom: '#e5f6ff', hillColor: '#c7e7ff',
-        turfTop: '#dff4ff', turfMid: '#b6d9f2', turfBottom: '#7ea4c4', edge: '#88a8c8',
-        frontTop: '#5b7b9a', frontMid: '#3e5872', frontBottom: '#1c2f46', blade: '#eff8ff',
-        silhouetteType: 'ice', silhouetteColor: '#b5d9f5',
-        hazardBodyLight: '#78a6c8', hazardBodyMid: '#5c84a3', hazardBodyDark: '#2f4e69', hazardSide: '#2f4e69', hazardLipLight: '#c1e2ff', hazardLipDark: '#24405b', hazardCavityTop: '#28435d', hazardCavityBottom: '#0f1e2d', hazardSmoke: '#f5fbff', hazardGlow: '#a8dbff', hazardRimGlow: '#dff3ff',
-        lavaRimTop: '#cbe7ff', lavaRimBottom: '#7aa7c8', lavaWallDark: '#1f3649', lavaWallMid: '#3f617f', lavaCavityTop: '#1a2e40', lavaCavityBottom: '#0c1724', lavaFillLight: '#b7e8ff', lavaFillMid: '#6ad1ff', lavaFillDark: '#2f9dd9', lavaStroke: '#dff7ff', lavaGlow: '#8ecff9',
-        resourceTrunk: '#9ac9f5', resourceCanopy: '#d7f0ff', resourceAccent: '#bcdfff',
-        wallPrimary: '#b3cde5', wallStroke: '#90abc7',
-        bulletPrimary: '#7bd3ff', bulletHighlight: '#e4f7ff',
-        enemyPrimary: '#4f708a', enemySecondary: '#6f96b6', enemyAccent: '#a8cbea', enemyHead: '#d7eaff', enemyEyeDark: '#1c2733', enemyEyeLight: '#f1fbff',
-        bossBody: '#4f7b92', bossBelly: '#6ba3bb', bossTail: '#365a74', bossHead: '#375971', bossEyeDark: '#102032', bossEyeLight: '#e6f6ff', bossTooth: '#e8f5ff', bossLeg: '#2e4d64', hpFill: '#a9e2ff'
-      }
-    },
-    city: {
-      id: 'city',
-      label: 'City',
-      icon: '🏙️',
-      gruntName: 'car',
-      bossName: 'monkey',
-      enemyVariant: 'car',
-      bossVariant: 'monkey',
-      resourceName: 'Concrete',
-      resourceIcon: '🧱',
-      hazardName: 'Steam Stack',
-      hazardVerb: 'bursts',
-      hazardNoun: 'stack',
-      minedItem: 'concrete',
-      blurb: 'Industrial skyline, street lights, and hot vents from the undercity.',
-      features: [
-        'Cool steel blues and sodium lamps set a clean dusk-in-the-city gradient.',
-        'Concrete resources echo the blocky silhouettes in the distance.',
-        'Vents glow amber like traffic lights so hazards feel urban, not random.',
-      ],
-      bossGoal: 'A steel-plated monkey mech with subway-yellow eyes, framed by smokestacks to feel like the city built it.',
-      characters: {
-        p1: { head: '#ffd166', body: '#3a3e4a' },
-        p2: { head: '#a6c1ff', body: '#2c3341' },
-      },
-      palette: {
-        skyTop: '#7f9abf', skyBottom: '#c5d4e8', hillColor: '#9fb4c9',
-        turfTop: '#b0b7c4', turfMid: '#8f97a4', turfBottom: '#6c727d', edge: '#59606d',
-        frontTop: '#4a4f59', frontMid: '#363a42', frontBottom: '#1f2228', blade: '#d5deea',
-        silhouetteType: 'city', silhouetteColor: '#556072',
-        hazardBodyLight: '#7b7f8a', hazardBodyMid: '#5b5f69', hazardBodyDark: '#30323a', hazardSide: '#2b2e35', hazardLipLight: '#d9dce3', hazardLipDark: '#1f232b', hazardCavityTop: '#2d3139', hazardCavityBottom: '#0f1218', hazardSmoke: '#e6f0ff', hazardGlow: '#ffcc7a', hazardRimGlow: '#ffe0a6',
-        lavaRimTop: '#a2a9b8', lavaRimBottom: '#5a5f6b', lavaWallDark: '#1f242d', lavaWallMid: '#3b424f', lavaCavityTop: '#242a35', lavaCavityBottom: '#0b0e14', lavaFillLight: '#ffd98a', lavaFillMid: '#ff9f46', lavaFillDark: '#d8572b', lavaStroke: '#ffe9b8', lavaGlow: '#ffb97a66',
-        resourceTrunk: '#7f8791', resourceCanopy: '#b8c0cc', resourceAccent: '#9099a8',
-        wallPrimary: '#9aa3b3', wallStroke: '#7a8291',
-        bulletPrimary: '#ffd98a', bulletHighlight: '#fff0c4',
-        enemyPrimary: '#5c4e6b', enemySecondary: '#8a6ad3', enemyAccent: '#403452', enemyHead: '#c8b7dd', enemyEyeDark: '#1d1826', enemyEyeLight: '#f1e6ff',
-        bossBody: '#4b5568', bossBelly: '#6a7891', bossTail: '#323848', bossHead: '#5b6b83', bossEyeDark: '#0f1117', bossEyeLight: '#f8f2ff', bossTooth: '#f5f5ff', bossLeg: '#323845', hpFill: '#ffd98a'
-      }
-    },
-    sand: {
-      id: 'sand',
-      label: 'Sand',
-      icon: '🏜️',
-      gruntName: 'camel',
-      bossName: 'camel',
-      enemyVariant: 'camel',
-      bossVariant: 'camel',
-      resourceName: 'Sandcastle',
-      resourceIcon: '🏰',
-      hazardName: 'Glass Dune',
-      hazardVerb: 'erupts',
-      hazardNoun: 'dune',
-      minedItem: 'sandcastle',
-      blurb: 'Sun-baked dunes, sandstone arches, and shimmering heat vents.',
-      features: [
-        'Layered oranges and golds match the sandstone arches and ramps.',
-        'Coin shine pairs with the sun-bleached highlights on every ledge.',
-        'Glass dunes bloom with warm light so hazards feel like desert mirages.',
-      ],
-      bossGoal: 'A dune-swept camel with amber plating and turquoise eyes that echo oasis tiles near the goal.',
-      characters: {
-        p1: { head: '#ffd38c', body: '#704c2e' },
-        p2: { head: '#ffe9b0', body: '#8a5b32' },
-      },
-      palette: {
-        skyTop: '#f3c27c', skyBottom: '#ffe7c1', hillColor: '#e2b76a',
-        turfTop: '#f5d19a', turfMid: '#e0b86e', turfBottom: '#c38b3a', edge: '#a26f28',
-        frontTop: '#c37c3a', frontMid: '#a4632c', frontBottom: '#5d3616', blade: '#fff4d3',
-        silhouetteType: 'dunes', silhouetteColor: '#d5a75b',
-        hazardBodyLight: '#d78d46', hazardBodyMid: '#ae6c2f', hazardBodyDark: '#6d3f19', hazardSide: '#7a4b21', hazardLipLight: '#f3d3a3', hazardLipDark: '#5a3519', hazardCavityTop: '#6a3818', hazardCavityBottom: '#2d1607', hazardSmoke: '#ffe8c2', hazardGlow: '#ffb86b', hazardRimGlow: '#ffdba6',
-        lavaRimTop: '#f6d7a1', lavaRimBottom: '#c48b41', lavaWallDark: '#4e2e12', lavaWallMid: '#825024', lavaCavityTop: '#4f2a12', lavaCavityBottom: '#221107', lavaFillLight: '#ffd480', lavaFillMid: '#ff9f3f', lavaFillDark: '#d45a2c', lavaStroke: '#ffe0a6', lavaGlow: '#ffba7a55',
-        resourceTrunk: '#c8923a', resourceCanopy: '#f3d9a5', resourceAccent: '#e6bd72',
-        wallPrimary: '#d6b57a', wallStroke: '#9c7a3f',
-        bulletPrimary: '#ffc176', bulletHighlight: '#ffe8bf',
-        enemyPrimary: '#7c4f2a', enemySecondary: '#d78d46', enemyAccent: '#4b2c16', enemyHead: '#f4d1a5', enemyEyeDark: '#2a1a10', enemyEyeLight: '#fff4d6',
-        bossBody: '#a06734', bossBelly: '#d18b4b', bossTail: '#7b4c25', bossHead: '#c37a3c', bossEyeDark: '#2a180d', bossEyeLight: '#ffe7c0', bossTooth: '#ffe9c6', bossLeg: '#7b4c25', hpFill: '#ffd98a'
-      }
-    },
-    water: {
-      id: 'water',
-      label: 'Water',
-      icon: '🌊',
-      gruntName: 'fish',
-      bossName: 'fish',
-      enemyVariant: 'fish',
-      bossVariant: 'fish',
-      resourceName: 'Fish Cake',
-      resourceIcon: '🍣',
-      hazardName: 'Geothermal Vent',
-      hazardVerb: 'erupts',
-      hazardNoun: 'vent',
-      minedItem: 'fish cake',
-      blurb: 'Underwater ruins, kelp silhouettes, and vents of steaming bubbles.',
-      features: [
-        'Blue-green gradients drift from surface light to deep teal shadows.',
-        'Coral pillars and kelp silhouettes line up with the resource trees.',
-        'Bubble vents glow aqua so the hazard reads like part of the reef.',
-      ],
-      bossGoal: 'A reef-armored fish with coral fins and tidepool eyes waiting in the ruins beyond the goal arch.',
-      characters: {
-        p1: { head: '#9bf0ff', body: '#1f5e6c' },
-        p2: { head: '#d9fff4', body: '#2c7a86' },
-      },
-      palette: {
-        skyTop: '#6fd2e8', skyBottom: '#c1f3ff', hillColor: '#7bd0d9',
-        turfTop: '#9be0d7', turfMid: '#55b8b5', turfBottom: '#2d6f78', edge: '#1f515a',
-        frontTop: '#3a6b73', frontMid: '#264d53', frontBottom: '#132b2e', blade: '#d6fbf6',
-        silhouetteType: 'kelp', silhouetteColor: '#3b8c80',
-        hazardBodyLight: '#3a92a0', hazardBodyMid: '#2c6c77', hazardBodyDark: '#123b45', hazardSide: '#1d4f59', hazardLipLight: '#8ae2e3', hazardLipDark: '#0f323a', hazardCavityTop: '#103642', hazardCavityBottom: '#04171d', hazardSmoke: '#e6fcff', hazardGlow: '#8be7ff', hazardRimGlow: '#c5f7ff',
-        lavaRimTop: '#8fdfe3', lavaRimBottom: '#2f6c7c', lavaWallDark: '#0e2a33', lavaWallMid: '#1b4a56', lavaCavityTop: '#0d2831', lavaCavityBottom: '#031419', lavaFillLight: '#5de1ff', lavaFillMid: '#22b2d1', lavaFillDark: '#107a9c', lavaStroke: '#c8f6ff', lavaGlow: '#5de1ff55',
-        resourceTrunk: '#2c7a86', resourceCanopy: '#8bf2de', resourceAccent: '#c6fff0',
-        wallPrimary: '#5f9fb0', wallStroke: '#3c6d7a',
-        bulletPrimary: '#8bf1ff', bulletHighlight: '#e9ffff',
-        enemyPrimary: '#2d6f78', enemySecondary: '#55b8b5', enemyAccent: '#18444c', enemyHead: '#b8f4f8', enemyEyeDark: '#0c262c', enemyEyeLight: '#e6ffff',
-        bossBody: '#2f7c8c', bossBelly: '#4cc0c1', bossTail: '#1f5965', bossHead: '#2a7080', bossEyeDark: '#0a1d25', bossEyeLight: '#d6ffff', bossTooth: '#eaffff', bossLeg: '#1f5965', hpFill: '#8bf2de'
-      }
-    },
-    space: {
-      id: 'space',
-      label: 'Space',
-      icon: '🪐',
-      bossName: 'alien',
-      bossVariant: 'alien',
-      resourceName: 'Meteor',
-      resourceIcon: '☄️',
-      hazardName: 'Impact Crater',
-      hazardVerb: 'pulses',
-      hazardNoun: 'crater',
-      minedItem: 'meteor',
-      blurb: 'Star-speckled sky, lunar rock, and a crater that occasionally rumbles.',
-      features: [
-        'Nebula purples fade into dusty rock so the ground feels otherworldly.',
-        'Meteor resources sparkle with the same starlight as the horizon.',
-        'Craters glow magenta when active, matching the cosmic hazard flare.',
-      ],
-      bossGoal: 'A low-gravity alien with comet stripes and pale starlit eyes guarding the lunar outpost ahead.',
-      characters: {
-        p1: { head: '#e6d3ff', body: '#3a2a5b' },
-        p2: { head: '#c4b0ff', body: '#4c2f6e' },
-      },
-      palette: {
-        skyTop: '#1e1236', skyBottom: '#4c2a5f', hillColor: '#2f1d45',
-        turfTop: '#5a3b7a', turfMid: '#4a2f66', turfBottom: '#331f48', edge: '#261637',
-        frontTop: '#2f1b44', frontMid: '#221433', frontBottom: '#140a21', blade: '#ccb9f8',
-        silhouetteType: 'craters', silhouetteColor: '#3d2855',
-        hazardBodyLight: '#60418a', hazardBodyMid: '#4c326f', hazardBodyDark: '#2c1d43', hazardSide: '#35234f', hazardLipLight: '#9576c0', hazardLipDark: '#241638', hazardCavityTop: '#241738', hazardCavityBottom: '#0d0818', hazardSmoke: '#e9d9ff', hazardGlow: '#b287ff', hazardRimGlow: '#e3c6ff',
-        lavaRimTop: '#7b5aa6', lavaRimBottom: '#3d275b', lavaWallDark: '#1a0f2c', lavaWallMid: '#2c1b3f', lavaCavityTop: '#190f29', lavaCavityBottom: '#0b0616', lavaFillLight: '#b15cff', lavaFillMid: '#7535d6', lavaFillDark: '#3b187f', lavaStroke: '#f1ddff', lavaGlow: '#b15cff55',
-        resourceTrunk: '#5c3f7a', resourceCanopy: '#c2a4ff', resourceAccent: '#8b6dd6',
-        wallPrimary: '#7b5aa6', wallStroke: '#563b7a',
-        bulletPrimary: '#cfb1ff', bulletHighlight: '#f4e8ff',
-        enemyPrimary: '#4a2f6e', enemySecondary: '#7b5aa6', enemyAccent: '#2a1a3f', enemyHead: '#d9c3ff', enemyEyeDark: '#140c1f', enemyEyeLight: '#f3eaff',
-        bossBody: '#5b3c82', bossBelly: '#8c66c5', bossTail: '#3b245a', bossHead: '#7448a8', bossEyeDark: '#0e0717', bossEyeLight: '#f3eaff', bossTooth: '#f4e8ff', bossLeg: '#3b245a', hpFill: '#cfb1ff'
-      }
     },
   };
 
-  const DEFAULT_BIOME_ID = 'volcano';
+  const DEFAULT_BIOME_ID = 'forest';
 
   const VOLCANO_STEPS = 12;
   const VOLCANO_STEP_HEIGHT = 12;
@@ -532,7 +330,6 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
   let platformMode = 'desktop';
   let activeBiomeId = null;
   let activeBiome = null;
-  let pendingBiomeReset = false;
   let keys = {};
   let remoteKeys = {};
   let remoteSessionCode = '';
@@ -723,7 +520,10 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
     }
     updateModeHud();
     updateRemoteShareUi();
-    if (modeChanged && showBiome) showBiomeSelect();
+    if (modeChanged && showBiome) {
+      ensureActiveBiome();
+      resetLevel();
+    }
     return modeChanged;
   }
 
@@ -823,8 +623,6 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
   }
 
   bindChatUi();
-
-  const biomeEntries = Object.values(BIOMES);
 
   function mergeBiomeConfig(config) {
     const palette = { ...BASE_BIOME.palette, ...(config && config.palette ? config.palette : {}) };
@@ -933,89 +731,11 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
     }
   }
 
-  function describeBiome(b) {
-    const hazard = b.hazardName.toLowerCase();
-    const base = b.blurb || `${b.icon} ${b.label}`;
-    return `${b.icon} ${b.label} · ${base} You mine ${b.resourceName} and face the ${hazard}.`;
-  }
-
-  function renderBiomeDetails(b) {
-    if (!b) return;
-    if (biomeTitle) biomeTitle.textContent = `${b.icon} ${b.label}`;
-    if (biomeBlurb) biomeBlurb.textContent = b.blurb || describeBiome(b);
-    if (biomeFeatures) {
-      biomeFeatures.innerHTML = '';
-      if (b.features && b.features.length) {
-        biomeFeatures.classList.remove('hidden');
-        b.features.forEach(text => {
-          const li = document.createElement('li');
-          li.textContent = text;
-          biomeFeatures.appendChild(li);
-        });
-      } else {
-        biomeFeatures.classList.add('hidden');
-      }
-    }
-    if (biomeBoss) {
-      const hasBoss = Boolean(b.bossGoal);
-      biomeBoss.textContent = hasBoss ? `End boss: ${b.bossGoal}` : '';
-      biomeBoss.classList.toggle('hidden', !hasBoss);
-    }
-  }
-
-  function chooseBiome(id) {
-    ensureActiveBiome(id);
-    updateBiomeTip();
-    updateResourceLabels();
-    if (activeBiome) renderBiomeDetails(activeBiome);
-    if (biomeSelect) {
-      biomeSelect.classList.add('hidden');
-      biomeSelect.style.display = 'none';
-    }
-    pendingBiomeReset = false;
-    resetLevel();
-  }
-
-  function showBiomeSelect() {
-    pendingBiomeReset = true;
-    if (!biomeSelect) { resetLevel(); return; }
-    hideBlockingOverlays();
-    resetInputState();
-    clearVirtualInputs();
-    biomeSelect.classList.remove('hidden');
-    biomeSelect.style.display = 'flex';
-    updateBiomeTip();
-    if (biomeBlurb) {
-      const next = ensureActiveBiome();
-      renderBiomeDetails(next);
-    }
-  }
-
-  function buildBiomeButtons() {
-    if (!biomeButtonsWrap) return;
-    biomeButtonsWrap.innerHTML = '';
-    biomeEntries.forEach(b => {
-      const btn = document.createElement('button');
-      btn.className = 'biome-btn';
-      btn.type = 'button';
-      btn.dataset.biome = b.id;
-      btn.innerHTML = `
-        <strong>${b.icon} ${b.label}</strong>
-        <small>${b.hazardName} · mines ${b.resourceName}</small>
-        <span class="biome-pill"><span class="icon">${b.resourceIcon}</span>${b.resourceName}</span>
-      `;
-      btn.addEventListener('mouseenter', () => renderBiomeDetails(mergeBiomeConfig(b)));
-      btn.addEventListener('click', () => chooseBiome(b.id));
-      biomeButtonsWrap.appendChild(btn);
-    });
-  }
-
   if (!initFailed) {
     try {
-      buildBiomeButtons();
+      ensureActiveBiome();
       updateResourceLabels();
       updateBiomeTip();
-      renderBiomeDetails(ensureActiveBiome());
       setupChatLane('p1');
       setupChatLane('p2');
       detectPlatformMode();
@@ -1226,7 +946,7 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
         if (levelIndex < LEVELS.length - 1) levelIndex += 1;
         else levelIndex = 0;
       }
-      showBiomeSelect();
+      resetLevel();
       return;
     }
     if (key === 'h' || key === 'H') { debugShowHit = !debugShowHit; }
@@ -1287,7 +1007,8 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
     hideWelcomeScreen();
     setAddonsPanelOpen(false);
     applyAddonsState({ localMultiplayerEnabled: false, remoteEnabled: false });
-    showBiomeSelect();
+    ensureActiveBiome();
+    resetLevel();
   }
 
   modeButtons.forEach(btn => {
@@ -1769,7 +1490,6 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
 
   function resetLevel() {
     if (!gameMode) return;
-    if (pendingBiomeReset || !activeBiome) { showBiomeSelect(); return; }
     ensureActiveBiome();
     updateResourceLabels();
     updateBiomeTip();
@@ -2073,7 +1793,7 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
     player.dinoBites = 0;
     if (player.lives <= 0) {
       updateUI();
-      showBiomeSelect();
+      resetLevel();
       return true;
     }
     if (player.coins > 0) player.coins -= 1;
