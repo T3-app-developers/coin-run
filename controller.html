@@ -28,9 +28,6 @@
   .btn small { display:block; font-size:12px; opacity:0.8; font-weight:600; }
   .btn:active, .btn.active { background:#3a4354; box-shadow:0 0 0 3px #ffffff12; }
   .mode-hint { margin:6px 0 0; font-size:13px; opacity:0.8; }
-  .chat { margin-top:14px; border:1px solid #2d3440; border-radius:12px; padding:10px; background:#12151c; }
-  .chat-log { max-height:180px; overflow:auto; padding-right:4px; font-size:14px; }
-  .chat-row { margin:2px 0; }
 </style>
 </head>
 <body>
@@ -58,14 +55,6 @@
       <button class="btn" data-action="[">🧱 [<small>Wall</small></button>
       <button class="btn" data-action="]">🔥 ]<small>Lava</small></button>
     </div>
-    <div class="chat">
-      <strong>Chat</strong>
-      <div id="chat-log" class="chat-log"></div>
-      <form id="chat-form">
-        <input id="chat-input" type="text" autocomplete="off" placeholder="Say hi" />
-        <button type="submit">Send</button>
-      </form>
-    </div>
   </div>
 </div>
 <script src="config.js"></script>
@@ -77,9 +66,6 @@
   const codeInput = document.getElementById('code-input');
   const statusEl = document.getElementById('status');
   const buttons = Array.from(document.querySelectorAll('.btn'));
-  const chatForm = document.getElementById('chat-form');
-  const chatInput = document.getElementById('chat-input');
-  const chatLog = document.getElementById('chat-log');
   const modeButtons = Array.from(document.querySelectorAll('.mode-btn'));
   const controlsGrid = document.getElementById('controls');
   const keyboardHint = document.getElementById('keyboard-hint');
@@ -101,15 +87,6 @@
     statusEl.textContent = label;
     statusEl.classList.toggle('ok', ok);
     statusEl.classList.toggle('warn', !ok);
-  }
-
-  function appendChat(text, from = 'Host') {
-    if (!chatLog || !text) return;
-    const row = document.createElement('div');
-    row.className = 'chat-row';
-    row.textContent = `${from}: ${text}`;
-    chatLog.appendChild(row);
-    chatLog.scrollTop = chatLog.scrollHeight;
   }
 
   function closeSocket() {
@@ -144,7 +121,6 @@
     socket.onopen = () => {
       connected = true;
       setStatus('Connected to host', true);
-      appendChat('Joined host session', 'You');
     };
     socket.onclose = () => {
       connected = false;
@@ -162,7 +138,6 @@
         return;
       }
       if (!data || data.code !== sessionCode) return;
-      if (data.type === 'chat' && data.text) appendChat(data.text, data.from || 'Host');
     };
   }
 
@@ -223,17 +198,6 @@
   }
 
   updateControlMode('mobile');
-
-  if (chatForm) {
-    chatForm.addEventListener('submit', (e) => {
-      e.preventDefault();
-      const text = ((chatInput && chatInput.value) || '').trim();
-      if (!text) return;
-      appendChat(text, 'You');
-      sendPayload({ type: 'chat', text, from: 'Controller' });
-      if (chatInput) chatInput.value = '';
-    });
-  }
 
   setStatus('Not connected', false);
 })();

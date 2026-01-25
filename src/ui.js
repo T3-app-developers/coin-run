@@ -48,34 +48,15 @@ export const createUI = () => {
   const remoteQrEl = document.getElementById('remote-qr');
   const remoteStatusEl = document.getElementById('remote-status');
   const remoteRefreshBtn = document.getElementById('remote-refresh');
-  const remoteMessagesEl = document.getElementById('remote-messages');
-  const remoteChatForm = document.getElementById('remote-chat-form');
-  const remoteChatInput = document.getElementById('remote-chat-input');
   const addonsButton = document.getElementById('addons-button');
   const addonsPanel = document.getElementById('addons-panel');
   const addonsClose = document.getElementById('addons-close');
-  const addonsChatToggle = document.getElementById('addon-chat');
   const addonsLocalToggle = document.getElementById('addon-local');
   const addonsRemoteToggle = document.getElementById('addon-remote');
   const addonsDisplayToggle = document.getElementById('addon-display');
   const resourceLabels = {
     p1: document.getElementById('p1-resource-label'),
     p2: document.getElementById('p2-resource-label'),
-  };
-  const chatUi = document.getElementById('chat-ui');
-  const chatForms = chatUi ? Array.from(chatUi.querySelectorAll('.chat-form')) : [];
-  const chatInputs = chatUi ? Array.from(chatUi.querySelectorAll('.chat-input')) : [];
-  const getChatLane = (target) => {
-    const lane = chatForms.find((form) => (form.dataset.target || '').toLowerCase() === target) || null;
-    return {
-      lane,
-      button: lane ? lane.querySelector('.chat-launch') : null,
-      input: lane ? lane.querySelector('.chat-input') : null,
-    };
-  };
-  const chatLanes = {
-    p1: getChatLane('p1'),
-    p2: getChatLane('p2'),
   };
   const deathScreen = document.getElementById('death-screen');
   const wahAudio = document.getElementById('wah-audio');
@@ -132,21 +113,13 @@ export const createUI = () => {
     remoteQrEl,
     remoteStatusEl,
     remoteRefreshBtn,
-    remoteMessagesEl,
-    remoteChatForm,
-    remoteChatInput,
     addonsButton,
     addonsPanel,
     addonsClose,
-    addonsChatToggle,
     addonsLocalToggle,
     addonsRemoteToggle,
     addonsDisplayToggle,
     resourceLabels,
-    chatUi,
-    chatForms,
-    chatInputs,
-    chatLanes,
     deathScreen,
     wahAudio,
     bossIndicator,

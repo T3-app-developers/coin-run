@@ -18,8 +18,7 @@ html, body { margin:0; padding:0; background:#21252b; color:#eaeaea; font-family
 #addons-panel p { margin:6px 0; opacity:0.75; font-size:13px; }
 body.app-display-hidden #ui .pill:not(.addons-pill) { display:none; }
 body.app-display-hidden #help,
-body.app-display-hidden #remote-share,
-body.app-display-hidden #chat-ui { display:none; }
+body.app-display-hidden #remote-share { display:none; }
 .boss-health { flex:1; position:relative; height:12px; border-radius:999px; border:1px solid #4c525e; background:#16181d; overflow:hidden; }
 .boss-health-fill { position:absolute; inset:0; background:linear-gradient(90deg, #ff6b6b, #ffd166); box-shadow:0 0 6px #ff6b6b77; transition:width 0.15s ease; }
 #upgrade-pill { min-width:220px; }
@@ -47,12 +46,6 @@ body.app-display-hidden #chat-ui { display:none; }
 #remote-share .remote-status.offline { color:#ff9e64; }
 #remote-share button { background:#2f3540; border:1px solid #4a5160; color:#fff; font-weight:600; padding:8px 12px; border-radius:10px; cursor:pointer; }
 #remote-share button:hover { background:#3d4554; }
-#remote-share .remote-chat { margin-top:8px; border:1px solid #333a46; border-radius:10px; padding:8px; background:#1c2028; }
-#remote-share .remote-chat h4 { margin:0 0 6px 0; font-size:14px; letter-spacing:0.2px; }
-#remote-share .remote-messages { max-height:120px; overflow:auto; font-size:13px; line-height:1.4; padding-right:4px; }
-#remote-share .remote-message { margin:2px 0; }
-#remote-share .remote-chat form { display:flex; gap:6px; margin-top:6px; }
-#remote-share .remote-chat input { flex:1; background:#0f1218; border:1px solid #2f3540; color:#fff; padding:6px 8px; border-radius:8px; }
 #overlay { position:fixed; inset:0; display:none; align-items:center; justify-content:center; background:#000a; color:#fff; text-align:center; transition:background 0.25s ease; }
 #overlay.celebrating { background:radial-gradient(circle at 50% 30%, #2e3c5fdd 0%, #141821ee 55%, #0a0c12f5 100%); }
 #overlay .card { background:#1f232a; border:1px solid #3a3f47; border-radius:14px; padding:22px 24px; max-width:560px; box-shadow:0 18px 60px #0009; }
@@ -110,23 +103,9 @@ body.app-display-hidden #chat-ui { display:none; }
 .biome-features li { margin:4px 0; }
 .biome-boss { margin-top:8px; font-weight:600; color:#ffd166; }
 canvas { display:block; width:100vw; height:100vh; image-rendering: pixelated; }
-.chat-ui { display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
-.chat-form { display:flex; align-items:center; gap:6px; background:#2b2f36; border:1px solid #3a3f47; padding:6px 8px; border-radius:12px; box-shadow: inset 0 0 0 1px #00000020; }
-.chat-form button { background:#3a414d; color:#fff; border:1px solid #4a5160; border-radius:10px; padding:8px 10px; font-weight:700; cursor:pointer; }
-.chat-form button:hover { background:#4a5362; }
-.chat-input { background:#1f232a; border:1px solid #3a3f47; color:#eaeaea; border-radius:10px; padding:8px 10px; min-width:150px; font-size:14px; }
-.chat-send { font-size:13px; padding:8px 12px; }
 #touch-controls { position:fixed; inset:auto 0 0 0; display:flex; justify-content:space-between; padding:18px 20px; pointer-events:none; z-index:15; }
 #touch-controls .cluster { display:flex; gap:14px; pointer-events:auto; flex-wrap:wrap; }
 #touch-controls .cluster.actions { justify-content:flex-end; }
 .touch-btn { background:#2b2f36; border:1px solid #3a3f47; color:#fff; font-weight:600; font-size:16px; padding:16px 18px; border-radius:18px; min-width:68px; text-transform:uppercase; touch-action:none; user-select:none; opacity:0.85; transition:background 0.15s ease, opacity 0.15s ease, box-shadow 0.15s ease; }
 .touch-btn:active, .touch-btn.active { background:#3d4554; opacity:1; box-shadow:0 0 0 3px #ffffff12; }
 .touch-btn span { display:block; font-size:12px; font-weight:500; opacity:0.8; margin-top:4px; text-transform:none; }
-#chat-ui { display:flex; align-items:center; gap:10px; margin-left:auto; }
-.chat-lane { display:flex; align-items:center; gap:6px; }
-.chat-btn { background:#2f3540; color:#fff; border:1px solid #4a5160; border-radius:12px; padding:6px 10px; font-weight:700; cursor:pointer; box-shadow: inset 0 0 0 1px #00000030; }
-.chat-btn:hover { background:#3a414d; }
-.chat-btn:focus-visible, .chat-input:focus-visible { outline:2px solid #9ef79a; outline-offset:2px; }
-.chat-input { background:#1f232a; border:1px solid #3a3f47; border-radius:10px; color:#eaeaea; padding:6px 8px; min-width:140px; font-weight:600; box-shadow: inset 0 0 0 1px #00000020; }
-.chat-input::placeholder { color:#7c8695; }
-.chat-lane.hidden { display:none; }

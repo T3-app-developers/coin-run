@@ -45,18 +45,6 @@
   </div>
   <div class="pill hidden" id="upgrade-pill">Upgrades: <span id="upgrade-text">None</span></div>
   <button class="pill addons-pill" id="addons-button" type="button">Add-ons</button>
-  <div id="chat-ui" class="chat-ui hidden" aria-live="polite">
-    <form class="chat-form chat-lane" data-target="p1">
-      <button type="button" class="chat-btn chat-launch">P1</button>
-      <input class="chat-input" type="text" placeholder="P1 chat" autocomplete="off" />
-      <button type="submit" class="chat-btn chat-send">Send</button>
-    </form>
-    <form class="chat-form chat-lane" data-target="p2">
-      <button type="button" class="chat-btn chat-launch">P2</button>
-      <input class="chat-input" type="text" placeholder="P2 chat" autocomplete="off" />
-      <button type="submit" class="chat-btn chat-send">Send</button>
-    </form>
-  </div>
 </div>
 
 <div id="addons-panel" class="hidden minimized" aria-hidden="true">
@@ -69,10 +57,6 @@
   </div>
   <div class="addons-body">
     <div class="addons-list">
-      <label class="addon-item" for="addon-chat">
-        <input id="addon-chat" type="checkbox" />
-        Chat overlays
-      </label>
       <label class="addon-item" for="addon-local">
         <input id="addon-local" type="checkbox" />
         Local multiplayer
@@ -141,14 +125,6 @@
     </div>
     <div class="remote-row">
       <img id="remote-qr" alt="Remote controller QR code" />
-    </div>
-    <div class="remote-chat">
-      <h4>Remote Chat</h4>
-      <div id="remote-messages" class="remote-messages"></div>
-      <form id="remote-chat-form">
-        <input id="remote-chat-input" type="text" autocomplete="off" placeholder="Send a message" />
-        <button type="submit">Send</button>
-      </form>
     </div>
   </div>
 </div>

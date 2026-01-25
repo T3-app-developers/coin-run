@@ -52,21 +52,13 @@ export const initGame = () => {
     remoteQrEl,
     remoteStatusEl,
     remoteRefreshBtn,
-    remoteMessagesEl,
-    remoteChatForm,
-    remoteChatInput,
     addonsButton,
     addonsPanel,
     addonsClose,
-    addonsChatToggle,
     addonsLocalToggle,
     addonsRemoteToggle,
     addonsDisplayToggle,
     resourceLabels,
-    chatUi,
-    chatForms,
-    chatInputs,
-    chatLanes,
     deathScreen,
     wahAudio,
     bossIndicator,
@@ -555,19 +547,11 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
   const virtualButtons = [];
   let initFailed = false;
   let deathScreenTimer = null;
-  const CHAT_LIFETIME_MS = 4500;
-  const chatState = {
-    p1: { text: '', expiresAt: 0 },
-    p2: { text: '', expiresAt: 0 },
-  };
   const addonsState = {
-    chatEnabled: false,
     localMultiplayerEnabled: false,
     remoteEnabled: false,
     appDisplayEnabled: true,
   };
-
-  const REMOTE_ACTION_HINT = 'Buttons map to Player 2: ← → ↑ / . [ ]';
 
   function failInit(message, error) {
     initFailed = true;
@@ -626,25 +610,6 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
     hideWelcomeScreen();
   }
 
-  function clearChatState() {
-    Object.values(chatState).forEach(entry => {
-      entry.text = '';
-      entry.expiresAt = 0;
-    });
-    players.forEach(player => {
-      player.chatText = '';
-      player.chatUntil = 0;
-    });
-  }
-
-  function setPlayerChat(target, text) {
-    const key = (target || '').toLowerCase();
-    const entry = chatState[key];
-    if (!entry) return;
-    entry.text = text;
-    entry.expiresAt = performance.now() + CHAT_LIFETIME_MS;
-    applyChatMessage(key.toUpperCase(), text);
-  }
 
   function setPlatformMode(nextMode) {
     platformMode = nextMode === 'mobile' ? 'mobile' : 'desktop';
@@ -677,18 +642,10 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
     return addonsState.localMultiplayerEnabled || addonsState.remoteEnabled;
   }
 
-  function isChatActive() {
-    return addonsState.chatEnabled && shouldShowSecondPlayer();
-  }
-
   function updateModeHud() {
     const showSecondPlayer = shouldShowSecondPlayer();
-    const showChat = isChatActive();
     p2Pills.forEach(el => el.classList.toggle('hidden', !showSecondPlayer));
     if (helpP2) helpP2.classList.toggle('hidden', !showSecondPlayer);
-    if (chatUi) chatUi.classList.toggle('hidden', !showChat);
-    if (chatLanes.p2 && chatLanes.p2.lane) chatLanes.p2.lane.classList.toggle('hidden', !showSecondPlayer);
-    if (!showChat) clearChatInputs();
   }
 
   function setAddonsPanelOpen(open) {
@@ -698,7 +655,6 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
   }
 
   function updateAddonsControls() {
-    if (addonsChatToggle) addonsChatToggle.checked = addonsState.chatEnabled;
     if (addonsLocalToggle) addonsLocalToggle.checked = addonsState.localMultiplayerEnabled;
     if (addonsRemoteToggle) addonsRemoteToggle.checked = addonsState.remoteEnabled;
     if (addonsDisplayToggle) addonsDisplayToggle.checked = addonsState.appDisplayEnabled;
@@ -756,12 +712,6 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
       addonsClose.addEventListener('click', () => setAddonsPanelOpen(false));
     }
 
-    if (addonsChatToggle) {
-      addonsChatToggle.addEventListener('change', (event) => {
-        applyAddonsState({ chatEnabled: event.target.checked });
-      });
-    }
-
     if (addonsLocalToggle) {
       addonsLocalToggle.addEventListener('change', (event) => {
         applyAddonsState({ localMultiplayerEnabled: event.target.checked }, { showBiome: true });
@@ -796,34 +746,6 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
     failInit('Game UI failed to initialize. You can still choose a mode.', error);
   }
 
-  function bindChatUi() {
-    chatForms.forEach(form => {
-      const target = form.dataset.target || 'p1';
-      const input = form.querySelector('.chat-input');
-      const launch = form.querySelector('.chat-launch');
-      if (launch && input) {
-        launch.addEventListener('click', () => {
-          input.focus();
-          input.select();
-        });
-      }
-      form.addEventListener('submit', (e) => {
-        e.preventDefault();
-        if (!input) return;
-        if (!isChatActive()) return;
-        const text = (input.value || '').trim();
-        if (!text) return;
-        setPlayerChat(target, text);
-        if (remoteMode && target === 'p2') {
-          sendRemoteChat(text, 'Host');
-        }
-        input.value = '';
-      });
-    });
-  }
-
-  bindChatUi();
-
   const biomeEntries = Object.values(BIOMES);
 
   function mergeBiomeConfig(config) {
@@ -856,81 +778,10 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
     if (resourceLabels.p2) resourceLabels.p2.textContent = b.resourceName;
   }
 
-  function clearChatInputs() {
-    activeChatPlayer = null;
-    Object.values(chatLanes).forEach(({ input }) => {
-      if (input) {
-        input.value = '';
-        input.blur();
-      }
-    });
-  }
-
   function resetInputState() {
     keys = {};
     Object.values(inputSources).forEach(source => source.clear());
     clearVirtualInputs();
-  }
-
-  function applyChatMessage(playerLabel, text) {
-    const player = players.find(p => p.label === playerLabel);
-    if (!player) return;
-    player.chatText = text;
-    player.chatUntil = performance.now() + CHAT_VISIBLE_MS;
-  }
-
-  function closeChatInput() {
-    activeChatPlayer = null;
-    Object.values(chatLanes).forEach(({ input }) => {
-      if (input) input.blur();
-    });
-  }
-
-  function submitChat(playerKey) {
-    const lane = chatLanes[playerKey];
-    if (!lane || !lane.input) return;
-    if (!isChatActive()) { closeChatInput(); return; }
-    const text = lane.input.value.trim();
-    if (text) {
-      applyChatMessage(playerKey.toUpperCase(), text);
-    }
-    lane.input.value = '';
-    closeChatInput();
-  }
-
-  function focusChat(playerKey) {
-    const lane = chatLanes[playerKey];
-    if (!lane || !lane.input) return;
-    if (!isChatActive()) return;
-    activeChatPlayer = playerKey;
-    lane.input.focus();
-    lane.input.select();
-  }
-
-  function setupChatLane(playerKey) {
-    const lane = chatLanes[playerKey];
-    if (!lane) return;
-    const { button, input } = lane;
-    if (button) button.addEventListener('click', () => focusChat(playerKey));
-    if (input) {
-      input.addEventListener('focus', () => { activeChatPlayer = playerKey; });
-      input.addEventListener('blur', () => {
-        if (activeChatPlayer === playerKey) activeChatPlayer = null;
-      });
-      input.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter') {
-          e.preventDefault();
-          e.stopPropagation();
-          submitChat(playerKey);
-        } else if (e.key === 'Escape') {
-          e.preventDefault();
-          e.stopPropagation();
-          closeChatInput();
-        } else {
-          e.stopPropagation();
-        }
-      });
-    }
   }
 
   function describeBiome(b) {
@@ -1016,8 +867,6 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
       updateResourceLabels();
       updateBiomeTip();
       renderBiomeDetails(ensureActiveBiome());
-      setupChatLane('p1');
-      setupChatLane('p2');
       detectPlatformMode();
     } catch (error) {
       failInit('Game UI failed to initialize. You can still choose a mode.', error);
@@ -1039,19 +888,6 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
     let basePath = location.pathname.replace(/index\.html$/, '');
     if (!basePath.endsWith('/')) basePath += '/';
     return `${location.origin}${basePath}controller.html?code=${encodeURIComponent(code)}`;
-  }
-
-  function clearRemoteMessages() {
-    if (remoteMessagesEl) remoteMessagesEl.innerHTML = '';
-  }
-
-  function addRemoteMessage(text, from = 'Friend') {
-    if (!remoteMessagesEl || !text) return;
-    const row = document.createElement('div');
-    row.className = 'remote-message';
-    row.textContent = `${from}: ${text}`;
-    remoteMessagesEl.appendChild(row);
-    remoteMessagesEl.scrollTop = remoteMessagesEl.scrollHeight;
   }
 
   function setRemoteStatus(label, connected = false) {
@@ -1112,11 +948,6 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
 
   function handleRemotePayload(payload) {
     if (!payload || payload.code !== remoteSessionCode) return;
-    if (payload.type === 'chat' && payload.text) {
-      addRemoteMessage(payload.text, payload.from || 'Friend');
-      setPlayerChat('p2', payload.text);
-      return;
-    }
     const action = payload.action;
     if (!action) return;
     const resolved = resolveVirtualKey(action);
@@ -1124,15 +955,6 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
     remoteKeys[resolved] = !!payload.pressed;
     if (payload.pressed) handleKeyDown(resolved);
     else handleKeyUp(resolved);
-  }
-
-  function sendRemoteChat(text, from = 'You') {
-    if (!text) return;
-    addRemoteMessage(text, from);
-    setPlayerChat('p1', text);
-    if (remoteSocket && remoteSocket.readyState === WebSocket.OPEN) {
-      remoteSocket.send(JSON.stringify({ code: remoteSessionCode, type: 'chat', text, from }));
-    }
   }
 
   function connectRemoteSocket() {
@@ -1173,8 +995,6 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
     if (!addonsState.remoteEnabled) return;
     if (forceNewCode || !remoteSessionCode) remoteSessionCode = generateRemoteCode();
     remoteKeys = {};
-    clearRemoteMessages();
-    addRemoteMessage(REMOTE_ACTION_HINT, 'Tip');
     remoteShareAutoCollapsed = false;
     setRemoteShareCollapsed(false);
     updateRemoteShareUi();
@@ -1327,16 +1147,6 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
     });
   }
 
-  if (remoteChatForm) {
-    remoteChatForm.addEventListener('submit', (e) => {
-      e.preventDefault();
-      if (!addonsState.remoteEnabled) return;
-      const text = remoteChatInput ? remoteChatInput.value.trim() : '';
-      if (text) sendRemoteChat(text, 'You');
-      if (remoteChatInput) remoteChatInput.value = '';
-    });
-  }
-
   // ===== entities =====
   class Player {
     constructor(x, y, options = {}) {
@@ -1352,8 +1162,6 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
       this.lives = 3;
       this.deaths = 0;
       this.finished = false;
-      this.chatText = '';
-      this.chatUntil = 0;
       this.label = options.label || 'P';
       this.bodyColor = options.bodyColor || '#2f3b52';
       this.headColor = options.headColor || '#2fd06c';
@@ -1774,7 +1582,6 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
     updateResourceLabels();
     updateBiomeTip();
     hideDeathScreen(true);
-    clearChatState();
     configureLevelDimensions();
     bossRewardsGranted = false;
     bossUpgradeSummary = '';
@@ -1793,7 +1600,6 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
     coins = [];
     enemies = [];
     bullets = [];
-    clearChatInputs();
     volcano = createVolcano(tileX(levelLength * 0.55), activeBiome);
     updateVolcanoHud();
     players = [];
@@ -1926,21 +1732,6 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
     }
     if (e.key === '3') {
       applyAddonsState({ remoteEnabled: true }, { showBiome: true });
-      return;
-    }
-    const chatTarget = Object.values(chatLanes).some(({ input }) => input && input === e.target);
-    const chatHidden = !chatUi || chatUi.classList.contains('hidden');
-    if (chatHidden === false) {
-      const wantsP1 = CHAT_HOTKEYS.p1.includes(e.key);
-      const wantsP2 = CHAT_HOTKEYS.p2.includes(e.key);
-      if (wantsP1 || (wantsP2 && shouldShowSecondPlayer())) {
-        e.preventDefault();
-        focusChat(wantsP1 ? 'p1' : 'p2');
-        return;
-      }
-    }
-    if (activeChatPlayer || chatTarget) {
-      if (e.key === 'Escape') closeChatInput();
       return;
     }
     handleKeyDown(e.key);
@@ -3509,37 +3300,6 @@ Fv9z/+n/WwCwANcAyQCQADsA4f+X/2z/aP+G/7z/+/8wAFQAXgBRADQAEQD0/+H/3f/k//H//P8=
     if (player.invuln > 0) {
       ctx.fillStyle = '#ffffff55';
       ctx.fillRect(player.x-2, player.y-18, player.w+4, player.h+20);
-    }
-
-    const chat = chatState[player.label.toLowerCase()];
-    if (chat && chat.text) {
-      const now = performance.now();
-      if (chat.expiresAt > now) {
-        const remaining = chat.expiresAt - now;
-        const opacity = clamp(remaining / CHAT_LIFETIME_MS, 0, 1);
-        const padding = 7;
-        ctx.font = '600 12px system-ui';
-        const text = chat.text;
-        const textWidth = ctx.measureText(text).width;
-        const boxW = textWidth + padding * 2;
-        const boxH = 22;
-        const boxX = player.centerX() - boxW / 2;
-        const boxY = head.y - boxH - 6;
-        ctx.fillStyle = `rgba(31, 35, 42, ${0.8 * opacity})`;
-        ctx.strokeStyle = `rgba(58, 63, 71, ${0.9 * opacity})`;
-        ctx.lineWidth = 1.5;
-        ctx.beginPath();
-        ctx.roundRect(boxX, boxY, boxW, boxH, 8);
-        ctx.fill();
-        ctx.stroke();
-        ctx.fillStyle = `rgba(234, 234, 234, ${opacity})`;
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.fillText(text, player.centerX(), boxY + boxH / 2);
-      } else {
-        chat.text = '';
-        chat.expiresAt = 0;
-      }
     }
 
     ctx.fillStyle = '#ffffffdd';

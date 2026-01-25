@@ -68,21 +68,6 @@ export const setupInput = ({
       actions.applyAddonsState({ remoteEnabled: true }, { showBiome: true });
       return;
     }
-    const chatTarget = Object.values(ui.chatLanes).some(({ input }) => input && input === e.target);
-    const chatHidden = !ui.chatUi || ui.chatUi.classList.contains('hidden');
-    if (chatHidden === false) {
-      const wantsP1 = state.chatHotkeys.p1.includes(e.key);
-      const wantsP2 = state.chatHotkeys.p2.includes(e.key);
-      if (wantsP1 || (wantsP2 && actions.shouldShowSecondPlayer())) {
-        e.preventDefault();
-        actions.focusChat(wantsP1 ? 'p1' : 'p2');
-        return;
-      }
-    }
-    if (state.activeChatPlayer || chatTarget) {
-      if (e.key === 'Escape') actions.closeChatInput();
-      return;
-    }
     actions.handleKeyDown(e.key);
   });
 
